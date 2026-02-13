@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm -C backend exec prisma generate && pnpm -C api exec prisma generate && pnpm -C frontend run build",
+  "buildCommand": "cd backend && npx prisma generate && cd ../api && npx prisma generate && cd ../frontend && pnpm run build",
   "outputDirectory": "frontend/dist",
   "installCommand": "pnpm install --recursive",
   "framework": "vite",
