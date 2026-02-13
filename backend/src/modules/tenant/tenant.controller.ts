@@ -78,8 +78,13 @@ export class TenantController {
   async listBranches(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const branches = await prisma.branch.findMany({
-        where: { tenantId: req.tenantId, isActive: true },
-        orderBy: { isMainBranch: 'desc' },
+        where: { tenantId: req.tenantId },
+        include: {
+          _count: {
+            select: { users: true, appointments: true },
+          },
+        },
+        orderBy: [{ isMainBranch: 'desc' }, { name: 'asc' }],
       });
 
       sendSuccess(res, branches);
@@ -90,18 +95,27 @@ export class TenantController {
 
   async createBranch(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { name, phone, email, address, city, region, isMainBranch } = req.body;
+      const { 
+        name, code, branchType, phone, email, address, city, region, 
+        isMainBranch, hasEmergency, hasInpatient, hasLab, hasPharmacy 
+      } = req.body;
 
       const branch = await prisma.branch.create({
         data: {
           tenantId: req.tenantId!,
           name,
+          code,
+          branchType: branchType || 'SATELLITE_CLINIC',
           phone,
           email,
           address,
           city,
           region,
           isMainBranch: isMainBranch || false,
+          hasEmergency: hasEmergency || false,
+          hasInpatient: hasInpatient || false,
+          hasLab: hasLab !== false,
+          hasPharmacy: hasPharmacy !== false,
         },
       });
 
@@ -113,22 +127,58 @@ export class TenantController {
 
   async updateBranch(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { name, phone, email, address, city, region, isActive } = req.body;
+      const { 
+        name, code, branchType, phone, email, address, city, region, 
+        isActive, hasEmergency, hasInpatient, hasLab, hasPharmacy 
+      } = req.body;
 
       const branch = await prisma.branch.update({
         where: { id: req.params.id },
         data: {
           ...(name && { name }),
+          ...(code !== undefined && { code }),
+          ...(branchType && { branchType }),
           ...(phone && { phone }),
           ...(email && { email }),
           ...(address && { address }),
-          ...(city && { city }),
-          ...(region && { region }),
+          ...(city !== undefined && { city }),
+          ...(region !== undefined && { region }),
           ...(isActive !== undefined && { isActive }),
+          ...(hasEmergency !== undefined && { hasEmergency }),
+          ...(hasInpatient !== undefined && { hasInpatient }),
+          ...(hasLab !== undefined && { hasLab }),
+          ...(hasPharmacy !== undefined && { hasPharmacy }),
         },
       });
 
       sendSuccess(res, branch, 'Branch updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteBranch(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const branch = await prisma.branch.findFirst({
+        where: { id: req.params.id, tenantId: req.tenantId },
+        include: { _count: { select: { users: true, appointments: true } } },
+      });
+
+      if (!branch) {
+        throw new AppError('Branch not found', 404);
+      }
+
+      if (branch.isMainBranch) {
+        throw new AppError('Cannot delete main branch', 400);
+      }
+
+      if (branch._count.users > 0 || branch._count.appointments > 0) {
+        throw new AppError('Cannot delete branch with assigned users or appointments', 400);
+      }
+
+      await prisma.branch.delete({ where: { id: branch.id } });
+
+      sendSuccess(res, null, 'Branch deleted successfully');
     } catch (error) {
       next(error);
     }

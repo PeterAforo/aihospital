@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Shield, Building2, Plus, Edit, Trash2, Search, Loader2, Check } from 'lucide-react';
+import { Users, Shield, Building2, Plus, Edit, Trash2, Search, Loader2, Check, MapPin, Phone, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/services/api';
-import { rbacService, Permission } from '@/services/rbac.service';
+import { rbacService, Permission, Branch } from '@/services/rbac.service';
 
 interface User {
   id: string;
@@ -30,6 +30,7 @@ export default function UserManagement() {
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [showCreateDept, setShowCreateDept] = useState(false);
+  const [showCreateBranch, setShowCreateBranch] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
   // Fetch users
@@ -89,6 +90,41 @@ export default function UserManagement() {
     },
   });
 
+  // Fetch branches
+  const { data: branches, isLoading: loadingBranches } = useQuery({
+    queryKey: ['branches'],
+    queryFn: () => rbacService.listBranches(),
+  });
+
+  const createBranchMutation = useMutation({
+    mutationFn: (data: {
+      name: string;
+      code?: string;
+      branchType?: string;
+      phone: string;
+      email: string;
+      address: string;
+      city?: string;
+      region?: string;
+      isMainBranch?: boolean;
+      hasEmergency?: boolean;
+      hasInpatient?: boolean;
+      hasLab?: boolean;
+      hasPharmacy?: boolean;
+    }) => rbacService.createBranch(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
+      setShowCreateBranch(false);
+    },
+  });
+
+  const deleteBranchMutation = useMutation({
+    mutationFn: (id: string) => rbacService.deleteBranch(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
+    },
+  });
+
   const assignRoleMutation = useMutation({
     mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
       rbacService.assignRoleToUser(userId, roleId),
@@ -135,6 +171,9 @@ export default function UserManagement() {
           </TabsTrigger>
           <TabsTrigger value="departments" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Building2 size={16} /> Departments
+          </TabsTrigger>
+          <TabsTrigger value="branches" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MapPin size={16} /> Branches
           </TabsTrigger>
         </TabsList>
 
@@ -359,7 +398,239 @@ export default function UserManagement() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Branches Tab */}
+        <TabsContent value="branches">
+          <Card>
+            <CardHeader>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <CardTitle>Hospital Branches</CardTitle>
+                <Button onClick={() => setShowCreateBranch(true)}>
+                  <Plus size={16} /> Add Branch
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingBranches ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <Loader2 className="animate-spin" size={32} style={{ margin: '0 auto', color: '#6b7280' }} />
+                </div>
+              ) : branches && branches.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                  {branches.map((branch) => (
+                    <div
+                      key={branch.id}
+                      style={{
+                        padding: '20px',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        backgroundColor: branch.isMainBranch ? '#f0fdf4' : 'white',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>{branch.name}</p>
+                            {branch.isMainBranch && (
+                              <Badge className="bg-green-100 text-green-800">Main</Badge>
+                            )}
+                          </div>
+                          {branch.code && (
+                            <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Code: {branch.code}</p>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <Button variant="ghost" size="sm">
+                            <Edit size={14} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteBranchMutation.mutate(branch.id)}
+                            disabled={deleteBranchMutation.isPending || branch.isMainBranch}
+                          >
+                            <Trash2 size={14} className="text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '0.875rem' }}>
+                          <MapPin size={14} />
+                          <span>{branch.address}{branch.city ? `, ${branch.city}` : ''}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '0.875rem' }}>
+                          <Phone size={14} />
+                          <span>{branch.phone}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6b7280', fontSize: '0.875rem' }}>
+                          <Mail size={14} />
+                          <span>{branch.email}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        <Badge variant="outline" style={{ fontSize: '0.7rem' }}>
+                          {branch.branchType.replace('_', ' ')}
+                        </Badge>
+                        {branch.hasEmergency && (
+                          <Badge className="bg-red-100 text-red-800" style={{ fontSize: '0.7rem' }}>Emergency</Badge>
+                        )}
+                        {branch.hasInpatient && (
+                          <Badge className="bg-blue-100 text-blue-800" style={{ fontSize: '0.7rem' }}>Inpatient</Badge>
+                        )}
+                        {branch.hasLab && (
+                          <Badge className="bg-purple-100 text-purple-800" style={{ fontSize: '0.7rem' }}>Lab</Badge>
+                        )}
+                        {branch.hasPharmacy && (
+                          <Badge className="bg-yellow-100 text-yellow-800" style={{ fontSize: '0.7rem' }}>Pharmacy</Badge>
+                        )}
+                      </div>
+
+                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                          {branch._count?.users || 0} staff • {branch._count?.appointments || 0} appointments
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '60px', color: '#6b7280' }}>
+                  <MapPin size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+                  <p style={{ fontWeight: 500 }}>No branches created yet</p>
+                  <p style={{ fontSize: '0.875rem', marginTop: '4px' }}>Add your first branch to get started</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Create Branch Modal */}
+      {showCreateBranch && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '500px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '16px' }}>Create Branch</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              createBranchMutation.mutate({
+                name: formData.get('name') as string,
+                code: formData.get('code') as string || undefined,
+                branchType: formData.get('branchType') as string || 'SATELLITE_CLINIC',
+                phone: formData.get('phone') as string,
+                email: formData.get('email') as string,
+                address: formData.get('address') as string,
+                city: formData.get('city') as string || undefined,
+                region: formData.get('region') as string || undefined,
+                hasEmergency: formData.get('hasEmergency') === 'on',
+                hasInpatient: formData.get('hasInpatient') === 'on',
+                hasLab: formData.get('hasLab') === 'on',
+                hasPharmacy: formData.get('hasPharmacy') === 'on',
+              });
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <Label>Branch Name *</Label>
+                    <Input name="name" required placeholder="e.g., Tema Clinic" />
+                  </div>
+                  <div>
+                    <Label>Code</Label>
+                    <Input name="code" placeholder="e.g., TEMA" />
+                  </div>
+                </div>
+                <div>
+                  <Label>Branch Type</Label>
+                  <Select name="branchType" defaultValue="SATELLITE_CLINIC">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MAIN">Main Hospital</SelectItem>
+                      <SelectItem value="SATELLITE_CLINIC">Satellite Clinic</SelectItem>
+                      <SelectItem value="DIAGNOSTIC_CENTER">Diagnostic Center</SelectItem>
+                      <SelectItem value="MATERNITY_WARD">Maternity Ward</SelectItem>
+                      <SelectItem value="PHARMACY">Pharmacy</SelectItem>
+                      <SelectItem value="LAB">Laboratory</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <Label>Phone *</Label>
+                    <Input name="phone" required placeholder="+233 XX XXX XXXX" />
+                  </div>
+                  <div>
+                    <Label>Email *</Label>
+                    <Input name="email" type="email" required placeholder="branch@hospital.com" />
+                  </div>
+                </div>
+                <div>
+                  <Label>Address *</Label>
+                  <Input name="address" required placeholder="Street address" />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <Label>City</Label>
+                    <Input name="city" placeholder="e.g., Accra" />
+                  </div>
+                  <div>
+                    <Label>Region</Label>
+                    <Input name="region" placeholder="e.g., Greater Accra" />
+                  </div>
+                </div>
+                <div style={{ marginTop: '8px' }}>
+                  <Label style={{ marginBottom: '8px', display: 'block' }}>Capabilities</Label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" name="hasEmergency" />
+                      <span style={{ fontSize: '0.875rem' }}>Emergency Services</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" name="hasInpatient" />
+                      <span style={{ fontSize: '0.875rem' }}>Inpatient Ward</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" name="hasLab" defaultChecked />
+                      <span style={{ fontSize: '0.875rem' }}>Laboratory</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" name="hasPharmacy" defaultChecked />
+                      <span style={{ fontSize: '0.875rem' }}>Pharmacy</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                <Button type="button" variant="outline" onClick={() => setShowCreateBranch(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createBranchMutation.isPending}>
+                  {createBranchMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+                  Create Branch
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Create Department Modal */}
       {showCreateDept && (

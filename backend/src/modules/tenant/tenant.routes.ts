@@ -18,5 +18,6 @@ router.put('/current', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), tenantControl
 router.get('/branches', tenantController.listBranches);
 router.post('/branches', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), tenantController.createBranch);
 router.put('/branches/:id', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), tenantController.updateBranch);
+router.delete('/branches/:id', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), tenantController.deleteBranch);
 
 export default router;
