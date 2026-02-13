@@ -1,0 +1,1339 @@
+{
+  "module_name": "User Management, Roles, Permissions & RBAC Module",
+  "project": "MediCare Ghana Hospital Management System",
+  "phase": "Phase 0 - Foundation (Should be first, but implementing now)",
+  "priority": "CRITICAL - Foundation for entire system",
+  "implementation_time": "2-3 weeks",
+  
+  "module_overview": {
+    "description": "Complete user management system with role-based access control (RBAC), multi-tenancy support, authentication, authorization, and comprehensive audit logging. Defines who can access what in the hospital system.",
+    "position_in_system": "Foundation layer - used by ALL other modules",
+    "key_objectives": [
+      "Manage hospital staff accounts (doctors, nurses, pharmacists, admins, etc.)",
+      "Implement role-based access control (RBAC) with granular permissions",
+      "Support multi-tenancy (different hospitals using same system)",
+      "Provide secure authentication (JWT) and authorization",
+      "Track user activity with comprehensive audit logging",
+      "Support department-based access control",
+      "Enable 2FA for high-security accounts",
+      "Manage user sessions and concurrent logins",
+      "Handle password policies and reset flows"
+    ],
+    "security_standards": {
+      "authentication": "JWT (JSON Web Tokens) with refresh tokens",
+      "password_hashing": "bcrypt with salt (cost factor 12)",
+      "session_management": "Redis-based session store",
+      "audit_logging": "All user actions logged for compliance",
+      "2fa": "Time-based One-Time Password (TOTP) using Google Authenticator",
+      "password_policy": "Min 8 chars, uppercase, lowercase, number, special char"
+    }
+  },
+
+  "healthcare_roles_structure": {
+    "description": "Pre-defined roles for hospital staff",
+    "role_hierarchy": {
+      "tier_1_admin": [
+        {
+          "role": "SUPER_ADMIN",
+          "description": "System administrator (Anthropic/MediCare staff)",
+          "scope": "Global - all tenants",
+          "use_case": "System maintenance, tenant management, global settings",
+          "permissions_count": "ALL",
+          "examples": ["System engineers", "Platform administrators"]
+        },
+        {
+          "role": "HOSPITAL_ADMIN",
+          "description": "Hospital administrator",
+          "scope": "Single tenant (hospital)",
+          "use_case": "Manage hospital settings, users, departments, billing",
+          "permissions_count": "~80 permissions",
+          "examples": ["Hospital CEO", "IT Manager", "Operations Manager"]
+        }
+      ],
+      "tier_2_clinical_leadership": [
+        {
+          "role": "MEDICAL_DIRECTOR",
+          "description": "Chief Medical Officer",
+          "scope": "All clinical departments",
+          "use_case": "Oversee all clinical operations, view all patient data, quality assurance",
+          "permissions": ["VIEW_ALL_PATIENTS", "VIEW_REPORTS", "MANAGE_DOCTORS"],
+          "examples": ["Chief Medical Officer", "Medical Director"]
+        },
+        {
+          "role": "HEAD_NURSE",
+          "description": "Nursing supervisor",
+          "scope": "All nursing staff",
+          "use_case": "Manage nursing staff, oversee patient care, duty rosters",
+          "permissions": ["MANAGE_NURSES", "VIEW_PATIENT_VITALS", "TRIAGE"],
+          "examples": ["Matron", "Nursing Supervisor", "Ward Manager"]
+        }
+      ],
+      "tier_3_clinical_staff": [
+        {
+          "role": "DOCTOR",
+          "description": "Physician/Medical doctor",
+          "scope": "Assigned patients and departments",
+          "use_case": "Diagnose, prescribe, order tests, write clinical notes",
+          "permissions": [
+            "VIEW_PATIENT",
+            "CREATE_ENCOUNTER",
+            "PRESCRIBE",
+            "ORDER_LAB",
+            "ORDER_RADIOLOGY",
+            "VIEW_LAB_RESULTS",
+            "DISCHARGE_PATIENT"
+          ],
+          "examples": ["General Practitioner", "Specialist", "Surgeon", "Pediatrician"]
+        },
+        {
+          "role": "NURSE",
+          "description": "Registered nurse",
+          "scope": "Assigned wards/departments",
+          "use_case": "Triage patients, administer medications, record vitals, assist doctors",
+          "permissions": [
+            "VIEW_PATIENT",
+            "TRIAGE",
+            "RECORD_VITALS",
+            "ADMINISTER_MEDICATION",
+            "UPDATE_PATIENT_NOTES"
+          ],
+          "examples": ["RN", "Staff Nurse", "Ward Nurse"]
+        },
+        {
+          "role": "PHARMACIST",
+          "description": "Licensed pharmacist",
+          "scope": "Pharmacy department",
+          "use_case": "Dispense medications, manage drug inventory, counsel patients",
+          "permissions": [
+            "VIEW_PRESCRIPTION",
+            "DISPENSE_MEDICATION",
+            "MANAGE_DRUG_INVENTORY",
+            "UPDATE_DRUG_FORMULARY"
+          ],
+          "examples": ["Pharmacy manager", "Staff pharmacist"]
+        },
+        {
+          "role": "LAB_TECHNICIAN",
+          "description": "Laboratory technician",
+          "scope": "Laboratory department",
+          "use_case": "Process lab tests, upload results",
+          "permissions": [
+            "VIEW_LAB_ORDER",
+            "PROCESS_LAB_TEST",
+            "UPLOAD_LAB_RESULT"
+          ],
+          "examples": ["Lab tech", "Medical lab scientist"]
+        },
+        {
+          "role": "RADIOLOGIST",
+          "description": "Radiology specialist",
+          "scope": "Radiology department",
+          "use_case": "Perform imaging, interpret results, upload reports",
+          "permissions": [
+            "VIEW_RADIOLOGY_ORDER",
+            "PERFORM_IMAGING",
+            "UPLOAD_RADIOLOGY_RESULT",
+            "APPROVE_RADIOLOGY_REPORT"
+          ],
+          "examples": ["Radiologist", "Radiology technician"]
+        }
+      ],
+      "tier_4_support_staff": [
+        {
+          "role": "RECEPTIONIST",
+          "description": "Front desk staff",
+          "scope": "Reception/Registration",
+          "use_case": "Register patients, book appointments, check-in",
+          "permissions": [
+            "REGISTER_PATIENT",
+            "VIEW_PATIENT_BASIC",
+            "CREATE_APPOINTMENT",
+            "CHECK_IN_PATIENT",
+            "UPDATE_PATIENT_DEMOGRAPHICS"
+          ],
+          "examples": ["Front desk officer", "Registration clerk"]
+        },
+        {
+          "role": "BILLING_OFFICER",
+          "description": "Accounts/billing staff",
+          "scope": "Billing department",
+          "use_case": "Generate invoices, process payments, submit NHIS claims",
+          "permissions": [
+            "VIEW_INVOICE",
+            "CREATE_INVOICE",
+            "PROCESS_PAYMENT",
+            "SUBMIT_NHIS_CLAIM",
+            "VIEW_FINANCIAL_REPORTS"
+          ],
+          "examples": ["Accountant", "Billing clerk", "Revenue officer"]
+        },
+        {
+          "role": "RECORDS_OFFICER",
+          "description": "Medical records officer",
+          "scope": "Health information management",
+          "use_case": "Manage patient records, ensure data quality",
+          "permissions": [
+            "VIEW_PATIENT",
+            "VIEW_ENCOUNTER",
+            "EXPORT_PATIENT_DATA",
+            "MANAGE_PATIENT_DOCUMENTS"
+          ],
+          "examples": ["Health information officer", "Records manager"]
+        }
+      ],
+      "tier_5_limited_access": [
+        {
+          "role": "PATIENT",
+          "description": "Patient portal user",
+          "scope": "Own data only",
+          "use_case": "View own medical records, book appointments, view prescriptions",
+          "permissions": [
+            "VIEW_OWN_RECORDS",
+            "BOOK_OWN_APPOINTMENT",
+            "VIEW_OWN_PRESCRIPTIONS",
+            "VIEW_OWN_LAB_RESULTS"
+          ],
+          "examples": ["Registered patients"]
+        }
+      ]
+    }
+  },
+
+  "permissions_catalog": {
+    "description": "Granular permissions for fine-grained access control",
+    "total_permissions": "~100 permissions across modules",
+    "categories": {
+      "patient_management": [
+        "REGISTER_PATIENT",
+        "VIEW_PATIENT",
+        "VIEW_PATIENT_BASIC",
+        "EDIT_PATIENT",
+        "DELETE_PATIENT",
+        "MERGE_PATIENTS",
+        "VIEW_PATIENT_HISTORY",
+        "EXPORT_PATIENT_DATA"
+      ],
+      "appointments": [
+        "CREATE_APPOINTMENT",
+        "VIEW_APPOINTMENT",
+        "EDIT_APPOINTMENT",
+        "CANCEL_APPOINTMENT",
+        "CHECK_IN_PATIENT",
+        "VIEW_APPOINTMENT_SCHEDULE"
+      ],
+      "triage": [
+        "TRIAGE",
+        "VIEW_TRIAGE",
+        "RECORD_VITALS",
+        "VIEW_VITALS",
+        "REPRIORITIZE_QUEUE"
+      ],
+      "clinical_encounters": [
+        "CREATE_ENCOUNTER",
+        "VIEW_ENCOUNTER",
+        "EDIT_ENCOUNTER",
+        "SIGN_ENCOUNTER",
+        "VIEW_ALL_ENCOUNTERS",
+        "DELETE_ENCOUNTER"
+      ],
+      "prescribing": [
+        "PRESCRIBE",
+        "VIEW_PRESCRIPTION",
+        "EDIT_PRESCRIPTION",
+        "CANCEL_PRESCRIPTION",
+        "DISPENSE_MEDICATION",
+        "VIEW_DRUG_FORMULARY",
+        "MANAGE_DRUG_FORMULARY"
+      ],
+      "laboratory": [
+        "ORDER_LAB",
+        "VIEW_LAB_ORDER",
+        "PROCESS_LAB_TEST",
+        "UPLOAD_LAB_RESULT",
+        "APPROVE_LAB_RESULT",
+        "VIEW_LAB_RESULTS",
+        "CANCEL_LAB_ORDER"
+      ],
+      "radiology": [
+        "ORDER_RADIOLOGY",
+        "VIEW_RADIOLOGY_ORDER",
+        "PERFORM_IMAGING",
+        "UPLOAD_RADIOLOGY_RESULT",
+        "APPROVE_RADIOLOGY_REPORT",
+        "VIEW_RADIOLOGY_RESULTS"
+      ],
+      "pharmacy": [
+        "MANAGE_DRUG_INVENTORY",
+        "RECEIVE_DRUG_STOCK",
+        "ADJUST_STOCK",
+        "VIEW_STOCK_LEVELS",
+        "GENERATE_STOCK_REPORT"
+      ],
+      "billing": [
+        "VIEW_INVOICE",
+        "CREATE_INVOICE",
+        "EDIT_INVOICE",
+        "DELETE_INVOICE",
+        "PROCESS_PAYMENT",
+        "VOID_PAYMENT",
+        "VIEW_FINANCIAL_REPORTS",
+        "SUBMIT_NHIS_CLAIM",
+        "APPROVE_NHIS_CLAIM"
+      ],
+      "user_management": [
+        "MANAGE_USERS",
+        "CREATE_USER",
+        "EDIT_USER",
+        "DEACTIVATE_USER",
+        "ASSIGN_ROLE",
+        "VIEW_USERS",
+        "RESET_USER_PASSWORD"
+      ],
+      "system_admin": [
+        "MANAGE_TENANTS",
+        "MANAGE_DEPARTMENTS",
+        "MANAGE_SETTINGS",
+        "VIEW_AUDIT_LOG",
+        "MANAGE_ROLES",
+        "MANAGE_PERMISSIONS",
+        "VIEW_SYSTEM_REPORTS"
+      ]
+    },
+    "permission_format": {
+      "example": "PRESCRIBE",
+      "structure": "VERB_RESOURCE (e.g., CREATE_APPOINTMENT, VIEW_PATIENT, MANAGE_USERS)",
+      "case": "UPPER_CASE_SNAKE_CASE"
+    }
+  },
+
+  "multi_tenancy_model": {
+    "description": "Support multiple hospitals using same platform",
+    "isolation_level": "Complete data isolation per tenant (hospital)",
+    "tenant_structure": {
+      "tenant": {
+        "id": "UUID",
+        "name": "St. Mary's Hospital",
+        "slug": "st-marys-hospital (URL-safe identifier)",
+        "type": "hospital | clinic | diagnostic_center",
+        "subscription_plan": "basic | pro | enterprise",
+        "status": "active | suspended | trial",
+        "max_users": "INTEGER (subscription limit)",
+        "settings": "JSONB (hospital-specific config)",
+        "created_at": "TIMESTAMP",
+        "expires_at": "TIMESTAMP (subscription expiry)"
+      }
+    },
+    "data_isolation": {
+      "method": "Every table has tenant_id column",
+      "query_pattern": "WHERE tenant_id = current_tenant",
+      "enforcement": "Row-Level Security (RLS) in PostgreSQL OR Middleware check in application",
+      "shared_tables": ["users (if shared login)", "tenants", "permissions", "roles (templates)"],
+      "isolated_tables": "patients, appointments, encounters, prescriptions, etc."
+    },
+    "tenant_context": {
+      "method": "JWT contains tenant_id",
+      "example_jwt_payload": {
+        "userId": "user-uuid",
+        "tenantId": "tenant-uuid",
+        "role": "DOCTOR",
+        "permissions": ["VIEW_PATIENT", "PRESCRIBE"],
+        "exp": 1234567890
+      }
+    }
+  },
+
+  "database_schema": {
+    "tenants": {
+      "table_name": "tenants",
+      "description": "Hospitals/clinics using the platform",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "name VARCHAR(200) NOT NULL (Hospital name)",
+        "slug VARCHAR(100) UNIQUE NOT NULL (URL-safe identifier)",
+        "type VARCHAR(50) DEFAULT 'hospital' (hospital, clinic, diagnostic_center)",
+        "subscription_plan VARCHAR(50) DEFAULT 'trial' (basic, pro, enterprise, trial)",
+        "status VARCHAR(50) DEFAULT 'active' (active, suspended, trial, expired)",
+        "max_users INTEGER DEFAULT 10 (Subscription limit)",
+        "logo_url TEXT NULL",
+        "address TEXT",
+        "phone VARCHAR(50)",
+        "email VARCHAR(200)",
+        "license_number VARCHAR(100) (Medical facility license)",
+        "settings JSONB DEFAULT '{}' (Hospital-specific settings)",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "expires_at TIMESTAMP NULL (Subscription expiry)",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_slug ON (slug)",
+        "INDEX idx_status ON (status)"
+      ]
+    },
+    "users": {
+      "table_name": "users",
+      "description": "All system users (staff, patients)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NULL REFERENCES tenants(id) (NULL for super admins)",
+        "email VARCHAR(200) UNIQUE NOT NULL",
+        "phone VARCHAR(50) NULL",
+        "password_hash VARCHAR(255) NOT NULL (bcrypt)",
+        "first_name VARCHAR(100) NOT NULL",
+        "last_name VARCHAR(100) NOT NULL",
+        "middle_name VARCHAR(100) NULL",
+        "gender VARCHAR(20) (male, female, other)",
+        "date_of_birth DATE NULL",
+        "profile_photo_url TEXT NULL",
+        
+        "-- Role & Department --",
+        "role_id UUID REFERENCES roles(id)",
+        "department_id UUID NULL REFERENCES departments(id)",
+        "specialization VARCHAR(200) NULL (e.g., Cardiology, Pediatrics)",
+        "license_number VARCHAR(100) NULL (Professional license for doctors, nurses)",
+        
+        "-- Status --",
+        "status VARCHAR(50) DEFAULT 'active' (active, inactive, suspended, pending_verification)",
+        "email_verified BOOLEAN DEFAULT FALSE",
+        "email_verified_at TIMESTAMP NULL",
+        
+        "-- Security --",
+        "two_factor_enabled BOOLEAN DEFAULT FALSE",
+        "two_factor_secret VARCHAR(255) NULL (TOTP secret)",
+        "password_reset_token VARCHAR(255) NULL",
+        "password_reset_expires TIMESTAMP NULL",
+        
+        "-- Session Management --",
+        "last_login_at TIMESTAMP NULL",
+        "last_login_ip VARCHAR(50) NULL",
+        "failed_login_attempts INTEGER DEFAULT 0",
+        "locked_until TIMESTAMP NULL (Account lockout)",
+        
+        "-- Audit --",
+        "created_by UUID REFERENCES users(id)",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()",
+        "deactivated_at TIMESTAMP NULL",
+        "deactivated_by UUID REFERENCES users(id)"
+      ],
+      "indexes": [
+        "INDEX idx_email ON (email)",
+        "INDEX idx_tenant ON (tenant_id)",
+        "INDEX idx_role ON (role_id)",
+        "INDEX idx_status ON (status)",
+        "UNIQUE CONSTRAINT unique_email_per_tenant ON (email, tenant_id)"
+      ],
+      "constraints": [
+        "CHECK (status IN ('active', 'inactive', 'suspended', 'pending_verification'))"
+      ]
+    },
+    "roles": {
+      "table_name": "roles",
+      "description": "User roles (DOCTOR, NURSE, PHARMACIST, etc.)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NULL REFERENCES tenants(id) (NULL for system-wide template roles)",
+        "name VARCHAR(100) NOT NULL (DOCTOR, NURSE, PHARMACIST)",
+        "display_name VARCHAR(200) (Doctor, Nurse, Pharmacist)",
+        "description TEXT",
+        "is_system_role BOOLEAN DEFAULT FALSE (Cannot be deleted)",
+        "is_active BOOLEAN DEFAULT TRUE",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_tenant ON (tenant_id)",
+        "UNIQUE CONSTRAINT unique_role_per_tenant ON (name, tenant_id)"
+      ],
+      "system_roles": [
+        "SUPER_ADMIN",
+        "HOSPITAL_ADMIN",
+        "MEDICAL_DIRECTOR",
+        "HEAD_NURSE",
+        "DOCTOR",
+        "NURSE",
+        "PHARMACIST",
+        "LAB_TECHNICIAN",
+        "RADIOLOGIST",
+        "RECEPTIONIST",
+        "BILLING_OFFICER",
+        "RECORDS_OFFICER",
+        "PATIENT"
+      ]
+    },
+    "permissions": {
+      "table_name": "permissions",
+      "description": "Granular permissions",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "name VARCHAR(100) UNIQUE NOT NULL (PRESCRIBE, VIEW_PATIENT)",
+        "display_name VARCHAR(200) (Prescribe medications, View patient records)",
+        "description TEXT",
+        "module VARCHAR(100) (patient, appointment, prescription, etc.)",
+        "is_system_permission BOOLEAN DEFAULT TRUE",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_module ON (module)"
+      ],
+      "note": "Permissions are system-wide, not tenant-specific"
+    },
+    "role_permissions": {
+      "table_name": "role_permissions",
+      "description": "Many-to-many: Roles have multiple permissions",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE",
+        "permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_role ON (role_id)",
+        "INDEX idx_permission ON (permission_id)",
+        "UNIQUE CONSTRAINT unique_role_permission ON (role_id, permission_id)"
+      ]
+    },
+    "user_permissions": {
+      "table_name": "user_permissions",
+      "description": "User-specific permission overrides (grant additional OR revoke)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE",
+        "permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE",
+        "grant_type VARCHAR(20) NOT NULL (grant, revoke)",
+        "granted_by UUID REFERENCES users(id)",
+        "reason TEXT",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "expires_at TIMESTAMP NULL (Temporary permission)"
+      ],
+      "indexes": [
+        "INDEX idx_user ON (user_id)",
+        "UNIQUE CONSTRAINT unique_user_permission ON (user_id, permission_id)"
+      ],
+      "use_case": "Example: Grant specific doctor ability to MANAGE_USERS temporarily"
+    },
+    "departments": {
+      "table_name": "departments",
+      "description": "Hospital departments (Emergency, OPD, Surgery, etc.)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NOT NULL REFERENCES tenants(id)",
+        "name VARCHAR(200) NOT NULL (Emergency, Outpatient, Surgery)",
+        "code VARCHAR(50) NULL (ER, OPD, SURG)",
+        "description TEXT",
+        "head_of_department UUID REFERENCES users(id)",
+        "is_active BOOLEAN DEFAULT TRUE",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_tenant ON (tenant_id)"
+      ]
+    },
+    "sessions": {
+      "table_name": "sessions",
+      "description": "Active user sessions (stored in Redis in production)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE",
+        "refresh_token VARCHAR(500) NOT NULL",
+        "ip_address VARCHAR(50)",
+        "user_agent TEXT",
+        "is_active BOOLEAN DEFAULT TRUE",
+        "expires_at TIMESTAMP NOT NULL",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_user ON (user_id)",
+        "INDEX idx_refresh_token ON (refresh_token)",
+        "INDEX idx_expires ON (expires_at)"
+      ],
+      "note": "In production, use Redis for sessions (faster)"
+    },
+    "audit_logs": {
+      "table_name": "audit_logs",
+      "description": "Complete audit trail of all user actions",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NULL REFERENCES tenants(id)",
+        "user_id UUID NULL REFERENCES users(id) (NULL for system actions)",
+        "action VARCHAR(100) NOT NULL (LOGIN, CREATE_PATIENT, PRESCRIBE, etc.)",
+        "resource_type VARCHAR(100) (patient, appointment, prescription)",
+        "resource_id UUID NULL (ID of affected resource)",
+        "ip_address VARCHAR(50)",
+        "user_agent TEXT",
+        "request_method VARCHAR(10) (GET, POST, PUT, DELETE)",
+        "request_path VARCHAR(500)",
+        "request_body JSONB NULL (Sanitized request data)",
+        "response_status INTEGER (200, 201, 400, 500)",
+        "metadata JSONB NULL (Additional context)",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_user ON (user_id)",
+        "INDEX idx_tenant ON (tenant_id)",
+        "INDEX idx_action ON (action)",
+        "INDEX idx_created_at ON (created_at DESC)",
+        "INDEX idx_resource ON (resource_type, resource_id)"
+      ],
+      "retention": "Keep for 7 years (healthcare compliance)",
+      "examples": [
+        {
+          "action": "LOGIN",
+          "user_id": "doctor-123",
+          "ip_address": "192.168.1.10",
+          "created_at": "2024-01-15 08:30:00"
+        },
+        {
+          "action": "VIEW_PATIENT",
+          "user_id": "nurse-456",
+          "resource_type": "patient",
+          "resource_id": "patient-789",
+          "created_at": "2024-01-15 09:15:00"
+        },
+        {
+          "action": "PRESCRIBE",
+          "user_id": "doctor-123",
+          "resource_type": "prescription",
+          "resource_id": "prescription-101",
+          "metadata": { "drug": "Amoxicillin 500mg", "quantity": 21 },
+          "created_at": "2024-01-15 10:00:00"
+        }
+      ]
+    },
+    "password_history": {
+      "table_name": "password_history",
+      "description": "Track password changes (prevent reuse)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE",
+        "password_hash VARCHAR(255) NOT NULL",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_user ON (user_id, created_at DESC)"
+      ],
+      "policy": "Prevent reusing last 5 passwords"
+    }
+  },
+
+  "authentication_flow": {
+    "login_process": {
+      "step_1": "User submits email + password",
+      "step_2": "System validates credentials (bcrypt.compare)",
+      "step_3": "Check account status (active, not locked, email verified)",
+      "step_4": "If 2FA enabled: Request TOTP code",
+      "step_5": "Generate JWT access token (15 min expiry) + refresh token (7 days)",
+      "step_6": "Store refresh token in sessions table",
+      "step_7": "Return tokens to client",
+      "step_8": "Log LOGIN action in audit_logs"
+    },
+    "jwt_structure": {
+      "access_token": {
+        "payload": {
+          "userId": "UUID",
+          "tenantId": "UUID",
+          "email": "user@hospital.com",
+          "role": "DOCTOR",
+          "roleId": "UUID",
+          "permissions": ["VIEW_PATIENT", "PRESCRIBE", "ORDER_LAB"],
+          "departmentId": "UUID",
+          "iat": "Issued at timestamp",
+          "exp": "Expiry timestamp (15 minutes from iat)"
+        },
+        "secret": "process.env.JWT_SECRET",
+        "algorithm": "HS256"
+      },
+      "refresh_token": {
+        "payload": {
+          "userId": "UUID",
+          "sessionId": "UUID",
+          "iat": "Issued at",
+          "exp": "Expiry (7 days)"
+        },
+        "use": "Get new access token without re-login"
+      }
+    },
+    "token_refresh_flow": {
+      "step_1": "Client access token expires (after 15 min)",
+      "step_2": "Client sends refresh token to /api/auth/refresh",
+      "step_3": "System validates refresh token and checks session is active",
+      "step_4": "Generate new access token (fresh 15 min expiry)",
+      "step_5": "Return new access token to client",
+      "step_6": "Optionally rotate refresh token (security best practice)"
+    },
+    "logout_flow": {
+      "step_1": "Client calls /api/auth/logout with refresh token",
+      "step_2": "System invalidates session (set is_active = FALSE)",
+      "step_3": "Delete refresh token from sessions table",
+      "step_4": "Client discards access token",
+      "step_5": "Log LOGOUT action in audit_logs"
+    },
+    "2fa_flow": {
+      "setup": {
+        "step_1": "User enables 2FA in settings",
+        "step_2": "System generates TOTP secret",
+        "step_3": "Display QR code for Google Authenticator",
+        "step_4": "User scans QR code",
+        "step_5": "User enters verification code",
+        "step_6": "System verifies code, saves secret",
+        "step_7": "Set two_factor_enabled = TRUE"
+      },
+      "login_with_2fa": {
+        "step_1": "User submits email + password",
+        "step_2": "System validates credentials",
+        "step_3": "Return response: { requires2FA: true }",
+        "step_4": "User enters 6-digit TOTP code from authenticator app",
+        "step_5": "System validates code using secret",
+        "step_6": "If valid: Generate tokens and login",
+        "step_7": "If invalid: Increment failed attempts, lock if threshold reached"
+      }
+    },
+    "password_reset_flow": {
+      "step_1": "User clicks 'Forgot Password', enters email",
+      "step_2": "System generates secure reset token (crypto.randomBytes)",
+      "step_3": "Store token in password_reset_token field with expiry (1 hour)",
+      "step_4": "Send email with reset link: https://hospital.com/reset-password?token=xyz",
+      "step_5": "User clicks link, enters new password",
+      "step_6": "System validates token (exists, not expired)",
+      "step_7": "Hash new password (bcrypt), save to users table",
+      "step_8": "Clear password_reset_token and password_reset_expires",
+      "step_9": "Add to password_history (prevent reuse)",
+      "step_10": "Invalidate all active sessions (force re-login)",
+      "step_11": "Send confirmation email"
+    },
+    "account_lockout": {
+      "trigger": "5 failed login attempts within 15 minutes",
+      "action": "Set locked_until = NOW() + 30 minutes",
+      "unlock": "Automatic after 30 minutes OR admin manual unlock",
+      "notification": "Send email to user about account lockout"
+    }
+  },
+
+  "authorization_middleware": {
+    "description": "Verify user has permission to perform action",
+    "check_permission_flow": {
+      "step_1": "Extract JWT from Authorization header",
+      "step_2": "Verify JWT signature and expiry",
+      "step_3": "Extract userId, tenantId, permissions from JWT",
+      "step_4": "Check if request is for correct tenant (prevent cross-tenant access)",
+      "step_5": "Check if user has required permission",
+      "step_6": "If yes: Allow request to proceed",
+      "step_7": "If no: Return 403 Forbidden"
+    },
+    "permission_checking_methods": {
+      "method_1_jwt_permissions": {
+        "description": "Permissions stored in JWT (fast, no DB query)",
+        "pros": "Very fast, no database lookup",
+        "cons": "Permissions cached until token expires (15 min)",
+        "use_case": "Most common, good for performance"
+      },
+      "method_2_realtime_db_check": {
+        "description": "Query database for user permissions on each request",
+        "pros": "Always up-to-date, immediate permission changes",
+        "cons": "Slower, extra DB queries",
+        "use_case": "High-security endpoints, admin actions"
+      },
+      "method_3_hybrid": {
+        "description": "JWT permissions + Redis cache with short TTL",
+        "pros": "Fast + reasonably up-to-date",
+        "use_case": "Production recommended approach"
+      }
+    },
+    "example_middleware": {
+      "route_protection": "app.post('/api/prescriptions', requirePermission('PRESCRIBE'), createPrescription)",
+      "permission_check": "requirePermission('PRESCRIBE') → Checks if 'PRESCRIBE' in JWT permissions array",
+      "role_check": "requireRole('DOCTOR') → Checks if JWT role === 'DOCTOR'"
+    }
+  },
+
+  "role_permission_presets": {
+    "description": "Default permission sets for each role",
+    "presets": {
+      "SUPER_ADMIN": {
+        "permissions": "ALL",
+        "description": "Full system access"
+      },
+      "HOSPITAL_ADMIN": {
+        "permissions": [
+          "MANAGE_USERS",
+          "MANAGE_DEPARTMENTS",
+          "MANAGE_SETTINGS",
+          "VIEW_AUDIT_LOG",
+          "VIEW_FINANCIAL_REPORTS",
+          "MANAGE_ROLES",
+          "VIEW_ALL_PATIENTS",
+          "VIEW_ALL_ENCOUNTERS",
+          "SUBMIT_NHIS_CLAIM"
+        ],
+        "count": "~80 permissions"
+      },
+      "MEDICAL_DIRECTOR": {
+        "permissions": [
+          "VIEW_ALL_PATIENTS",
+          "VIEW_ALL_ENCOUNTERS",
+          "VIEW_PATIENT_HISTORY",
+          "VIEW_LAB_RESULTS",
+          "VIEW_RADIOLOGY_RESULTS",
+          "VIEW_REPORTS",
+          "MANAGE_DOCTORS",
+          "VIEW_AUDIT_LOG"
+        ]
+      },
+      "DOCTOR": {
+        "permissions": [
+          "VIEW_PATIENT",
+          "EDIT_PATIENT",
+          "CREATE_ENCOUNTER",
+          "VIEW_ENCOUNTER",
+          "EDIT_ENCOUNTER",
+          "SIGN_ENCOUNTER",
+          "PRESCRIBE",
+          "VIEW_PRESCRIPTION",
+          "ORDER_LAB",
+          "VIEW_LAB_RESULTS",
+          "ORDER_RADIOLOGY",
+          "VIEW_RADIOLOGY_RESULTS",
+          "CREATE_APPOINTMENT",
+          "VIEW_APPOINTMENT",
+          "DISCHARGE_PATIENT"
+        ]
+      },
+      "NURSE": {
+        "permissions": [
+          "VIEW_PATIENT",
+          "TRIAGE",
+          "RECORD_VITALS",
+          "VIEW_VITALS",
+          "ADMINISTER_MEDICATION",
+          "VIEW_PRESCRIPTION",
+          "UPDATE_PATIENT_NOTES",
+          "VIEW_ENCOUNTER",
+          "CHECK_IN_PATIENT"
+        ]
+      },
+      "PHARMACIST": {
+        "permissions": [
+          "VIEW_PRESCRIPTION",
+          "DISPENSE_MEDICATION",
+          "MANAGE_DRUG_INVENTORY",
+          "VIEW_DRUG_FORMULARY",
+          "UPDATE_DRUG_FORMULARY",
+          "RECEIVE_DRUG_STOCK",
+          "VIEW_STOCK_LEVELS"
+        ]
+      },
+      "LAB_TECHNICIAN": {
+        "permissions": [
+          "VIEW_LAB_ORDER",
+          "PROCESS_LAB_TEST",
+          "UPLOAD_LAB_RESULT",
+          "VIEW_LAB_RESULTS"
+        ]
+      },
+      "RADIOLOGIST": {
+        "permissions": [
+          "VIEW_RADIOLOGY_ORDER",
+          "PERFORM_IMAGING",
+          "UPLOAD_RADIOLOGY_RESULT",
+          "APPROVE_RADIOLOGY_REPORT"
+        ]
+      },
+      "RECEPTIONIST": {
+        "permissions": [
+          "REGISTER_PATIENT",
+          "VIEW_PATIENT_BASIC",
+          "EDIT_PATIENT",
+          "CREATE_APPOINTMENT",
+          "VIEW_APPOINTMENT",
+          "EDIT_APPOINTMENT",
+          "CHECK_IN_PATIENT"
+        ]
+      },
+      "BILLING_OFFICER": {
+        "permissions": [
+          "VIEW_INVOICE",
+          "CREATE_INVOICE",
+          "EDIT_INVOICE",
+          "PROCESS_PAYMENT",
+          "VIEW_FINANCIAL_REPORTS",
+          "SUBMIT_NHIS_CLAIM"
+        ]
+      },
+      "PATIENT": {
+        "permissions": [
+          "VIEW_OWN_RECORDS",
+          "BOOK_OWN_APPOINTMENT",
+          "VIEW_OWN_PRESCRIPTIONS",
+          "VIEW_OWN_LAB_RESULTS"
+        ]
+      }
+    }
+  },
+
+  "api_endpoints": {
+    "base_path": "/api",
+    "authentication": "JWT Bearer token",
+    "endpoints": [
+      {
+        "path": "/api/auth/register",
+        "method": "POST",
+        "name": "Register User",
+        "description": "Create new user account (admin only)",
+        "permissions": ["MANAGE_USERS"],
+        "request_body": {
+          "email": "STRING (required)",
+          "password": "STRING (required, min 8 chars)",
+          "firstName": "STRING",
+          "lastName": "STRING",
+          "roleId": "UUID (required)",
+          "departmentId": "UUID (optional)",
+          "phone": "STRING (optional)"
+        },
+        "validation": [
+          "Email must be unique within tenant",
+          "Password must meet complexity requirements",
+          "Role must exist and be active",
+          "Tenant must not exceed max_users limit"
+        ],
+        "side_effects": [
+          "Hash password with bcrypt",
+          "Send email verification link",
+          "Set status = 'pending_verification'",
+          "Log USER_CREATED in audit_logs"
+        ],
+        "response": {
+          "status": 201,
+          "body": {
+            "success": true,
+            "data": {
+              "user": "{ user object without password }",
+              "message": "User created. Verification email sent."
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/auth/login",
+        "method": "POST",
+        "name": "Login",
+        "description": "Authenticate user and generate tokens",
+        "public": true,
+        "request_body": {
+          "email": "STRING",
+          "password": "STRING"
+        },
+        "logic": [
+          "1. Find user by email",
+          "2. Compare password with bcrypt",
+          "3. Check account status (active, not locked)",
+          "4. If 2FA enabled: Return { requires2FA: true }",
+          "5. Generate access token + refresh token",
+          "6. Store refresh token in sessions",
+          "7. Update last_login_at, last_login_ip",
+          "8. Log LOGIN action"
+        ],
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "accessToken": "JWT access token (15 min)",
+              "refreshToken": "JWT refresh token (7 days)",
+              "user": {
+                "id": "UUID",
+                "email": "STRING",
+                "firstName": "STRING",
+                "lastName": "STRING",
+                "role": "DOCTOR",
+                "permissions": "[array]"
+              }
+            }
+          }
+        },
+        "error_cases": [
+          "401: Invalid credentials",
+          "403: Account locked",
+          "403: Email not verified",
+          "423: Account suspended"
+        ]
+      },
+      {
+        "path": "/api/auth/verify-2fa",
+        "method": "POST",
+        "name": "Verify 2FA Code",
+        "description": "Submit TOTP code after password validation",
+        "request_body": {
+          "email": "STRING",
+          "code": "STRING (6 digits)"
+        },
+        "logic": [
+          "Validate TOTP code using user's two_factor_secret",
+          "If valid: Generate tokens and complete login",
+          "If invalid: Increment failed_login_attempts"
+        ]
+      },
+      {
+        "path": "/api/auth/refresh",
+        "method": "POST",
+        "name": "Refresh Access Token",
+        "description": "Get new access token using refresh token",
+        "request_body": {
+          "refreshToken": "STRING"
+        },
+        "logic": [
+          "Verify refresh token signature",
+          "Check session is active in database",
+          "Generate new access token",
+          "Optionally rotate refresh token"
+        ],
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "accessToken": "New JWT (15 min)"
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/auth/logout",
+        "method": "POST",
+        "name": "Logout",
+        "description": "Invalidate user session",
+        "authentication": "Required",
+        "request_body": {
+          "refreshToken": "STRING"
+        },
+        "side_effects": [
+          "Invalidate session (is_active = FALSE)",
+          "Delete refresh token",
+          "Log LOGOUT action"
+        ]
+      },
+      {
+        "path": "/api/auth/forgot-password",
+        "method": "POST",
+        "name": "Forgot Password",
+        "description": "Request password reset link",
+        "public": true,
+        "request_body": {
+          "email": "STRING"
+        },
+        "side_effects": [
+          "Generate reset token",
+          "Set password_reset_token and password_reset_expires (1 hour)",
+          "Send reset email with link"
+        ]
+      },
+      {
+        "path": "/api/auth/reset-password",
+        "method": "POST",
+        "name": "Reset Password",
+        "description": "Set new password using reset token",
+        "public": true,
+        "request_body": {
+          "token": "STRING",
+          "newPassword": "STRING"
+        },
+        "validation": [
+          "Token must be valid and not expired",
+          "Password must meet complexity requirements",
+          "Password must not match last 5 passwords"
+        ],
+        "side_effects": [
+          "Hash new password",
+          "Clear reset token",
+          "Add to password_history",
+          "Invalidate all sessions (force re-login)",
+          "Send confirmation email"
+        ]
+      },
+      {
+        "path": "/api/users",
+        "method": "GET",
+        "name": "List Users",
+        "description": "Get all users in tenant",
+        "permissions": ["VIEW_USERS"],
+        "query_params": {
+          "role": "STRING (filter by role)",
+          "department": "UUID (filter by department)",
+          "status": "STRING (active, inactive, suspended)",
+          "search": "STRING (search name, email)",
+          "page": "INTEGER",
+          "limit": "INTEGER"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "users": "[array of user objects]",
+              "total": 45,
+              "page": 1,
+              "limit": 20
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/users/:id",
+        "method": "GET",
+        "name": "Get User",
+        "description": "Get user details",
+        "permissions": ["VIEW_USERS"]
+      },
+      {
+        "path": "/api/users/:id",
+        "method": "PUT",
+        "name": "Update User",
+        "description": "Update user information",
+        "permissions": ["EDIT_USER"],
+        "request_body": {
+          "firstName": "STRING",
+          "lastName": "STRING",
+          "phone": "STRING",
+          "departmentId": "UUID"
+        },
+        "side_effects": [
+          "Log USER_UPDATED in audit_logs"
+        ]
+      },
+      {
+        "path": "/api/users/:id/deactivate",
+        "method": "POST",
+        "name": "Deactivate User",
+        "description": "Deactivate user account",
+        "permissions": ["DEACTIVATE_USER"],
+        "side_effects": [
+          "Set status = 'inactive'",
+          "Set deactivated_at timestamp",
+          "Invalidate all user sessions",
+          "Log USER_DEACTIVATED"
+        ]
+      },
+      {
+        "path": "/api/users/:id/assign-role",
+        "method": "POST",
+        "name": "Assign Role",
+        "description": "Change user's role",
+        "permissions": ["ASSIGN_ROLE"],
+        "request_body": {
+          "roleId": "UUID"
+        },
+        "side_effects": [
+          "Update role_id",
+          "Invalidate active sessions (force re-login with new permissions)",
+          "Log ROLE_CHANGED"
+        ]
+      },
+      {
+        "path": "/api/roles",
+        "method": "GET",
+        "name": "List Roles",
+        "description": "Get all roles for tenant",
+        "permissions": ["VIEW_ROLES"]
+      },
+      {
+        "path": "/api/roles/:id/permissions",
+        "method": "GET",
+        "name": "Get Role Permissions",
+        "description": "Get all permissions for a role",
+        "permissions": ["VIEW_ROLES"]
+      },
+      {
+        "path": "/api/roles/:id/permissions",
+        "method": "POST",
+        "name": "Update Role Permissions",
+        "description": "Add/remove permissions from role",
+        "permissions": ["MANAGE_ROLES"],
+        "request_body": {
+          "permissionsToAdd": "[array of permission IDs]",
+          "permissionsToRemove": "[array of permission IDs]"
+        },
+        "side_effects": [
+          "Update role_permissions table",
+          "Invalidate sessions for all users with this role (force re-login)",
+          "Log ROLE_PERMISSIONS_UPDATED"
+        ]
+      },
+      {
+        "path": "/api/permissions",
+        "method": "GET",
+        "name": "List Permissions",
+        "description": "Get all available permissions",
+        "permissions": ["VIEW_PERMISSIONS"],
+        "query_params": {
+          "module": "STRING (filter by module)"
+        }
+      },
+      {
+        "path": "/api/audit-logs",
+        "method": "GET",
+        "name": "Get Audit Logs",
+        "description": "View audit trail",
+        "permissions": ["VIEW_AUDIT_LOG"],
+        "query_params": {
+          "userId": "UUID",
+          "action": "STRING",
+          "resourceType": "STRING",
+          "dateFrom": "DATE",
+          "dateTo": "DATE",
+          "page": "INTEGER",
+          "limit": "INTEGER"
+        }
+      }
+    ]
+  },
+
+  "frontend_components": {
+    "component_structure": [
+      {
+        "name": "LoginPage",
+        "route": "/login",
+        "description": "User authentication",
+        "features": [
+          "Email + password form",
+          "Remember me checkbox",
+          "Forgot password link",
+          "2FA code input (if enabled)",
+          "Error messages for failed login",
+          "Account lockout message"
+        ]
+      },
+      {
+        "name": "UserManagement",
+        "route": "/admin/users",
+        "permissions": ["VIEW_USERS"],
+        "description": "Manage hospital staff",
+        "features": [
+          "User list with filters (role, department, status)",
+          "Search by name/email",
+          "Add new user button",
+          "Edit user inline",
+          "Deactivate user",
+          "Reset password",
+          "Assign role",
+          "View user activity log"
+        ]
+      },
+      {
+        "name": "RoleManagement",
+        "route": "/admin/roles",
+        "permissions": ["MANAGE_ROLES"],
+        "description": "Manage roles and permissions",
+        "features": [
+          "List of roles",
+          "Create custom role",
+          "Edit role permissions (checkbox grid)",
+          "View users with role",
+          "Delete custom role (system roles protected)"
+        ]
+      },
+      {
+        "name": "UserProfile",
+        "route": "/profile",
+        "description": "User's own profile",
+        "features": [
+          "View/edit personal info",
+          "Change password",
+          "Enable/disable 2FA",
+          "View my permissions",
+          "View login history",
+          "Upload profile photo"
+        ]
+      },
+      {
+        "name": "AuditLogViewer",
+        "route": "/admin/audit-logs",
+        "permissions": ["VIEW_AUDIT_LOG"],
+        "description": "View system audit trail",
+        "features": [
+          "Timeline of all actions",
+          "Filter by user, action, date",
+          "Export to CSV",
+          "Drill-down to see details",
+          "Search functionality"
+        ]
+      }
+    ]
+  },
+
+  "integration_with_existing_modules": {
+    "retrofit_strategy": {
+      "description": "How to add RBAC to existing modules",
+      "steps": [
+        "1. Add permission checks to all API routes",
+        "2. Update frontend to hide/disable features based on permissions",
+        "3. Add tenant_id to all database queries (multi-tenancy)",
+        "4. Update JWT middleware to include permissions",
+        "5. Seed roles and permissions in database"
+      ]
+    },
+    "example_retrofitting": {
+      "before": "app.post('/api/prescriptions', createPrescription)",
+      "after": "app.post('/api/prescriptions', requireAuth, requirePermission('PRESCRIBE'), createPrescription)",
+      "middleware": "requirePermission('PRESCRIBE') checks if user has PRESCRIBE permission"
+    }
+  },
+
+  "security_best_practices": {
+    "password_policy": {
+      "min_length": 8,
+      "require_uppercase": true,
+      "require_lowercase": true,
+      "require_number": true,
+      "require_special_char": true,
+      "prevent_reuse_last_n": 5,
+      "max_age_days": 90,
+      "example_valid": "MediCare@2024",
+      "example_invalid": "password123"
+    },
+    "session_management": {
+      "access_token_expiry": "15 minutes",
+      "refresh_token_expiry": "7 days",
+      "max_concurrent_sessions": 3,
+      "session_timeout_inactivity": "30 minutes"
+    },
+    "rate_limiting": {
+      "login_attempts": "5 per 15 minutes (then lock account)",
+      "password_reset": "3 per hour",
+      "api_requests": "100 per minute per user"
+    },
+    "data_protection": {
+      "encrypt_at_rest": "Database encryption for sensitive fields (passwords, tokens)",
+      "encrypt_in_transit": "HTTPS/TLS 1.3",
+      "pii_masking": "Mask patient data in logs",
+      "gdpr_compliance": "Right to erasure, data portability"
+    }
+  },
+
+  "performance_requirements": {
+    "login": "<1 second",
+    "token_refresh": "<200ms",
+    "permission_check": "<50ms (cached in JWT)",
+    "user_list_query": "<500ms for 1000 users",
+    "audit_log_query": "<1 second for 10,000 records"
+  },
+
+  "success_criteria": {
+    "security": [
+      "Zero unauthorized access incidents",
+      "100% of actions audited",
+      "Password complexity enforced",
+      "2FA available for all users",
+      "Account lockout after failed attempts"
+    ],
+    "usability": [
+      "Login time <2 seconds",
+      "User creation <1 minute",
+      "Role assignment <30 seconds",
+      "Permission changes immediate (after re-login)"
+    ],
+    "compliance": [
+      "Audit logs retained for 7 years",
+      "HIPAA-compliant access controls",
+      "GDPR data protection features",
+      "SOC 2 audit trail requirements met"
+    ]
+  }
+}

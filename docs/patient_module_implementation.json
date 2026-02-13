@@ -1,0 +1,1771 @@
+{
+  "module_name": "Patient Management Module",
+  "project": "MediCare Ghana Hospital Management System",
+  "phase": "Phase 1 - Core Module",
+  "priority": "Critical - Foundation Module",
+  "development_focus": "User Experience & Workflow Efficiency",
+  
+  "module_overview": {
+    "description": "Comprehensive patient management system optimized for Ghana healthcare facilities with emphasis on fast registration, duplicate prevention, and multi-identifier support.",
+    "key_objectives": [
+      "Register new patients in under 2 minutes",
+      "Search existing patients in under 5 seconds",
+      "Prevent duplicate patient records (>95% accuracy)",
+      "Support multiple identification methods (MRN, Ghana Card, NHIS)",
+      "Capture complete medical history efficiently",
+      "Enable family/dependent linking",
+      "Provide patient portal access",
+      "Support document uploads and photo capture",
+      "Integrate biometric authentication (fingerprint)"
+    ],
+    "target_users": [
+      "Receptionists (primary users - 80% of interactions)",
+      "Nurses (medical history capture)",
+      "Doctors (viewing patient information)",
+      "Patients (self-service portal)",
+      "Administrators (data management)"
+    ]
+  },
+
+  "patient_identification_strategy": {
+    "primary_identifier": {
+      "type": "MRN (Medical Record Number)",
+      "format": "{HOSPITAL_CODE}-{YEAR}-{SEQUENCE}",
+      "example": "RDG-2024-00001",
+      "generation": "Auto-generated on patient creation",
+      "components": {
+        "hospital_code": "3-letter hospital identifier (configurable per tenant)",
+        "year": "4-digit year of registration",
+        "sequence": "5-digit sequential number (resets yearly or continuous)"
+      },
+      "properties": {
+        "mandatory": true,
+        "unique": true,
+        "immutable": true,
+        "visible_on_patient_card": true,
+        "human_readable": true,
+        "easy_to_communicate": true
+      }
+    },
+    "secondary_identifiers": {
+      "ghana_card": {
+        "type": "National ID",
+        "format": "GHA-XXXXXXXXX-X",
+        "mandatory": false,
+        "recommended": true,
+        "unique": true,
+        "validation": "Format validation + optional API verification",
+        "use_cases": ["Identity verification", "Government reporting", "Insurance claims"]
+      },
+      "nhis_number": {
+        "type": "Health Insurance ID",
+        "mandatory": false,
+        "unique": false,
+        "validation": "Format validation + online verification",
+        "additional_data": ["Scheme type", "Expiry date", "Status (active/expired)"],
+        "use_cases": ["Insurance claims", "Eligibility verification"]
+      },
+      "phone_number": {
+        "type": "Contact identifier",
+        "format": "+233 XX XXX XXXX",
+        "mandatory": true,
+        "unique": false,
+        "validation": "Ghana phone format + network detection",
+        "use_cases": ["Quick search", "SMS notifications", "Duplicate detection"]
+      }
+    },
+    "search_priority": {
+      "description": "Order of search methods by usage frequency",
+      "priority_order": [
+        "1. MRN (exact match - 40% of searches)",
+        "2. Phone number (exact match - 30% of searches)",
+        "3. Ghana Card (exact match - 15% of searches)",
+        "4. Name (fuzzy search - 10% of searches)",
+        "5. NHIS number (exact match - 5% of searches)"
+      ]
+    }
+  },
+
+  "registration_workflow": {
+    "scenario_1_walkin_new_patient": {
+      "name": "Walk-in New Patient (Most Common - 60%)",
+      "estimated_time": "90-120 seconds",
+      "user": "Receptionist",
+      "trigger": "Patient arrives without appointment",
+      "workflow_steps": [
+        {
+          "step": 1,
+          "action": "Quick search to prevent duplicates",
+          "ui": "Receptionist types name or phone",
+          "system": "Real-time fuzzy search shows potential matches",
+          "decision": "If no match found, proceed to step 2. If match found, open existing patient."
+        },
+        {
+          "step": 2,
+          "action": "Open quick registration form",
+          "ui": "Single-page form with smart defaults",
+          "required_fields": ["First name", "Last name", "DOB", "Gender", "Phone", "Address", "City", "Region"],
+          "optional_fields": ["Ghana Card", "NHIS", "Email"],
+          "time_target": "60 seconds"
+        },
+        {
+          "step": 3,
+          "action": "Take photo (optional but recommended)",
+          "ui": "Webcam capture or mobile camera",
+          "skip_option": "Can add photo later",
+          "time_target": "15 seconds"
+        },
+        {
+          "step": 4,
+          "action": "Generate MRN and save",
+          "system": "Auto-generate MRN, create patient record",
+          "output": "Patient card printed with MRN + QR code",
+          "time_target": "5 seconds"
+        },
+        {
+          "step": 5,
+          "action": "Proceed to appointment/billing",
+          "ui": "Seamless transition to next workflow",
+          "context_preserved": "Patient ID passed to next screen"
+        }
+      ],
+      "optimization_features": [
+        "Tab navigation (no mouse needed)",
+        "Auto-format phone numbers",
+        "Auto-capitalize names",
+        "Smart defaults (Country=Ghana, Language=English)",
+        "Keyboard shortcuts (Ctrl+S to save, Esc to cancel)",
+        "Auto-save draft every 30 seconds"
+      ]
+    },
+    "scenario_2_walkin_existing_patient": {
+      "name": "Walk-in Existing Patient (30%)",
+      "estimated_time": "10-30 seconds",
+      "workflow_steps": [
+        {
+          "step": 1,
+          "action": "Patient provides MRN card or phone number",
+          "ui": "Receptionist scans QR code or types MRN/phone",
+          "time_target": "5 seconds"
+        },
+        {
+          "step": 2,
+          "action": "Patient profile loads instantly",
+          "ui": "Show patient summary with photo",
+          "verification": "Receptionist confirms identity visually",
+          "time_target": "5 seconds"
+        },
+        {
+          "step": 3,
+          "action": "Update info if needed (e.g., new phone number)",
+          "ui": "Quick edit option",
+          "optional": true,
+          "time_target": "10-20 seconds if needed"
+        },
+        {
+          "step": 4,
+          "action": "Proceed to appointment/service",
+          "ui": "One-click transition"
+        }
+      ]
+    },
+    "scenario_3_online_preregistration": {
+      "name": "Online Pre-Registration via Patient Portal (10%)",
+      "estimated_time": "3-5 minutes (patient's time)",
+      "workflow_steps": [
+        {
+          "step": 1,
+          "action": "Patient accesses registration page",
+          "ui": "Mobile-friendly form",
+          "authentication": "Phone OTP verification"
+        },
+        {
+          "step": 2,
+          "action": "Patient fills detailed registration",
+          "form": "Multi-step wizard (Demographics → Contact → Medical History)",
+          "data_captured": "More comprehensive than walk-in"
+        },
+        {
+          "step": 3,
+          "action": "System creates pre-registration record",
+          "status": "Pending verification",
+          "mrn": "Not yet assigned"
+        },
+        {
+          "step": 4,
+          "action": "Patient arrives at hospital",
+          "ui": "Receptionist searches by phone, finds pre-registration",
+          "action": "Verify identity, take photo, assign MRN, activate account",
+          "time_target": "30 seconds"
+        }
+      ]
+    },
+    "scenario_4_emergency_patient": {
+      "name": "Emergency Registration (Ultra-Fast)",
+      "estimated_time": "15-30 seconds",
+      "trigger": "Critical patient needs immediate care",
+      "workflow_steps": [
+        {
+          "step": 1,
+          "action": "Click 'Emergency Registration' button",
+          "ui": "Minimal form: Name + Gender + Approximate Age",
+          "mrn": "Auto-generated immediately"
+        },
+        {
+          "step": 2,
+          "action": "Patient proceeds to treatment",
+          "background": "Full details collected later by nurse/relative"
+        },
+        {
+          "step": 3,
+          "action": "Complete registration within 24 hours",
+          "ui": "System flags incomplete registrations",
+          "follow_up": "Nurse completes full registration when patient stable"
+        }
+      ]
+    }
+  },
+
+  "duplicate_detection_system": {
+    "objective": "Prevent duplicate patient records with 95%+ accuracy",
+    "detection_triggers": [
+      "On name entry (real-time fuzzy matching)",
+      "On phone entry (exact match check)",
+      "On Ghana Card entry (exact match check)",
+      "Before saving new patient (comprehensive check)"
+    ],
+    "matching_algorithm": {
+      "name": "Multi-factor Probabilistic Matching",
+      "scoring_system": {
+        "ghana_card_match": {
+          "weight": 100,
+          "logic": "If exact match on Ghana Card → 100% duplicate (definite)",
+          "action": "Block creation, show existing record"
+        },
+        "phone_exact_match": {
+          "weight": 40,
+          "logic": "Primary phone number matches exactly",
+          "note": "Not definitive (family members may share phone)"
+        },
+        "name_similarity": {
+          "weight": 30,
+          "logic": "Levenshtein distance or soundex matching",
+          "threshold": ">80% similarity",
+          "examples": [
+            "'Kwame Mensah' vs 'Kwame Mensa' → 95% match",
+            "'John Smith' vs 'Jon Smyth' → 85% match"
+          ]
+        },
+        "dob_exact_match": {
+          "weight": 20,
+          "logic": "Date of birth matches exactly"
+        },
+        "address_similarity": {
+          "weight": 10,
+          "logic": "City and region match",
+          "note": "Lower weight due to common addresses"
+        }
+      },
+      "decision_thresholds": {
+        "score_100": {
+          "verdict": "Definite duplicate",
+          "action": "Block creation, redirect to existing record",
+          "ui": "Error message: 'Patient already exists with Ghana Card XXX'"
+        },
+        "score_70_99": {
+          "verdict": "High probability duplicate",
+          "action": "Show warning with existing record details",
+          "ui": "Modal: 'Possible duplicate found. Is this the same patient?'",
+          "options": ["Yes, open existing record", "No, create new patient", "Let me search manually"]
+        },
+        "score_40_69": {
+          "verdict": "Possible duplicate",
+          "action": "Show notification with link to potential matches",
+          "ui": "Info banner: 'Similar patient(s) found. Review before saving.'",
+          "allow_proceed": true
+        },
+        "score_below_40": {
+          "verdict": "Likely unique patient",
+          "action": "Proceed with registration",
+          "no_warning": true
+        }
+      }
+    },
+    "merge_functionality": {
+      "trigger": "Admin or receptionist identifies confirmed duplicate",
+      "workflow": [
+        {
+          "step": 1,
+          "action": "Select primary record (keep) and duplicate record (merge from)",
+          "ui": "Side-by-side comparison view"
+        },
+        {
+          "step": 2,
+          "action": "Review data differences",
+          "ui": "Highlight fields that differ",
+          "choice": "Choose which data to keep for conflicting fields"
+        },
+        {
+          "step": 3,
+          "action": "Merge visits, appointments, bills, documents",
+          "system": "Transfer all related records to primary patient"
+        },
+        {
+          "step": 4,
+          "action": "Link old MRN to new MRN",
+          "system": "Create alias so searches for old MRN redirect to primary",
+          "preserve_history": "Keep audit trail of merge"
+        },
+        {
+          "step": 5,
+          "action": "Mark duplicate as merged (soft delete)",
+          "system": "Flag record as merged, include link to primary",
+          "allow_undo": "30-day undo window for mistakes"
+        }
+      ]
+    }
+  },
+
+  "database_schema": {
+    "patients_table": {
+      "table_name": "patients",
+      "description": "Core patient demographics and identifiers",
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "constraints": "PRIMARY KEY",
+          "description": "Internal system ID"
+        },
+        {
+          "name": "tenant_id",
+          "type": "UUID",
+          "constraints": "NOT NULL, REFERENCES tenants(id)",
+          "description": "Hospital/facility ID for multi-tenancy",
+          "index": true
+        },
+        {
+          "name": "mrn",
+          "type": "VARCHAR(50)",
+          "constraints": "NOT NULL, UNIQUE",
+          "description": "Medical Record Number (hospital-generated)",
+          "format": "HOS-YYYY-NNNNN",
+          "index": true
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(10)",
+          "constraints": "NULL",
+          "enum": ["Mr.", "Mrs.", "Ms.", "Dr.", "Prof.", "Rev.", "Chief"],
+          "description": "Title/honorific"
+        },
+        {
+          "name": "first_name",
+          "type": "VARCHAR(100)",
+          "constraints": "NOT NULL",
+          "description": "First/given name",
+          "index": true
+        },
+        {
+          "name": "last_name",
+          "type": "VARCHAR(100)",
+          "constraints": "NOT NULL",
+          "description": "Last/surname",
+          "index": true
+        },
+        {
+          "name": "other_names",
+          "type": "VARCHAR(100)",
+          "constraints": "NULL",
+          "description": "Middle names or additional names"
+        },
+        {
+          "name": "date_of_birth",
+          "type": "DATE",
+          "constraints": "NOT NULL",
+          "description": "Date of birth",
+          "validation": "Must be in the past",
+          "index": true
+        },
+        {
+          "name": "age_at_registration",
+          "type": "INTEGER",
+          "constraints": "NULL",
+          "description": "Calculated age at registration (for analytics)",
+          "computed": "YEAR(created_at) - YEAR(date_of_birth)"
+        },
+        {
+          "name": "gender",
+          "type": "VARCHAR(10)",
+          "constraints": "NOT NULL",
+          "enum": ["Male", "Female", "Other"],
+          "description": "Gender/sex"
+        },
+        {
+          "name": "phone_primary",
+          "type": "VARCHAR(20)",
+          "constraints": "NOT NULL",
+          "description": "Primary phone number",
+          "format": "+233XXXXXXXXX",
+          "index": true
+        },
+        {
+          "name": "phone_secondary",
+          "type": "VARCHAR(20)",
+          "constraints": "NULL",
+          "description": "Secondary/alternate phone number"
+        },
+        {
+          "name": "email",
+          "type": "VARCHAR(255)",
+          "constraints": "NULL",
+          "description": "Email address (optional)"
+        },
+        {
+          "name": "address",
+          "type": "TEXT",
+          "constraints": "NOT NULL",
+          "description": "Street address or residential area"
+        },
+        {
+          "name": "ghana_post_gps",
+          "type": "VARCHAR(20)",
+          "constraints": "NULL",
+          "description": "Ghana Post digital address",
+          "format": "AA-NNN-NNNN"
+        },
+        {
+          "name": "city",
+          "type": "VARCHAR(100)",
+          "constraints": "NOT NULL",
+          "description": "City or town"
+        },
+        {
+          "name": "region",
+          "type": "VARCHAR(50)",
+          "constraints": "NOT NULL",
+          "description": "Ghana region (16 regions)",
+          "index": true
+        },
+        {
+          "name": "country",
+          "type": "VARCHAR(50)",
+          "constraints": "NOT NULL DEFAULT 'Ghana'",
+          "description": "Country (default Ghana)"
+        },
+        {
+          "name": "ghana_card_number",
+          "type": "VARCHAR(20)",
+          "constraints": "NULL, UNIQUE",
+          "description": "Ghana Card national ID number",
+          "format": "GHA-XXXXXXXXX-X",
+          "index": true,
+          "encrypted": true
+        },
+        {
+          "name": "nhis_number",
+          "type": "VARCHAR(50)",
+          "constraints": "NULL",
+          "description": "NHIS membership number",
+          "index": true
+        },
+        {
+          "name": "nhis_scheme",
+          "type": "VARCHAR(100)",
+          "constraints": "NULL",
+          "description": "NHIS scheme type",
+          "examples": ["Premium", "Indigent", "SSNIT Contributor"]
+        },
+        {
+          "name": "nhis_expiry_date",
+          "type": "DATE",
+          "constraints": "NULL",
+          "description": "NHIS membership expiry date"
+        },
+        {
+          "name": "nhis_status",
+          "type": "VARCHAR(20)",
+          "constraints": "NULL",
+          "enum": ["Active", "Expired", "Suspended", "Unknown"],
+          "description": "Current NHIS membership status"
+        },
+        {
+          "name": "blood_group",
+          "type": "VARCHAR(5)",
+          "constraints": "NULL",
+          "enum": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+          "description": "Blood group/type"
+        },
+        {
+          "name": "photo_url",
+          "type": "VARCHAR(500)",
+          "constraints": "NULL",
+          "description": "URL to patient photo (S3 or local storage)"
+        },
+        {
+          "name": "occupation",
+          "type": "VARCHAR(100)",
+          "constraints": "NULL",
+          "description": "Patient's occupation"
+        },
+        {
+          "name": "marital_status",
+          "type": "VARCHAR(20)",
+          "constraints": "NULL",
+          "enum": ["Single", "Married", "Divorced", "Widowed"],
+          "description": "Marital status"
+        },
+        {
+          "name": "religion",
+          "type": "VARCHAR(50)",
+          "constraints": "NULL",
+          "description": "Religious affiliation"
+        },
+        {
+          "name": "preferred_language",
+          "type": "VARCHAR(20)",
+          "constraints": "NULL DEFAULT 'English'",
+          "enum": ["English", "Twi", "Ga", "Ewe", "Other"],
+          "description": "Preferred communication language"
+        },
+        {
+          "name": "portal_access_enabled",
+          "type": "BOOLEAN",
+          "constraints": "DEFAULT FALSE",
+          "description": "Whether patient can access patient portal"
+        },
+        {
+          "name": "portal_password_hash",
+          "type": "VARCHAR(255)",
+          "constraints": "NULL",
+          "description": "Hashed password for patient portal (bcrypt)"
+        },
+        {
+          "name": "portal_last_login",
+          "type": "TIMESTAMP",
+          "constraints": "NULL",
+          "description": "Last portal login timestamp"
+        },
+        {
+          "name": "fingerprint_template",
+          "type": "TEXT",
+          "constraints": "NULL",
+          "description": "Biometric fingerprint template (encrypted)",
+          "encrypted": true
+        },
+        {
+          "name": "fingerprint_enrolled_at",
+          "type": "TIMESTAMP",
+          "constraints": "NULL",
+          "description": "When fingerprint was enrolled"
+        },
+        {
+          "name": "is_active",
+          "type": "BOOLEAN",
+          "constraints": "DEFAULT TRUE",
+          "description": "Active status (soft delete)"
+        },
+        {
+          "name": "is_merged",
+          "type": "BOOLEAN",
+          "constraints": "DEFAULT FALSE",
+          "description": "Whether this record has been merged into another"
+        },
+        {
+          "name": "merged_into_patient_id",
+          "type": "UUID",
+          "constraints": "NULL, REFERENCES patients(id)",
+          "description": "If merged, the primary patient ID"
+        },
+        {
+          "name": "merged_at",
+          "type": "TIMESTAMP",
+          "constraints": "NULL",
+          "description": "When record was merged"
+        },
+        {
+          "name": "merged_by",
+          "type": "UUID",
+          "constraints": "NULL, REFERENCES users(id)",
+          "description": "User who performed the merge"
+        },
+        {
+          "name": "registration_source",
+          "type": "VARCHAR(50)",
+          "constraints": "NULL",
+          "enum": ["walk-in", "online", "emergency", "referral"],
+          "description": "How patient was registered"
+        },
+        {
+          "name": "created_by",
+          "type": "UUID",
+          "constraints": "REFERENCES users(id)",
+          "description": "User who created the record"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "constraints": "DEFAULT NOW()",
+          "description": "Creation timestamp"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP",
+          "constraints": "DEFAULT NOW()",
+          "description": "Last update timestamp"
+        }
+      ],
+      "indexes": [
+        "PRIMARY KEY (id)",
+        "UNIQUE (mrn)",
+        "UNIQUE (ghana_card_number) WHERE ghana_card_number IS NOT NULL",
+        "INDEX idx_tenant_patient (tenant_id, mrn)",
+        "INDEX idx_phone (phone_primary)",
+        "INDEX idx_nhis (nhis_number)",
+        "INDEX idx_name_search (first_name, last_name)",
+        "INDEX idx_dob (date_of_birth)",
+        "INDEX idx_active (is_active, is_merged)",
+        "FULLTEXT INDEX idx_fulltext_search (first_name, last_name, other_names)"
+      ]
+    },
+    "patient_emergency_contacts": {
+      "table_name": "patient_emergency_contacts",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE",
+        "name VARCHAR(100) NOT NULL",
+        "relationship VARCHAR(50) NOT NULL",
+        "phone VARCHAR(20) NOT NULL",
+        "email VARCHAR(255) NULL",
+        "address TEXT NULL",
+        "is_primary BOOLEAN DEFAULT FALSE",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "constraints": [
+        "Only one emergency contact can be marked as primary per patient"
+      ]
+    },
+    "patient_allergies": {
+      "table_name": "patient_allergies",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE",
+        "allergen VARCHAR(200) NOT NULL",
+        "allergen_type VARCHAR(50) NULL",
+        "reaction TEXT NULL",
+        "severity VARCHAR(20) NULL",
+        "discovered_date DATE NULL",
+        "notes TEXT NULL",
+        "is_active BOOLEAN DEFAULT TRUE",
+        "created_by UUID REFERENCES users(id)",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "enums": {
+        "allergen_type": ["Drug", "Food", "Environmental", "Other"],
+        "severity": ["Mild", "Moderate", "Severe", "Life-threatening"]
+      }
+    },
+    "patient_chronic_conditions": {
+      "table_name": "patient_chronic_conditions",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE",
+        "condition_name VARCHAR(200) NOT NULL",
+        "icd10_code VARCHAR(20) NULL",
+        "diagnosed_date DATE NULL",
+        "diagnosed_by VARCHAR(200) NULL",
+        "notes TEXT NULL",
+        "is_active BOOLEAN DEFAULT TRUE",
+        "created_by UUID REFERENCES users(id)",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ]
+    },
+    "patient_medications": {
+      "table_name": "patient_current_medications",
+      "description": "Current medications patient is taking",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE",
+        "medication_name VARCHAR(200) NOT NULL",
+        "dosage VARCHAR(100) NULL",
+        "frequency VARCHAR(100) NULL",
+        "started_date DATE NULL",
+        "prescribed_by VARCHAR(200) NULL",
+        "reason TEXT NULL",
+        "is_active BOOLEAN DEFAULT TRUE",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ]
+    },
+    "patient_relationships": {
+      "table_name": "patient_relationships",
+      "description": "Family and dependent relationships",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE",
+        "related_patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE",
+        "relationship_type VARCHAR(50) NOT NULL",
+        "is_primary_guardian BOOLEAN DEFAULT FALSE",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "enums": {
+        "relationship_type": ["Spouse", "Parent", "Child", "Sibling", "Guardian", "Other"]
+      },
+      "constraints": [
+        "UNIQUE (patient_id, related_patient_id)",
+        "CHECK (patient_id != related_patient_id)"
+      ]
+    },
+    "patient_documents": {
+      "table_name": "patient_documents",
+      "description": "Uploaded documents (lab reports, scans, etc.)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE",
+        "document_type VARCHAR(50) NOT NULL",
+        "file_name VARCHAR(255) NOT NULL",
+        "file_url VARCHAR(500) NOT NULL",
+        "file_size_bytes INTEGER NOT NULL",
+        "mime_type VARCHAR(100) NOT NULL",
+        "description TEXT NULL",
+        "uploaded_by UUID REFERENCES users(id)",
+        "uploaded_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "enums": {
+        "document_type": ["Lab Report", "Radiology", "Referral Letter", "Insurance Card", "ID Document", "Prescription", "Other"]
+      }
+    },
+    "patient_audit_log": {
+      "table_name": "patient_audit_log",
+      "description": "Audit trail of patient record changes",
+      "columns": [
+        "id BIGSERIAL PRIMARY KEY",
+        "patient_id UUID NOT NULL REFERENCES patients(id)",
+        "action VARCHAR(50) NOT NULL",
+        "changed_fields JSONB NULL",
+        "old_values JSONB NULL",
+        "new_values JSONB NULL",
+        "changed_by UUID REFERENCES users(id)",
+        "ip_address VARCHAR(45) NULL",
+        "user_agent TEXT NULL",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "enums": {
+        "action": ["CREATE", "UPDATE", "DELETE", "MERGE", "VIEW", "EXPORT"]
+      },
+      "retention": "Keep for 7 years (legal requirement)"
+    }
+  },
+
+  "api_endpoints": {
+    "base_path": "/api/patients",
+    "authentication": "Required (JWT)",
+    "endpoints": [
+      {
+        "path": "/api/patients",
+        "method": "POST",
+        "name": "Create Patient",
+        "description": "Register a new patient",
+        "permissions": ["PATIENT_CREATE"],
+        "request_body": {
+          "required_fields": [
+            "first_name",
+            "last_name",
+            "date_of_birth",
+            "gender",
+            "phone_primary",
+            "address",
+            "city",
+            "region"
+          ],
+          "optional_fields": [
+            "title",
+            "other_names",
+            "phone_secondary",
+            "email",
+            "ghana_post_gps",
+            "ghana_card_number",
+            "nhis_number",
+            "blood_group",
+            "occupation",
+            "marital_status",
+            "religion",
+            "preferred_language",
+            "emergency_contact",
+            "allergies",
+            "chronic_conditions",
+            "current_medications",
+            "registration_source"
+          ]
+        },
+        "validation": [
+          "Check for duplicates before creating",
+          "Validate Ghana Card format if provided",
+          "Validate phone number format",
+          "Validate date of birth (must be in past)",
+          "Check NHIS number format if provided"
+        ],
+        "response": {
+          "success": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "patient": "{ patient object with generated MRN }",
+                "mrn": "string",
+                "message": "Patient registered successfully"
+              }
+            }
+          },
+          "duplicate_found": {
+            "status": 409,
+            "body": {
+              "success": false,
+              "error": {
+                "code": "DUPLICATE_PATIENT",
+                "message": "Patient already exists",
+                "duplicates": "[ array of potential duplicate patients ]"
+              }
+            }
+          }
+        },
+        "side_effects": [
+          "Generate MRN",
+          "Create audit log entry",
+          "Send welcome SMS (if phone provided)",
+          "Generate patient card (PDF with QR code)"
+        ]
+      },
+      {
+        "path": "/api/patients/:id",
+        "method": "GET",
+        "name": "Get Patient by ID",
+        "description": "Retrieve full patient details",
+        "permissions": ["PATIENT_READ"],
+        "path_params": {
+          "id": "UUID or MRN"
+        },
+        "query_params": {
+          "include": "Comma-separated list of related data to include",
+          "options": ["allergies", "conditions", "medications", "relationships", "documents", "emergency_contacts", "visits"]
+        },
+        "response": {
+          "success": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "patient": "{ complete patient object }",
+                "allergies": "[ array if requested ]",
+                "conditions": "[ array if requested ]",
+                "relationships": "[ array if requested ]"
+              }
+            }
+          }
+        },
+        "side_effects": [
+          "Log access in audit trail (who viewed patient record)"
+        ]
+      },
+      {
+        "path": "/api/patients/:id",
+        "method": "PUT",
+        "name": "Update Patient",
+        "description": "Update patient information",
+        "permissions": ["PATIENT_UPDATE"],
+        "request_body": {
+          "allowed_updates": "Any patient field except mrn (immutable)"
+        },
+        "validation": [
+          "Prevent MRN changes",
+          "Validate Ghana Card if updated",
+          "Check for duplicates if identifiers changed"
+        ],
+        "response": {
+          "success": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "patient": "{ updated patient object }",
+                "message": "Patient updated successfully"
+              }
+            }
+          }
+        },
+        "side_effects": [
+          "Create audit log with old and new values",
+          "Trigger duplicate check if Ghana Card/phone changed"
+        ]
+      },
+      {
+        "path": "/api/patients/:id",
+        "method": "DELETE",
+        "name": "Delete Patient",
+        "description": "Soft delete patient (mark as inactive)",
+        "permissions": ["PATIENT_DELETE"],
+        "note": "This is a soft delete - record is marked inactive but not removed",
+        "response": {
+          "success": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "message": "Patient deactivated successfully"
+            }
+          }
+        },
+        "side_effects": [
+          "Set is_active = false",
+          "Cancel all future appointments",
+          "Create audit log entry"
+        ]
+      },
+      {
+        "path": "/api/patients/search",
+        "method": "GET",
+        "name": "Search Patients",
+        "description": "Search for patients using various criteria",
+        "permissions": ["PATIENT_READ"],
+        "query_params": {
+          "q": "Search query (name, MRN, phone, Ghana Card, NHIS)",
+          "type": "Search type (mrn, phone, ghana_card, nhis, name)",
+          "page": "Page number (default: 1)",
+          "limit": "Results per page (default: 20, max: 100)",
+          "include_inactive": "Include deactivated patients (default: false)"
+        },
+        "search_behavior": {
+          "mrn": "Exact match",
+          "phone": "Exact match",
+          "ghana_card": "Exact match",
+          "nhis": "Exact match",
+          "name": "Fuzzy match using LIKE or full-text search",
+          "general": "If type not specified, try all methods in priority order"
+        },
+        "response": {
+          "success": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "patients": "[ array of patient objects ]",
+                "total": "number",
+                "page": "number",
+                "limit": "number",
+                "pages": "number"
+              }
+            }
+          }
+        },
+        "performance": {
+          "target": "<500ms for name search, <100ms for exact matches",
+          "optimization": "Use database indexes, limit returned fields in list view"
+        }
+      },
+      {
+        "path": "/api/patients/check-duplicate",
+        "method": "POST",
+        "name": "Check for Duplicates",
+        "description": "Check if patient already exists (used during registration)",
+        "permissions": ["PATIENT_CREATE"],
+        "request_body": {
+          "first_name": "string (required)",
+          "last_name": "string (required)",
+          "date_of_birth": "date (required)",
+          "phone_primary": "string (optional)",
+          "ghana_card_number": "string (optional)"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "is_duplicate": "boolean",
+              "duplicate_score": "number (0-100)",
+              "potential_duplicates": "[array of matching patients with scores]"
+            }
+          }
+        },
+        "logic": "Use duplicate detection algorithm defined earlier"
+      },
+      {
+        "path": "/api/patients/:id/merge",
+        "method": "POST",
+        "name": "Merge Duplicate Patients",
+        "description": "Merge duplicate patient record into primary record",
+        "permissions": ["PATIENT_MERGE"],
+        "path_params": {
+          "id": "Primary patient ID (keep this record)"
+        },
+        "request_body": {
+          "duplicate_patient_id": "UUID (patient to merge from)",
+          "field_choices": "object (for conflicting fields, which value to keep)",
+          "merge_reason": "string"
+        },
+        "response": {
+          "success": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "patient": "{ merged patient object }",
+                "merged_visits": "number",
+                "merged_appointments": "number",
+                "merged_documents": "number"
+              }
+            }
+          }
+        },
+        "side_effects": [
+          "Transfer all related records to primary patient",
+          "Create MRN alias (old MRN → new MRN)",
+          "Mark duplicate as merged",
+          "Create detailed audit log",
+          "Send notification to admin"
+        ]
+      },
+      {
+        "path": "/api/patients/:id/photo",
+        "method": "POST",
+        "name": "Upload Patient Photo",
+        "description": "Upload or update patient photo",
+        "permissions": ["PATIENT_UPDATE"],
+        "content_type": "multipart/form-data",
+        "request_body": {
+          "photo": "File (image, max 2MB)"
+        },
+        "validation": [
+          "File type: image/jpeg, image/png",
+          "Max size: 2MB",
+          "Min dimensions: 200x200px"
+        ],
+        "processing": [
+          "Resize to 400x400px (square crop)",
+          "Generate thumbnail 100x100px",
+          "Optimize for web (compress)",
+          "Upload to S3 or local storage"
+        ],
+        "response": {
+          "success": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "photo_url": "string (URL to photo)",
+                "thumbnail_url": "string"
+              }
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/patients/:id/allergies",
+        "method": "POST",
+        "name": "Add Patient Allergy",
+        "description": "Record a new allergy for patient",
+        "permissions": ["PATIENT_UPDATE"],
+        "request_body": {
+          "allergen": "string (required)",
+          "allergen_type": "string (Drug/Food/Environmental/Other)",
+          "reaction": "string",
+          "severity": "string (Mild/Moderate/Severe/Life-threatening)",
+          "discovered_date": "date",
+          "notes": "string"
+        },
+        "response": {
+          "success": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "allergy": "{ created allergy object }"
+              }
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/patients/:id/documents",
+        "method": "POST",
+        "name": "Upload Patient Document",
+        "description": "Upload document for patient (lab report, scan, etc.)",
+        "permissions": ["PATIENT_UPDATE"],
+        "content_type": "multipart/form-data",
+        "request_body": {
+          "file": "File (max 10MB)",
+          "document_type": "string (Lab Report/Radiology/etc.)",
+          "description": "string"
+        },
+        "validation": [
+          "Allowed types: PDF, images, Word docs",
+          "Max size: 10MB",
+          "Virus scan"
+        ],
+        "response": {
+          "success": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "document": "{ created document object with file_url }"
+              }
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/patients/:id/relationships",
+        "method": "POST",
+        "name": "Link Related Patients",
+        "description": "Create family/dependent relationship between patients",
+        "permissions": ["PATIENT_UPDATE"],
+        "request_body": {
+          "related_patient_id": "UUID",
+          "relationship_type": "string (Spouse/Parent/Child/etc.)",
+          "is_primary_guardian": "boolean"
+        },
+        "response": {
+          "success": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "relationship": "{ created relationship }"
+              }
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/patients/:id/fingerprint",
+        "method": "POST",
+        "name": "Enroll Fingerprint",
+        "description": "Register patient fingerprint for biometric authentication",
+        "permissions": ["PATIENT_UPDATE"],
+        "request_body": {
+          "fingerprint_template": "string (base64-encoded biometric template)",
+          "finger": "string (left_thumb/right_thumb/etc.)"
+        },
+        "security": [
+          "Encrypt fingerprint template before storage",
+          "Never transmit raw fingerprint image",
+          "Use standard template format (ISO/ANSI)"
+        ],
+        "response": {
+          "success": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "message": "Fingerprint enrolled successfully"
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/patients/verify-fingerprint",
+        "method": "POST",
+        "name": "Verify Patient by Fingerprint",
+        "description": "Identify patient using fingerprint scan",
+        "permissions": ["PATIENT_READ"],
+        "request_body": {
+          "fingerprint_template": "string (captured fingerprint to match)"
+        },
+        "logic": [
+          "Compare against all enrolled fingerprints in database",
+          "Return patient if match score above threshold",
+          "Log verification attempt"
+        ],
+        "response": {
+          "match": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "patient": "{ matched patient object }",
+                "match_score": "number (0-100)"
+              }
+            }
+          },
+          "no_match": {
+            "status": 404,
+            "body": {
+              "success": false,
+              "message": "No matching fingerprint found"
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/patients/:id/card",
+        "method": "GET",
+        "name": "Generate Patient Card",
+        "description": "Generate printable patient card with MRN and QR code",
+        "permissions": ["PATIENT_READ"],
+        "response_type": "application/pdf",
+        "card_content": [
+          "Hospital logo and name",
+          "Patient photo",
+          "Full name",
+          "MRN (large, prominent)",
+          "QR code (encodes MRN)",
+          "Blood group",
+          "Emergency contact phone",
+          "Allergy warnings (if any)"
+        ],
+        "size": "Credit card size (85mm x 54mm)"
+      }
+    ]
+  },
+
+  "frontend_components": {
+    "component_structure": [
+      {
+        "name": "PatientManagementPage",
+        "type": "Container Page",
+        "route": "/patients",
+        "description": "Main patient management page",
+        "layout": {
+          "header": "Search bar + Quick actions (New Patient, Emergency Registration)",
+          "main": "Patient list or search results",
+          "sidebar": "Filters (Active/Inactive, Registration source)"
+        },
+        "state": {
+          "searchQuery": "string",
+          "searchType": "mrn | phone | ghana_card | nhis | name",
+          "patients": "array",
+          "selectedPatient": "object | null",
+          "isLoading": "boolean",
+          "filters": "object"
+        }
+      },
+      {
+        "name": "PatientSearchBar",
+        "type": "Component",
+        "description": "Intelligent search with auto-detection of search type",
+        "features": [
+          "Auto-detect search type based on input format",
+          "Real-time search as user types (debounced 300ms)",
+          "Show search type indicator (MRN/Phone/Name)",
+          "Keyboard shortcuts (Ctrl+K to focus)",
+          "Recent searches dropdown"
+        ],
+        "ui": "Single input field with smart detection",
+        "examples": [
+          "RDG-2024-00001 → Detected as MRN",
+          "+233244123456 → Detected as Phone",
+          "GHA-123456789-1 → Detected as Ghana Card",
+          "Kwame Mensah → Detected as Name"
+        ]
+      },
+      {
+        "name": "PatientQuickRegistration",
+        "type": "Modal Component",
+        "description": "Fast registration form for walk-in patients",
+        "form_type": "Single-page form",
+        "estimated_time": "90 seconds",
+        "sections": [
+          {
+            "name": "Personal Details",
+            "fields": ["title", "firstName", "lastName", "otherNames", "dateOfBirth", "gender"]
+          },
+          {
+            "name": "Contact Information",
+            "fields": ["phonePrimary", "phoneSecondary", "email", "address", "city", "region"]
+          },
+          {
+            "name": "Identifiers (Optional)",
+            "fields": ["ghanaCard", "nhisNumber"],
+            "collapsible": true
+          },
+          {
+            "name": "Photo (Optional)",
+            "component": "PhotoCapture",
+            "skippable": true
+          }
+        ],
+        "ux_features": [
+          "Tab navigation (no mouse needed)",
+          "Auto-format phone numbers as typed",
+          "Auto-capitalize names",
+          "Smart defaults (Country=Ghana)",
+          "Duplicate warning on name/phone blur",
+          "Save draft to localStorage",
+          "Keyboard shortcut: Ctrl+S to save"
+        ],
+        "validation": "Real-time with React Hook Form + Yup"
+      },
+      {
+        "name": "PatientFullRegistration",
+        "type": "Page Component",
+        "description": "Comprehensive registration with all details",
+        "form_type": "Multi-step wizard",
+        "estimated_time": "5 minutes",
+        "steps": [
+          {
+            "step": 1,
+            "name": "Demographics",
+            "fields": "Basic personal information"
+          },
+          {
+            "step": 2,
+            "name": "Contact & Address",
+            "fields": "Phone, email, address details"
+          },
+          {
+            "step": 3,
+            "name": "Identifiers & Insurance",
+            "fields": "Ghana Card, NHIS details"
+          },
+          {
+            "step": 4,
+            "name": "Medical History",
+            "fields": "Allergies, chronic conditions, current medications"
+          },
+          {
+            "step": 5,
+            "name": "Emergency Contact",
+            "fields": "Emergency contact details"
+          },
+          {
+            "step": 6,
+            "name": "Photo & Biometric",
+            "fields": "Photo capture, fingerprint enrollment (optional)"
+          }
+        ],
+        "when_to_use": "Online registration, pre-scheduled appointments, when time permits"
+      },
+      {
+        "name": "PhotoCapture",
+        "type": "Component",
+        "description": "Capture patient photo via webcam or upload",
+        "features": [
+          "Webcam live preview",
+          "Capture button",
+          "Retake option",
+          "Upload from file option",
+          "Square crop editor",
+          "Preview before save"
+        ],
+        "libraries": "react-webcam for camera, react-image-crop for cropping"
+      },
+      {
+        "name": "DuplicateWarningModal",
+        "type": "Modal Component",
+        "description": "Alert user when potential duplicate detected",
+        "ui": "Side-by-side comparison of new patient vs potential duplicate",
+        "display": [
+          "Photo (if available)",
+          "Name, DOB, Gender",
+          "Phone number",
+          "Address",
+          "Ghana Card (if available)",
+          "Match score percentage"
+        ],
+        "actions": [
+          "This is the same patient (open existing record)",
+          "Different patient (continue registration)",
+          "Let me search manually"
+        ]
+      },
+      {
+        "name": "PatientProfile",
+        "type": "Page Component",
+        "route": "/patients/:id",
+        "description": "Complete patient profile view",
+        "layout": {
+          "header": {
+            "left": "Patient photo + Name + MRN",
+            "center": "Age, Gender, Blood Group",
+            "right": "Action buttons (Edit, Print Card, Portal Access)"
+          },
+          "tabs": [
+            {
+              "name": "Overview",
+              "content": "Demographics, Contact, Identifiers, Allergies warning"
+            },
+            {
+              "name": "Medical History",
+              "content": "Allergies, Chronic Conditions, Current Medications, Previous Surgeries"
+            },
+            {
+              "name": "Visits",
+              "content": "Visit history, Encounters, Diagnoses"
+            },
+            {
+              "name": "Documents",
+              "content": "Uploaded documents with preview"
+            },
+            {
+              "name": "Family",
+              "content": "Linked family members/dependents"
+            },
+            {
+              "name": "Billing",
+              "content": "Outstanding bills, Payment history"
+            }
+          ]
+        }
+      },
+      {
+        "name": "PatientAllergyAlert",
+        "type": "Component",
+        "description": "Prominent allergy warning banner",
+        "display": "Red banner at top of patient profile",
+        "content": "⚠️ ALLERGIES: Penicillin (Severe), Codeine (Moderate)",
+        "always_visible": true,
+        "dismissable": false
+      },
+      {
+        "name": "PatientList",
+        "type": "Component",
+        "description": "Searchable, paginated list of patients",
+        "features": [
+          "Virtual scrolling for large lists (react-window)",
+          "Quick filters (Active/Inactive, Today's registrations)",
+          "Sort by: Name, MRN, Registration date",
+          "Bulk actions (Export, Print cards)",
+          "Click row to view profile"
+        ],
+        "display_fields": [
+          "Photo thumbnail",
+          "MRN",
+          "Full name",
+          "Age, Gender",
+          "Phone",
+          "Last visit date",
+          "Status (Active/Inactive)"
+        ]
+      },
+      {
+        "name": "FingerprintEnrollment",
+        "type": "Component",
+        "description": "Biometric fingerprint enrollment",
+        "requirements": [
+          "Fingerprint scanner device connected",
+          "Device driver/SDK installed",
+          "Browser permissions for USB/device access"
+        ],
+        "workflow": [
+          "1. Connect fingerprint scanner",
+          "2. Prompt patient to place finger",
+          "3. Capture fingerprint template",
+          "4. Quality check",
+          "5. Repeat for verification",
+          "6. Encrypt and save template"
+        ],
+        "libraries": "Device-specific SDK (e.g., Futronic, Digital Persona)",
+        "security": "Never store raw fingerprint image, only encrypted template"
+      },
+      {
+        "name": "PatientPortalSetup",
+        "type": "Modal Component",
+        "description": "Enable patient portal access",
+        "workflow": [
+          "1. Enter patient's email (required) and phone",
+          "2. System sends OTP to phone",
+          "3. Patient verifies phone",
+          "4. Patient creates password",
+          "5. Portal access activated"
+        ],
+        "features": [
+          "SMS OTP verification",
+          "Password strength meter",
+          "Terms & conditions acceptance"
+        ]
+      },
+      {
+        "name": "PatientCardGenerator",
+        "type": "Component",
+        "description": "Generate printable patient ID card",
+        "output": "PDF for printing",
+        "card_layout": {
+          "front": [
+            "Hospital logo",
+            "Patient photo (if available)",
+            "Full name",
+            "MRN (large)",
+            "Blood group",
+            "QR code (MRN encoded)"
+          ],
+          "back": [
+            "Emergency contact",
+            "Allergies (if any)",
+            "Hospital address",
+            "Hospital phone"
+          ]
+        },
+        "size": "Credit card size for wallet",
+        "print_options": "Single card or batch print for family"
+      }
+    ]
+  },
+
+  "patient_portal_specification": {
+    "description": "Self-service portal for patients to view records and manage appointments",
+    "access_url": "portal.yourhospital.com or yourhospital.com/portal",
+    "authentication": {
+      "login_methods": [
+        "Phone + Password",
+        "MRN + Password",
+        "Fingerprint (if enrolled)"
+      ],
+      "2fa": "SMS OTP (required for sensitive actions)",
+      "password_reset": "Via SMS OTP to registered phone"
+    },
+    "features": [
+      {
+        "name": "Dashboard",
+        "content": [
+          "Upcoming appointments",
+          "Recent lab results",
+          "Outstanding bills",
+          "Unread messages from hospital"
+        ]
+      },
+      {
+        "name": "My Profile",
+        "permissions": "View all, edit contact info only",
+        "editable_fields": ["phone_secondary", "email", "address"],
+        "read_only_fields": ["name", "MRN", "DOB", "Ghana Card", "medical history"]
+      },
+      {
+        "name": "Appointments",
+        "capabilities": [
+          "View upcoming and past appointments",
+          "Book new appointment (select doctor, date, time)",
+          "Reschedule appointment (up to 24 hours before)",
+          "Cancel appointment",
+          "Add to calendar (Google/Apple)"
+        ]
+      },
+      {
+        "name": "Lab Results",
+        "display": "View approved lab results only",
+        "download": "PDF download option",
+        "notification": "SMS when new result available"
+      },
+      {
+        "name": "Prescriptions",
+        "display": "Current and past prescriptions",
+        "details": "Drug name, dosage, duration, prescribing doctor"
+      },
+      {
+        "name": "Bills & Payments",
+        "capabilities": [
+          "View outstanding bills",
+          "View payment history",
+          "Pay online (mobile money/card)",
+          "Download receipts"
+        ]
+      },
+      {
+        "name": "Family Members",
+        "capability": "View linked family members",
+        "access": "Book appointments for dependents",
+        "permission_model": "Guardian can view minor dependents' records"
+      },
+      {
+        "name": "Documents",
+        "display": "View uploaded documents (lab reports, etc.)",
+        "download": "PDF download",
+        "upload": "Upload documents (optional feature)"
+      }
+    ],
+    "mobile_app": {
+      "platform": "React Native (iOS + Android)",
+      "features": "Same as web portal + push notifications",
+      "priority": "Phase 2 (after web portal stable)"
+    }
+  },
+
+  "biometric_integration": {
+    "supported_devices": [
+      "Fingerprint scanners (USB)",
+      "Iris scanners (future)",
+      "Face recognition (camera-based - future)"
+    ],
+    "primary_use_cases": [
+      "Patient identification at registration/check-in",
+      "Verify identity for dispensing controlled drugs",
+      "Access medical records (for illiterate patients)",
+      "Payment authorization"
+    ],
+    "implementation": {
+      "hardware": "USB fingerprint scanner (e.g., Futronic FS88, Digital Persona U.are.U 4500)",
+      "sdk": "Device-specific SDK (WebUSB or native desktop app bridge)",
+      "template_format": "ISO 19794-2 or ANSI 378",
+      "storage": "Encrypted template in database (not raw image)",
+      "matching": "1:N matching for identification, 1:1 for verification",
+      "performance": "Matching time <1 second for database of 10,000 patients"
+    },
+    "workflow": {
+      "enrollment": [
+        "1. Patient places finger on scanner",
+        "2. Capture 3-5 samples",
+        "3. Generate template",
+        "4. Quality check (reject poor quality)",
+        "5. Encrypt and store template",
+        "6. Link to patient record"
+      ],
+      "identification": [
+        "1. Patient places finger on scanner",
+        "2. Capture fingerprint",
+        "3. Generate template",
+        "4. Match against database (1:N)",
+        "5. Return patient record if match found",
+        "6. Log attempt"
+      ]
+    },
+    "security": [
+      "Never store raw fingerprint images",
+      "Encrypt templates at rest (AES-256)",
+      "TLS for transmission",
+      "Audit all biometric access",
+      "Comply with Ghana Data Protection Act"
+    ],
+    "fallback": "If biometric fails, fallback to manual search by name/phone/MRN"
+  },
+
+  "performance_requirements": {
+    "api_response_times": {
+      "create_patient": "<1 second",
+      "get_patient_by_id": "<200ms",
+      "search_by_mrn": "<100ms",
+      "search_by_phone": "<150ms",
+      "search_by_name": "<500ms",
+      "duplicate_check": "<800ms"
+    },
+    "ui_responsiveness": {
+      "page_load": "<2 seconds on 3G",
+      "search_autocomplete": "Results appear within 300ms of typing",
+      "photo_upload": "Preview within 1 second",
+      "form_save": "Confirmation within 2 seconds"
+    },
+    "scalability": {
+      "database": "Support 100,000+ patient records per hospital",
+      "concurrent_users": "50+ receptionists searching simultaneously",
+      "daily_registrations": "Handle 500+ new registrations per day"
+    },
+    "database_optimization": [
+      "Index on mrn, ghana_card_number, phone_primary, (first_name, last_name)",
+      "Full-text search index for name search",
+      "Partition large tables by tenant_id",
+      "Archive inactive patients after 5 years (configurable)"
+    ]
+  },
+
+  "security_and_compliance": {
+    "data_protection": [
+      "Encrypt Ghana Card numbers at rest (AES-256)",
+      "Encrypt fingerprint templates at rest",
+      "Mask Ghana Card in UI (show only last 4 digits)",
+      "Hash portal passwords with bcrypt (12 rounds)",
+      "Use TLS 1.3 for all data transmission"
+    ],
+    "access_control": [
+      "Role-based permissions (Receptionist, Nurse, Doctor, Admin)",
+      "Receptionists: Create, Read, Update patients",
+      "Doctors/Nurses: Read patient records",
+      "Admins: All permissions including Merge, Delete",
+      "Audit log: Who accessed which patient record when"
+    ],
+    "compliance": [
+      "Ghana Data Protection Act, 2012",
+      "Obtain consent for data collection (checkbox on registration)",
+      "Right to access: Patients can request their data via portal",
+      "Right to deletion: Soft delete with 30-day retention",
+      "Data breach notification: Alert within 72 hours"
+    ],
+    "audit_logging": {
+      "logged_actions": ["CREATE", "UPDATE", "DELETE", "MERGE", "VIEW", "EXPORT"],
+      "stored_data": ["action", "user_id", "patient_id", "timestamp", "ip_address", "changed_fields", "old_values", "new_values"],
+      "retention": "7 years (legal requirement)",
+      "access": "Admins only, read-only"
+    }
+  },
+
+  "testing_strategy": {
+    "unit_tests": [
+      "Duplicate detection algorithm (various scenarios)",
+      "MRN generation (uniqueness, format)",
+      "Ghana Card validation",
+      "Phone number formatting",
+      "Age calculation from DOB",
+      "Search query parsing"
+    ],
+    "integration_tests": [
+      "Patient registration flow (API + database)",
+      "Search functionality (all types)",
+      "Duplicate detection during registration",
+      "Patient merge operation",
+      "Photo upload and storage",
+      "Document upload"
+    ],
+    "e2e_tests": [
+      "Walk-in patient registration (full flow)",
+      "Search for existing patient and book appointment",
+      "Detect and handle duplicate patient",
+      "Upload patient photo",
+      "Merge duplicate patients",
+      "Patient portal login and view records"
+    ],
+    "performance_tests": [
+      "Search with 100,000 patient records",
+      "Duplicate detection with large dataset",
+      "50 concurrent patient registrations",
+      "Photo upload under slow network"
+    ],
+    "test_data": {
+      "generate": "Script to generate 10,000+ realistic test patients",
+      "include": "Common Ghana names, valid phone numbers, addresses"
+    }
+  },
+
+  "deployment_considerations": {
+    "environment_variables": [
+      "PATIENT_MRN_PREFIX (hospital-specific, e.g., 'RDG')",
+      "PATIENT_MRN_FORMAT (sequential vs yearly reset)",
+      "PATIENT_PHOTO_STORAGE (s3 | local)",
+      "AWS_S3_BUCKET_PHOTOS",
+      "FINGERPRINT_SDK_PATH",
+      "PORTAL_BASE_URL",
+      "SMS_PROVIDER (for portal OTP)"
+    ],
+    "database_migrations": [
+      "Create all patient-related tables",
+      "Add indexes",
+      "Set up full-text search",
+      "Create initial MRN sequence"
+    ],
+    "file_storage": {
+      "photos": "S3 bucket: medicare-ghana-photos/{tenant_id}/{patient_id}/",
+      "documents": "S3 bucket: medicare-ghana-documents/{tenant_id}/{patient_id}/"
+    }
+  },
+
+  "future_enhancements_phase_2": [
+    "OCR for extracting data from Ghana Card photo",
+    "Facial recognition for identification",
+    "Integration with National ID database (Ghana Card verification API)",
+    "NHIS real-time eligibility check API",
+    "SMS appointment reminders",
+    "WhatsApp appointment booking",
+    "Advanced analytics (patient demographics, trends)",
+    "Patient satisfaction surveys",
+    "Referral tracking",
+    "Patient consent management for research"
+  ],
+
+  "success_metrics": {
+    "kpis": [
+      "Average registration time <2 minutes for walk-ins",
+      "Patient search time <5 seconds",
+      "Duplicate rate <5% (target: <2%)",
+      "Portal adoption: 30% of patients within 6 months",
+      "Data completeness: 90%+ patients with photo and Ghana Card",
+      "User satisfaction: 4.5+ stars from receptionists"
+    ]
+  }
+}

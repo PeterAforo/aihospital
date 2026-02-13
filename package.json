@@ -1,0 +1,35 @@
+{
+  "name": "medicare-ghana",
+  "version": "1.0.0",
+  "description": "Multi-tenant Hospital Management System for Ghana",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "mobile",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel run dev",
+    "dev:backend": "pnpm --filter backend run dev",
+    "dev:frontend": "pnpm --filter frontend run dev",
+    "dev:mobile": "pnpm --filter mobile run start",
+    "build": "pnpm --parallel run build",
+    "build:backend": "pnpm --filter backend run build",
+    "build:frontend": "pnpm --filter frontend run build",
+    "lint": "pnpm --parallel run lint",
+    "test": "pnpm --parallel run test",
+    "db:migrate": "pnpm --filter backend run db:migrate",
+    "db:generate": "pnpm --filter backend run db:generate",
+    "db:push": "pnpm --filter backend run db:push",
+    "db:studio": "pnpm --filter backend run db:studio",
+    "clean": "rimraf node_modules backend/node_modules frontend/node_modules mobile/node_modules shared/node_modules"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "author": "MediCare Ghana",
+  "license": "UNLICENSED"
+}

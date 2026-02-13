@@ -1,0 +1,1474 @@
+{
+  "module_name": "EMR/Clinical Consultation Module",
+  "project": "MediCare Ghana Hospital Management System",
+  "phase": "Phase 2 - Clinical Core (Months 4-5)",
+  "priority": "Critical - Core Clinical Documentation",
+  "implementation_time": "3-4 weeks",
+  
+  "module_overview": {
+    "description": "Complete Electronic Medical Record system for documenting patient encounters, diagnoses, physical examinations, clinical assessments, and treatment plans. The clinical brain of the hospital system.",
+    "position_in_workflow": "After triage, during doctor consultation",
+    "key_objectives": [
+      "Enable comprehensive clinical documentation using SOAP format",
+      "Support ICD-10 diagnosis coding for NHIS claims",
+      "Provide clinical decision support (drug interactions, allergy alerts)",
+      "Create specialty-specific encounter templates",
+      "Link to lab/radiology orders and results",
+      "Generate patient clinical summaries and discharge notes",
+      "Track patient problem list and care plans",
+      "Support Ghana's common diseases and health protocols"
+    ],
+    "clinical_standards": {
+      "documentation_format": "SOAP (Subjective, Objective, Assessment, Plan)",
+      "diagnosis_coding": "ICD-10 (International Classification of Diseases, 10th revision)",
+      "protocols": "Ghana Health Service clinical guidelines",
+      "prescribing": "Ghana National Formulary"
+    }
+  },
+
+  "workflow_integration": {
+    "patient_flow": {
+      "step_1": "Patient triaged → Vital signs captured",
+      "step_2": "🆕 Doctor calls patient → Opens encounter",
+      "step_3": "🆕 Reviews triage notes, vital signs, patient history",
+      "step_4": "🆕 Documents consultation (SOAP notes)",
+      "step_5": "🆕 Assigns diagnoses (ICD-10)",
+      "step_6": "🆕 Orders tests (lab/radiology)",
+      "step_7": "🆕 Writes prescriptions",
+      "step_8": "🆕 Completes encounter → Patient proceeds to pharmacy/lab/billing"
+    },
+    "doctor_workflow": {
+      "open_encounter": "Doctor clicks patient from queue → System creates new encounter record",
+      "review_context": "See: Vital signs (from triage), Allergies, Problem list, Recent visits, Lab results",
+      "document_visit": "Fill SOAP note sections, add diagnoses, order tests",
+      "prescribe": "E-prescription with dosage, frequency, duration",
+      "complete": "Sign encounter → Status changes to COMPLETED → Billing triggered"
+    }
+  },
+
+  "soap_documentation_structure": {
+    "format": "SOAP (Subjective, Objective, Assessment, Plan)",
+    "description": "Industry-standard clinical documentation format",
+    
+    "subjective": {
+      "name": "S - Subjective",
+      "description": "Patient's description of symptoms and concerns in their own words",
+      "components": {
+        "chief_complaint": {
+          "label": "Chief Complaint (CC)",
+          "description": "Primary reason for visit",
+          "data_type": "Text",
+          "examples": [
+            "Fever for 3 days",
+            "Chest pain since morning",
+            "Follow-up for hypertension"
+          ],
+          "source": "Can pre-populate from triage chief complaint"
+        },
+        "history_of_present_illness": {
+          "label": "History of Present Illness (HPI)",
+          "description": "Detailed narrative of current symptoms",
+          "data_type": "Long text",
+          "framework": "OLD CARTS mnemonic",
+          "elements": {
+            "onset": "When did symptoms start?",
+            "location": "Where is the pain/symptom?",
+            "duration": "How long does it last?",
+            "character": "What does it feel like? (sharp, dull, burning)",
+            "aggravating_factors": "What makes it worse?",
+            "relieving_factors": "What makes it better?",
+            "timing": "Constant or intermittent? Pattern?",
+            "severity": "How bad is it? (1-10 scale)"
+          },
+          "example": "Patient reports sudden onset chest pain started this morning at 7 AM. Pain is located in center of chest, described as 'pressure-like' and radiates to left arm. Severity 8/10. Pain worsens with exertion, relieved by rest. Associated symptoms include shortness of breath and sweating. No previous episodes."
+        },
+        "review_of_systems": {
+          "label": "Review of Systems (ROS)",
+          "description": "Systematic review of body systems",
+          "data_type": "Structured checklist + notes",
+          "systems": [
+            {
+              "system": "Constitutional",
+              "symptoms": ["Fever", "Chills", "Fatigue", "Weight loss", "Weight gain", "Night sweats"]
+            },
+            {
+              "system": "Cardiovascular",
+              "symptoms": ["Chest pain", "Palpitations", "Shortness of breath", "Edema", "Orthopnea"]
+            },
+            {
+              "system": "Respiratory",
+              "symptoms": ["Cough", "Dyspnea", "Wheezing", "Hemoptysis", "Sputum production"]
+            },
+            {
+              "system": "Gastrointestinal",
+              "symptoms": ["Nausea", "Vomiting", "Diarrhea", "Constipation", "Abdominal pain", "Heartburn"]
+            },
+            {
+              "system": "Genitourinary",
+              "symptoms": ["Dysuria", "Frequency", "Urgency", "Hematuria", "Incontinence"]
+            },
+            {
+              "system": "Musculoskeletal",
+              "symptoms": ["Joint pain", "Muscle pain", "Back pain", "Stiffness", "Swelling"]
+            },
+            {
+              "system": "Neurological",
+              "symptoms": ["Headache", "Dizziness", "Numbness", "Weakness", "Seizures", "Vision changes"]
+            },
+            {
+              "system": "Psychiatric",
+              "symptoms": ["Depression", "Anxiety", "Sleep disturbance", "Mood changes"]
+            },
+            {
+              "system": "Skin",
+              "symptoms": ["Rash", "Itching", "Lesions", "Color changes", "Hair loss"]
+            },
+            {
+              "system": "Endocrine",
+              "symptoms": ["Heat/cold intolerance", "Excessive thirst", "Polyuria"]
+            }
+          ],
+          "capture_method": "Checkboxes + free text notes for positive findings"
+        },
+        "past_medical_history": {
+          "label": "Past Medical History (PMH)",
+          "description": "Previous illnesses, chronic conditions",
+          "data_type": "Structured list",
+          "includes": ["Hypertension", "Diabetes", "Asthma", "Previous hospitalizations", "Surgeries"],
+          "source": "Pre-populated from patient.chronic_conditions"
+        },
+        "medications": {
+          "label": "Current Medications",
+          "description": "All medications patient is currently taking",
+          "data_type": "Structured list",
+          "source": "Pre-populated from patient.current_medications",
+          "includes": ["Prescription drugs", "Over-the-counter", "Herbal/traditional remedies"]
+        },
+        "allergies": {
+          "label": "Allergies",
+          "description": "Drug, food, environmental allergies",
+          "data_type": "List with severity",
+          "source": "Pre-populated from patient.allergies",
+          "alert": "Display prominently in red banner if present"
+        },
+        "social_history": {
+          "label": "Social History",
+          "description": "Lifestyle factors affecting health",
+          "elements": {
+            "smoking": "Never/Former/Current, pack-years",
+            "alcohol": "Never/Occasional/Moderate/Heavy",
+            "drugs": "Type, frequency",
+            "occupation": "Job, exposures",
+            "living_situation": "Alone, family, conditions",
+            "diet": "Type, adequacy",
+            "exercise": "Frequency, type"
+          }
+        },
+        "family_history": {
+          "label": "Family History",
+          "description": "Diseases in blood relatives",
+          "common_conditions": ["Hypertension", "Diabetes", "Cancer", "Heart disease", "Stroke", "Sickle cell"],
+          "capture": "Relationship + condition"
+        }
+      }
+    },
+    
+    "objective": {
+      "name": "O - Objective",
+      "description": "Measurable clinical findings from examination and tests",
+      "components": {
+        "vital_signs": {
+          "label": "Vital Signs",
+          "description": "Current vitals from triage or re-measured",
+          "data_type": "Structured numeric",
+          "source": "Auto-populated from triage_records",
+          "fields": [
+            "Blood Pressure (mmHg)",
+            "Temperature (°C)",
+            "Pulse Rate (bpm)",
+            "Respiratory Rate (/min)",
+            "SpO2 (%)",
+            "Weight (kg)",
+            "Height (cm)",
+            "BMI (calculated)",
+            "Pain Scale (0-10)"
+          ],
+          "display": "Prominently at top of encounter, color-coded if abnormal"
+        },
+        "general_appearance": {
+          "label": "General Appearance",
+          "description": "Overall patient presentation",
+          "data_type": "Text",
+          "common_phrases": [
+            "Well-appearing, in no acute distress",
+            "Appears ill, uncomfortable",
+            "Alert and oriented x3",
+            "Lethargic",
+            "Anxious/distressed"
+          ]
+        },
+        "physical_examination": {
+          "label": "Physical Examination",
+          "description": "Systematic body systems examination",
+          "data_type": "Structured templates per system",
+          "systems": [
+            {
+              "system": "HEENT (Head, Eyes, Ears, Nose, Throat)",
+              "template_fields": {
+                "head": "Normocephalic, atraumatic",
+                "eyes": "PERRLA (Pupils Equal, Round, Reactive to Light and Accommodation), conjunctiva clear",
+                "ears": "TMs intact, canals clear",
+                "nose": "Patent, no discharge",
+                "throat": "Oropharynx clear, no erythema",
+                "neck": "Supple, no lymphadenopathy, thyroid normal"
+              }
+            },
+            {
+              "system": "Cardiovascular",
+              "template_fields": {
+                "inspection": "No visible pulsations",
+                "palpation": "PMI normal, no heaves",
+                "auscultation": "Regular rate and rhythm, S1 S2 normal, no murmurs/rubs/gallops",
+                "extremities": "Pulses 2+ bilaterally, no edema"
+              }
+            },
+            {
+              "system": "Respiratory",
+              "template_fields": {
+                "inspection": "No respiratory distress, symmetrical chest expansion",
+                "palpation": "No tenderness",
+                "percussion": "Resonant throughout",
+                "auscultation": "Clear to auscultation bilaterally, no wheezes/rales/rhonchi"
+              }
+            },
+            {
+              "system": "Abdomen",
+              "template_fields": {
+                "inspection": "Soft, flat, no distension",
+                "auscultation": "Bowel sounds present, normal",
+                "palpation": "Non-tender, no masses, no hepatosplenomegaly",
+                "percussion": "Tympanic"
+              }
+            },
+            {
+              "system": "Musculoskeletal",
+              "template_fields": {
+                "gait": "Normal",
+                "range_of_motion": "Full, symmetrical",
+                "joints": "No swelling, erythema, or tenderness",
+                "strength": "5/5 all extremities"
+              }
+            },
+            {
+              "system": "Neurological",
+              "template_fields": {
+                "mental_status": "Alert and oriented x3 (person, place, time)",
+                "cranial_nerves": "II-XII grossly intact",
+                "motor": "5/5 strength all extremities",
+                "sensory": "Intact to light touch",
+                "reflexes": "2+ and symmetric",
+                "gait": "Normal",
+                "cerebellar": "Finger-to-nose intact, Romberg negative"
+              }
+            },
+            {
+              "system": "Skin",
+              "template_fields": {
+                "color": "Normal",
+                "moisture": "Dry",
+                "temperature": "Warm",
+                "lesions": "None",
+                "turgor": "Normal"
+              }
+            }
+          ],
+          "customization": "Doctor can select which systems to examine based on chief complaint",
+          "smart_defaults": "System suggests relevant exams based on chief complaint (e.g., chest pain → cardiovascular + respiratory)"
+        },
+        "lab_results": {
+          "label": "Laboratory Results",
+          "description": "Recent lab test results",
+          "data_type": "Structured list from lab module",
+          "display": "Table with test name, result, normal range, flag (high/low)",
+          "integration": "Pull from lab_results table where status = APPROVED"
+        },
+        "imaging_results": {
+          "label": "Imaging/Radiology Results",
+          "description": "X-ray, ultrasound, CT, MRI findings",
+          "data_type": "Link to radiology reports",
+          "integration": "Pull from radiology_results table"
+        }
+      }
+    },
+    
+    "assessment": {
+      "name": "A - Assessment",
+      "description": "Clinical interpretation and diagnosis",
+      "components": {
+        "clinical_impression": {
+          "label": "Clinical Impression",
+          "description": "Doctor's interpretation of findings",
+          "data_type": "Text",
+          "example": "Based on history of acute onset chest pain with radiation to left arm, elevated troponins, and EKG changes consistent with ST-elevation, patient likely experiencing acute myocardial infarction."
+        },
+        "diagnoses": {
+          "label": "Diagnoses (ICD-10 Coded)",
+          "description": "Primary and secondary diagnoses with ICD-10 codes",
+          "data_type": "Structured list with codes",
+          "structure": {
+            "primary_diagnosis": {
+              "description": "Main reason for visit",
+              "required": true,
+              "format": {
+                "code": "ICD-10 code (e.g., I21.0)",
+                "description": "Acute transmural myocardial infarction of anterior wall",
+                "status": "Active/Resolved",
+                "onset_date": "Date diagnosis made"
+              }
+            },
+            "secondary_diagnoses": {
+              "description": "Additional conditions affecting care",
+              "required": false,
+              "max": 10,
+              "examples": [
+                "I10 - Essential (primary) hypertension",
+                "E11.9 - Type 2 diabetes mellitus without complications"
+              ]
+            }
+          },
+          "icd10_integration": {
+            "search": "Real-time search with autocomplete",
+            "favorites": "Doctor's frequently used diagnoses",
+            "recent": "Recently coded diagnoses",
+            "ghana_common": "Pre-loaded common Ghana diagnoses"
+          },
+          "nhis_importance": "ICD-10 codes required for NHIS reimbursement claims"
+        },
+        "differential_diagnoses": {
+          "label": "Differential Diagnoses",
+          "description": "Other conditions being considered",
+          "data_type": "List",
+          "example": ["Unstable angina", "Pericarditis", "Pulmonary embolism"]
+        },
+        "problem_list": {
+          "label": "Active Problem List",
+          "description": "Ongoing medical issues requiring management",
+          "data_type": "Persistent list across encounters",
+          "management": "Add, resolve, or update problems",
+          "examples": [
+            "Hypertension - Active since 2020",
+            "Type 2 Diabetes - Active since 2018",
+            "Asthma - Active",
+            "Acute bronchitis - Resolved 2023-12-15"
+          ]
+        }
+      }
+    },
+    
+    "plan": {
+      "name": "P - Plan",
+      "description": "Treatment plan and next steps",
+      "components": {
+        "treatment_plan": {
+          "label": "Treatment Plan",
+          "description": "Therapeutic interventions",
+          "data_type": "Text + structured orders",
+          "includes": [
+            "Medications (prescriptions)",
+            "Procedures",
+            "Lifestyle modifications",
+            "Diet recommendations",
+            "Activity restrictions"
+          ]
+        },
+        "orders": {
+          "label": "Orders",
+          "description": "Tests and procedures ordered",
+          "types": {
+            "lab_orders": {
+              "description": "Laboratory tests",
+              "examples": ["Complete Blood Count (CBC)", "Lipid panel", "HbA1c", "Malaria test"],
+              "status": "Pending/Collected/Resulted",
+              "urgency": "Routine/Urgent/STAT"
+            },
+            "radiology_orders": {
+              "description": "Imaging studies",
+              "examples": ["Chest X-ray", "Abdominal ultrasound", "CT scan"],
+              "status": "Pending/Scheduled/Completed"
+            },
+            "procedure_orders": {
+              "description": "Medical procedures",
+              "examples": ["ECG", "Wound dressing", "Nebulizer treatment"]
+            }
+          },
+          "integration": "Orders automatically create records in lab_orders/radiology_orders tables"
+        },
+        "prescriptions": {
+          "label": "Prescriptions",
+          "description": "Medications prescribed",
+          "data_type": "Structured prescription records",
+          "integration": "Link to prescription module (to be built)",
+          "fields": {
+            "medication": "Drug name",
+            "dosage": "Strength (e.g., 500mg)",
+            "route": "Oral/IV/IM/Topical",
+            "frequency": "Once daily, Twice daily, Three times daily, etc.",
+            "duration": "Number of days",
+            "quantity": "Total tablets/vials",
+            "instructions": "Take with food, etc."
+          },
+          "clinical_decision_support": {
+            "drug_interactions": "Alert if new drug interacts with current medications",
+            "allergy_alerts": "Block if patient allergic to drug class",
+            "duplicate_therapy": "Warn if prescribing similar drug already on list",
+            "dosage_validation": "Check pediatric/geriatric dose appropriateness"
+          }
+        },
+        "patient_education": {
+          "label": "Patient Education",
+          "description": "Instructions given to patient",
+          "data_type": "Text",
+          "examples": [
+            "Explained diagnosis and treatment plan",
+            "Discussed medication side effects",
+            "Instructed on warning signs to return to ER",
+            "Reviewed lifestyle modifications"
+          ]
+        },
+        "follow_up": {
+          "label": "Follow-up Plan",
+          "description": "When to return and why",
+          "data_type": "Structured",
+          "fields": {
+            "timeframe": "1 week, 2 weeks, 1 month, 3 months, As needed",
+            "reason": "Lab review, Symptom check, Medication adjustment",
+            "appointment_booked": "Yes/No",
+            "appointment_date": "Scheduled date if booked"
+          },
+          "auto_schedule": "Option to book follow-up appointment from encounter"
+        },
+        "referrals": {
+          "label": "Referrals",
+          "description": "Specialist consultations",
+          "data_type": "Structured referral",
+          "fields": {
+            "specialty": "Cardiology, Orthopedics, Surgery, etc.",
+            "urgency": "Routine/Urgent",
+            "reason": "Detailed reason for referral",
+            "facility": "Internal specialist or external facility"
+          }
+        },
+        "disposition": {
+          "label": "Disposition",
+          "description": "What happened to patient after encounter",
+          "data_type": "Select",
+          "options": [
+            "Discharged home",
+            "Admitted to ward",
+            "Admitted to ICU",
+            "Transferred to another facility",
+            "Left against medical advice (AMA)",
+            "Deceased"
+          ]
+        }
+      }
+    }
+  },
+
+  "icd10_diagnosis_system": {
+    "importance": "Critical for NHIS claims, clinical research, epidemiology",
+    "version": "ICD-10 (WHO 2019 version adapted for Ghana)",
+    "structure": {
+      "code_format": "Letter + 2 digits + optional decimal + 1-2 digits (e.g., A09.9, I10, E11.9)",
+      "chapters": 22,
+      "total_codes": "~70,000 codes"
+    },
+    "ghana_most_common_diagnoses": {
+      "infectious_diseases": [
+        {
+          "code": "A09",
+          "description": "Diarrhea and gastroenteritis of presumed infectious origin",
+          "notes": "Very common in Ghana, especially children"
+        },
+        {
+          "code": "B50.9",
+          "description": "Plasmodium falciparum malaria, unspecified",
+          "notes": "Most common malaria type in Ghana"
+        },
+        {
+          "code": "B51.9",
+          "description": "Plasmodium vivax malaria, unspecified"
+        },
+        {
+          "code": "A01.0",
+          "description": "Typhoid fever",
+          "notes": "Common in Ghana"
+        },
+        {
+          "code": "J18.9",
+          "description": "Pneumonia, unspecified organism"
+        },
+        {
+          "code": "A06.0",
+          "description": "Acute amebic dysentery"
+        },
+        {
+          "code": "B20",
+          "description": "HIV disease",
+          "notes": "Requires confidential handling"
+        }
+      ],
+      "non_communicable_diseases": [
+        {
+          "code": "I10",
+          "description": "Essential (primary) hypertension",
+          "notes": "Very high prevalence in Ghana (>25% of adults)"
+        },
+        {
+          "code": "E11.9",
+          "description": "Type 2 diabetes mellitus without complications"
+        },
+        {
+          "code": "E11.65",
+          "description": "Type 2 diabetes mellitus with hyperglycemia"
+        },
+        {
+          "code": "J45.9",
+          "description": "Asthma, unspecified"
+        },
+        {
+          "code": "D57.0",
+          "description": "Sickle-cell anemia with crisis",
+          "notes": "High prevalence in Ghana (15-30% carrier rate)"
+        }
+      ],
+      "maternal_health": [
+        {
+          "code": "O80",
+          "description": "Single spontaneous delivery"
+        },
+        {
+          "code": "O14.9",
+          "description": "Pre-eclampsia, unspecified"
+        },
+        {
+          "code": "Z34.9",
+          "description": "Encounter for supervision of normal pregnancy, unspecified"
+        }
+      ],
+      "injuries": [
+        {
+          "code": "S00-S09",
+          "description": "Injuries to the head"
+        },
+        {
+          "code": "S60-S69",
+          "description": "Injuries to the wrist and hand"
+        }
+      ]
+    },
+    "icd10_search_features": {
+      "autocomplete": "Type 'diabetes' → shows all diabetes codes",
+      "code_search": "Search by code: 'I10' → Essential hypertension",
+      "favorites": "Save frequently used codes per doctor",
+      "recent": "Show last 20 codes used by this doctor",
+      "templates": "Pre-filled diagnosis sets (e.g., 'Uncomplicated Malaria' → B50.9 + A09 + R50.9)",
+      "synonyms": "Search by common name: 'sugar disease' → diabetes",
+      "language_support": "English terms + local language mappings"
+    },
+    "validation_rules": {
+      "primary_diagnosis_required": "Cannot complete encounter without at least one diagnosis",
+      "code_specificity": "Encourage most specific code (E11.9 better than E11)",
+      "age_gender_validation": "Warn if diagnosis doesn't match patient (e.g., pregnancy code for male)",
+      "chronic_disease_flagging": "Auto-add to problem list if chronic condition (hypertension, diabetes)"
+    }
+  },
+
+  "encounter_templates": {
+    "description": "Pre-built templates to speed documentation",
+    "types": [
+      {
+        "name": "General Medical Consultation",
+        "use_case": "Default template for routine visits",
+        "pre_populated": [
+          "All SOAP sections",
+          "Common ROS checkboxes",
+          "Standard physical exam sections"
+        ]
+      },
+      {
+        "name": "Malaria Workup",
+        "use_case": "Suspected malaria case",
+        "pre_populated": {
+          "chief_complaint": "Fever with chills",
+          "hpi_prompts": "Duration of fever, intermittent vs continuous, other symptoms (headache, body aches, nausea)",
+          "physical_exam": "Fever, pallor, splenomegaly",
+          "diagnosis": "B50.9 - Plasmodium falciparum malaria",
+          "orders": ["Malaria rapid diagnostic test (RDT)", "Full blood count"],
+          "prescriptions": ["Artemether-lumefantrine (ACT)", "Paracetamol"]
+        }
+      },
+      {
+        "name": "Hypertension Follow-up",
+        "use_case": "Routine BP check",
+        "pre_populated": {
+          "chief_complaint": "Hypertension follow-up",
+          "hpi_prompts": "Medication compliance, side effects, symptoms (headache, dizziness, chest pain)",
+          "physical_exam": "Cardiovascular",
+          "diagnosis": "I10 - Essential hypertension",
+          "orders": ["Lipid panel (if due)", "Creatinine", "Urinalysis"],
+          "patient_education": "Lifestyle: low salt diet, regular exercise, weight management"
+        }
+      },
+      {
+        "name": "Diabetes Follow-up",
+        "use_case": "Routine diabetes management",
+        "pre_populated": {
+          "chief_complaint": "Diabetes follow-up",
+          "hpi_prompts": "Medication compliance, blood sugar monitoring, hypoglycemic episodes",
+          "physical_exam": "Foot exam, visual acuity",
+          "diagnosis": "E11.9 - Type 2 diabetes",
+          "orders": ["HbA1c", "Lipid panel", "Creatinine", "Urinalysis"],
+          "patient_education": "Diet control, exercise, foot care"
+        }
+      },
+      {
+        "name": "Pediatric Consultation",
+        "use_case": "Child <12 years",
+        "pre_populated": {
+          "vitals": "Age-appropriate ranges displayed",
+          "growth_chart": "Height, weight, BMI percentiles",
+          "developmental_milestones": "Age-appropriate milestone checklist",
+          "immunization_status": "Pull from immunization record"
+        }
+      },
+      {
+        "name": "Antenatal Visit (ANC)",
+        "use_case": "Pregnant woman routine check",
+        "pre_populated": {
+          "obstetric_history": "G_P_ (Gravida, Para)",
+          "gestational_age": "Calculation from LMP",
+          "physical_exam": "Fundal height, fetal heart rate",
+          "orders": ["Hemoglobin", "Urinalysis", "Ultrasound (if indicated)"],
+          "diagnosis": "Z34.9 - Supervision of normal pregnancy"
+        }
+      },
+      {
+        "name": "Emergency Department Note",
+        "use_case": "ER presentations",
+        "pre_populated": {
+          "triage_level": "Pull from triage",
+          "time_stamps": "Arrival time, seen by doctor time",
+          "disposition_required": "Must specify disposition (admit/discharge/transfer)"
+        }
+      }
+    ],
+    "customization": {
+      "doctor_can_create": "Doctors can save their own templates",
+      "admin_can_create": "Hospital admin can create hospital-wide templates",
+      "specialty_specific": "Cardiologist sees cardiology templates, pediatrician sees peds templates"
+    }
+  },
+
+  "clinical_decision_support": {
+    "description": "Real-time alerts and suggestions to improve care quality",
+    "features": [
+      {
+        "feature": "Drug-Allergy Interaction Alert",
+        "trigger": "Doctor prescribes medication patient is allergic to",
+        "action": "Block prescription, show red alert: '⚠️ ALLERGY ALERT: Patient allergic to Penicillin!'",
+        "severity": "Critical - Cannot override"
+      },
+      {
+        "feature": "Drug-Drug Interaction Alert",
+        "trigger": "New prescription interacts with current medication",
+        "action": "Show warning: 'Moderate interaction: Aspirin + Warfarin increases bleeding risk'",
+        "severity": "Warning - Can override with reason",
+        "database": "Use drug interaction database (e.g., First DataBank, or custom)"
+      },
+      {
+        "feature": "Duplicate Therapy Alert",
+        "trigger": "Prescribing drug from same class as current medication",
+        "action": "Warn: 'Patient already on Lisinopril (ACE inhibitor). Are you sure you want to add Enalapril?'",
+        "severity": "Info - Can override"
+      },
+      {
+        "feature": "Abnormal Vital Signs Alert",
+        "trigger": "Vital signs outside normal range",
+        "action": "Highlight in red/orange, suggest relevant diagnoses",
+        "example": "BP 180/110 → Suggest: Hypertensive urgency/emergency"
+      },
+      {
+        "feature": "Preventive Care Reminders",
+        "trigger": "Patient due for screening/vaccination",
+        "action": "Show banner: 'Patient due for cervical cancer screening (last Pap smear 4 years ago)'",
+        "examples": [
+          "Cervical cancer screening (Pap smear) - Every 3 years for women 25-65",
+          "Diabetes screening - Every 3 years for adults >45",
+          "Malaria prophylaxis - For travelers to endemic areas"
+        ]
+      },
+      {
+        "feature": "Diagnosis-Lab Correlation",
+        "trigger": "Diagnosis made without supporting lab",
+        "action": "Suggest: 'Consider ordering: Malaria RDT (for suspected malaria)'",
+        "severity": "Info"
+      },
+      {
+        "feature": "Ghana-Specific Alerts",
+        "triggers": [
+          "High fever + headache → Suggest malaria test",
+          "Severe anemia + joint pain (in young patient) → Suggest sickle cell screening",
+          "Pregnant woman with BP >140/90 → Alert: Pre-eclampsia risk, consider admission"
+        ]
+      }
+    ]
+  },
+
+  "database_schema": {
+    "clinical_encounters": {
+      "table_name": "clinical_encounters",
+      "description": "Main clinical visit/consultation record",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NOT NULL REFERENCES tenants(id)",
+        "patient_id UUID NOT NULL REFERENCES patients(id)",
+        "appointment_id UUID NULL REFERENCES appointments(id) (Can be null for walk-ins)",
+        "encounter_type VARCHAR(50) (outpatient, inpatient, emergency, telemedicine)",
+        "encounter_date DATE NOT NULL",
+        "encounter_time TIME NOT NULL",
+        
+        "-- Doctor & Location --",
+        "doctor_id UUID NOT NULL REFERENCES users(id)",
+        "department VARCHAR(100)",
+        "location VARCHAR(200) (Room number, clinic)",
+        
+        "-- SOAP Documentation --",
+        "chief_complaint TEXT",
+        "history_present_illness TEXT (HPI - narrative)",
+        "review_of_systems JSONB (Structured ROS data)",
+        "past_medical_history TEXT",
+        "medications_reviewed BOOLEAN DEFAULT FALSE",
+        "allergies_reviewed BOOLEAN DEFAULT FALSE",
+        "social_history TEXT",
+        "family_history TEXT",
+        
+        "-- Objective --",
+        "vital_signs_id UUID REFERENCES triage_records(id) (Link to triage vitals)",
+        "general_appearance TEXT",
+        "physical_examination JSONB (Structured exam findings by system)",
+        
+        "-- Assessment --",
+        "clinical_impression TEXT",
+        "differential_diagnoses TEXT[] (Array of possible diagnoses)",
+        
+        "-- Plan --",
+        "treatment_plan TEXT",
+        "patient_education TEXT",
+        "follow_up_plan TEXT",
+        "follow_up_date DATE NULL",
+        "disposition VARCHAR(50) (discharged, admitted, transferred, AMA, deceased)",
+        
+        "-- Meta --",
+        "template_used VARCHAR(100) (Which template was used)",
+        "status VARCHAR(50) DEFAULT 'IN_PROGRESS' (in_progress, completed, signed)",
+        "started_at TIMESTAMP NOT NULL DEFAULT NOW()",
+        "completed_at TIMESTAMP NULL",
+        "signed_at TIMESTAMP NULL",
+        "signed_by UUID REFERENCES users(id)",
+        "encounter_duration_minutes INTEGER (Calculated)",
+        
+        "-- Billing Integration --",
+        "is_billable BOOLEAN DEFAULT TRUE",
+        "billing_status VARCHAR(50) (pending, billed, paid)",
+        
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_patient_date ON (patient_id, encounter_date DESC)",
+        "INDEX idx_doctor_date ON (doctor_id, encounter_date)",
+        "INDEX idx_appointment ON (appointment_id)",
+        "INDEX idx_status ON (status)"
+      ]
+    },
+    "encounter_diagnoses": {
+      "table_name": "encounter_diagnoses",
+      "description": "ICD-10 diagnoses for each encounter",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "encounter_id UUID NOT NULL REFERENCES clinical_encounters(id) ON DELETE CASCADE",
+        "icd10_code VARCHAR(10) NOT NULL",
+        "icd10_description TEXT NOT NULL",
+        "diagnosis_type VARCHAR(20) NOT NULL (primary, secondary)",
+        "status VARCHAR(20) DEFAULT 'active' (active, resolved, chronic)",
+        "onset_date DATE",
+        "resolved_date DATE NULL",
+        "notes TEXT",
+        "rank INTEGER (1 for primary, 2,3,4... for secondary)",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_encounter ON (encounter_id)",
+        "INDEX idx_icd10 ON (icd10_code)"
+      ],
+      "constraints": [
+        "UNIQUE (encounter_id, diagnosis_type, rank) - Only one primary diagnosis"
+      ]
+    },
+    "problem_list": {
+      "table_name": "problem_list",
+      "description": "Patient's active and resolved medical problems (persists across encounters)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "patient_id UUID NOT NULL REFERENCES patients(id)",
+        "icd10_code VARCHAR(10)",
+        "icd10_description TEXT",
+        "problem_name TEXT NOT NULL",
+        "status VARCHAR(20) DEFAULT 'active' (active, resolved, inactive)",
+        "onset_date DATE",
+        "resolved_date DATE NULL",
+        "notes TEXT",
+        "added_by UUID REFERENCES users(id)",
+        "added_from_encounter UUID REFERENCES clinical_encounters(id)",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_patient_active ON (patient_id, status)"
+      ],
+      "note": "This list follows the patient - doctors add/update across multiple encounters"
+    },
+    "lab_orders": {
+      "table_name": "lab_orders",
+      "description": "Laboratory test orders from encounters",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NOT NULL REFERENCES tenants(id)",
+        "encounter_id UUID NOT NULL REFERENCES clinical_encounters(id)",
+        "patient_id UUID NOT NULL REFERENCES patients(id)",
+        "ordered_by UUID NOT NULL REFERENCES users(id) (Doctor)",
+        "test_name VARCHAR(200) NOT NULL",
+        "test_code VARCHAR(50)",
+        "urgency VARCHAR(20) (routine, urgent, stat)",
+        "clinical_indication TEXT (Why test is being ordered)",
+        "specimen_type VARCHAR(100) (blood, urine, stool, etc.)",
+        "status VARCHAR(50) DEFAULT 'pending' (pending, collected, in_progress, resulted, cancelled)",
+        "ordered_at TIMESTAMP DEFAULT NOW()",
+        "collected_at TIMESTAMP NULL",
+        "resulted_at TIMESTAMP NULL",
+        "notes TEXT",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_encounter ON (encounter_id)",
+        "INDEX idx_patient ON (patient_id)",
+        "INDEX idx_status ON (status)"
+      ]
+    },
+    "radiology_orders": {
+      "table_name": "radiology_orders",
+      "description": "Imaging/radiology orders from encounters",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NOT NULL REFERENCES tenants(id)",
+        "encounter_id UUID NOT NULL REFERENCES clinical_encounters(id)",
+        "patient_id UUID NOT NULL REFERENCES patients(id)",
+        "ordered_by UUID NOT NULL REFERENCES users(id)",
+        "study_type VARCHAR(200) NOT NULL (X-ray, Ultrasound, CT, MRI)",
+        "body_part VARCHAR(100) (Chest, Abdomen, Brain, etc.)",
+        "laterality VARCHAR(20) (left, right, bilateral)",
+        "urgency VARCHAR(20) (routine, urgent, stat)",
+        "clinical_indication TEXT",
+        "status VARCHAR(50) DEFAULT 'pending' (pending, scheduled, in_progress, completed, cancelled)",
+        "ordered_at TIMESTAMP DEFAULT NOW()",
+        "scheduled_at TIMESTAMP NULL",
+        "completed_at TIMESTAMP NULL",
+        "notes TEXT",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_encounter ON (encounter_id)",
+        "INDEX idx_patient ON (patient_id)",
+        "INDEX idx_status ON (status)"
+      ]
+    },
+    "icd10_codes": {
+      "table_name": "icd10_codes",
+      "description": "Master table of ICD-10 codes for search",
+      "columns": [
+        "code VARCHAR(10) PRIMARY KEY",
+        "description TEXT NOT NULL",
+        "chapter INTEGER (1-22, ICD-10 chapter)",
+        "category VARCHAR(100) (Category name)",
+        "is_common_ghana BOOLEAN DEFAULT FALSE (Flag common Ghana diagnoses)",
+        "synonyms TEXT[] (Array of alternate names for search)",
+        "notes TEXT"
+      ],
+      "indexes": [
+        "INDEX idx_description_fulltext ON description (Full-text search)",
+        "INDEX idx_common ON (is_common_ghana) WHERE is_common_ghana = TRUE"
+      ],
+      "initial_data": "Pre-load ~1000 most common codes + all Ghana-specific codes"
+    },
+    "encounter_notes_history": {
+      "table_name": "encounter_notes_history",
+      "description": "Audit trail of encounter edits (for compliance)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "encounter_id UUID NOT NULL REFERENCES clinical_encounters(id)",
+        "field_name VARCHAR(100) (Which field was edited)",
+        "old_value TEXT",
+        "new_value TEXT",
+        "edited_by UUID NOT NULL REFERENCES users(id)",
+        "edited_at TIMESTAMP DEFAULT NOW()",
+        "edit_reason TEXT"
+      ],
+      "use_case": "Track all changes to signed encounters (required for legal/audit purposes)"
+    }
+  },
+
+  "api_endpoints": {
+    "base_path": "/api/encounters",
+    "authentication": "Required (JWT)",
+    "endpoints": [
+      {
+        "path": "/api/encounters",
+        "method": "POST",
+        "name": "Create Encounter",
+        "description": "Start new clinical encounter",
+        "permissions": ["ENCOUNTER_CREATE"],
+        "request_body": {
+          "patientId": "UUID (required)",
+          "appointmentId": "UUID (optional)",
+          "encounterType": "STRING (outpatient, emergency, etc.)",
+          "template": "STRING (optional - template name to pre-populate)"
+        },
+        "logic": [
+          "Create encounter record with status = IN_PROGRESS",
+          "If appointmentId provided: Link encounter, update appointment.status = IN_PROGRESS",
+          "Pull patient context: allergies, current medications, problem list, recent vitals",
+          "If template specified: Pre-populate fields from template",
+          "Return encounter ID + pre-populated data"
+        ],
+        "response": {
+          "status": 201,
+          "body": {
+            "success": true,
+            "data": {
+              "encounter": "{ encounter object }",
+              "patient_context": {
+                "allergies": "[ ]",
+                "current_medications": "[ ]",
+                "problem_list": "[ ]",
+                "recent_vitals": "{ from triage }"
+              }
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/encounters/:id",
+        "method": "GET",
+        "name": "Get Encounter",
+        "description": "Retrieve complete encounter details",
+        "permissions": ["ENCOUNTER_READ"],
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "encounter": "{ full encounter }",
+              "diagnoses": "[ list of diagnoses with ICD-10 codes ]",
+              "orders": {
+                "lab": "[ lab orders ]",
+                "radiology": "[ radiology orders ]"
+              },
+              "patient": "{ patient summary }",
+              "doctor": "{ doctor info }"
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/encounters/:id",
+        "method": "PUT",
+        "name": "Update Encounter",
+        "description": "Update encounter documentation",
+        "permissions": ["ENCOUNTER_UPDATE"],
+        "request_body": {
+          "chiefComplaint": "STRING (optional)",
+          "historyPresentIllness": "STRING",
+          "reviewOfSystems": "OBJECT",
+          "physicalExamination": "OBJECT",
+          "clinicalImpression": "STRING",
+          "treatmentPlan": "STRING",
+          "patientEducation": "STRING",
+          "followUpPlan": "STRING",
+          "disposition": "STRING"
+        },
+        "validation": [
+          "Cannot edit if status = SIGNED (must create addendum)",
+          "Log all changes in encounter_notes_history if encounter is COMPLETED"
+        ],
+        "side_effects": [
+          "Auto-save every 2 minutes (draft)",
+          "Update updated_at timestamp"
+        ]
+      },
+      {
+        "path": "/api/encounters/:id/diagnoses",
+        "method": "POST",
+        "name": "Add Diagnosis",
+        "description": "Add ICD-10 diagnosis to encounter",
+        "request_body": {
+          "icd10Code": "STRING (required)",
+          "icd10Description": "STRING (required)",
+          "diagnosisType": "primary | secondary",
+          "status": "active | resolved | chronic",
+          "notes": "STRING (optional)"
+        },
+        "validation": [
+          "Only one primary diagnosis allowed",
+          "ICD-10 code must exist in icd10_codes table",
+          "Check age/gender appropriateness"
+        ],
+        "side_effects": [
+          "If chronic disease: Auto-add to patient's problem_list",
+          "If NHIS-relevant diagnosis: Flag for billing"
+        ]
+      },
+      {
+        "path": "/api/encounters/:id/diagnoses/:diagnosisId",
+        "method": "DELETE",
+        "name": "Remove Diagnosis",
+        "description": "Remove diagnosis from encounter"
+      },
+      {
+        "path": "/api/encounters/:id/complete",
+        "method": "POST",
+        "name": "Complete Encounter",
+        "description": "Mark encounter as completed (doctor finished)",
+        "validation": [
+          "Must have at least one diagnosis",
+          "All required SOAP sections filled (configurable)",
+          "Disposition must be set"
+        ],
+        "side_effects": [
+          "Set status = COMPLETED",
+          "Set completed_at timestamp",
+          "Update appointment.status = COMPLETED",
+          "Calculate encounter_duration_minutes",
+          "Trigger billing (create invoice)",
+          "If prescriptions: Send to pharmacy",
+          "If orders: Send to lab/radiology"
+        ]
+      },
+      {
+        "path": "/api/encounters/:id/sign",
+        "method": "POST",
+        "name": "Sign Encounter",
+        "description": "Legally sign/attest encounter (immutable after this)",
+        "permissions": ["ENCOUNTER_SIGN"],
+        "side_effects": [
+          "Set status = SIGNED",
+          "Set signed_at timestamp",
+          "Set signed_by = current doctor",
+          "Lock encounter (cannot edit, only addendum)",
+          "Generate clinical summary PDF"
+        ]
+      },
+      {
+        "path": "/api/encounters/patient/:patientId",
+        "method": "GET",
+        "name": "Get Patient Encounter History",
+        "description": "List all encounters for a patient",
+        "query_params": {
+          "limit": "INTEGER (default 20)",
+          "status": "STRING (filter by status)",
+          "date_from": "DATE",
+          "date_to": "DATE"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "encounters": "[array of encounters with diagnoses]",
+              "total": 45
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/icd10/search",
+        "method": "GET",
+        "name": "Search ICD-10 Codes",
+        "description": "Real-time search for diagnosis codes",
+        "query_params": {
+          "q": "STRING (search query)",
+          "limit": "INTEGER (default 10)"
+        },
+        "logic": [
+          "Full-text search on description + synonyms",
+          "Boost Ghana common diagnoses in results",
+          "Include code + description in results"
+        ],
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "results": [
+                {
+                  "code": "B50.9",
+                  "description": "Plasmodium falciparum malaria, unspecified",
+                  "isCommonGhana": true
+                },
+                {
+                  "code": "B51.9",
+                  "description": "Plasmodium vivax malaria, unspecified",
+                  "isCommonGhana": true
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/encounters/:id/orders/lab",
+        "method": "POST",
+        "name": "Create Lab Order",
+        "description": "Order laboratory test from encounter",
+        "request_body": {
+          "testName": "STRING (required)",
+          "testCode": "STRING (optional)",
+          "urgency": "routine | urgent | stat",
+          "clinicalIndication": "STRING (why ordering test)",
+          "specimenType": "blood | urine | stool | etc."
+        },
+        "side_effects": [
+          "Create record in lab_orders table",
+          "Send to lab queue",
+          "Notify lab staff (if urgent/stat)"
+        ]
+      },
+      {
+        "path": "/api/encounters/:id/orders/radiology",
+        "method": "POST",
+        "name": "Create Radiology Order",
+        "description": "Order imaging study from encounter",
+        "request_body": {
+          "studyType": "X-ray | Ultrasound | CT | MRI",
+          "bodyPart": "STRING",
+          "laterality": "left | right | bilateral",
+          "urgency": "routine | urgent | stat",
+          "clinicalIndication": "STRING"
+        }
+      },
+      {
+        "path": "/api/encounters/:id/summary",
+        "method": "GET",
+        "name": "Generate Clinical Summary",
+        "description": "Generate PDF summary of encounter for patient",
+        "response": {
+          "status": 200,
+          "content_type": "application/pdf",
+          "body": "PDF file with: Patient demographics, Visit date, Diagnoses, Prescriptions, Follow-up plan"
+        }
+      }
+    ]
+  },
+
+  "integration_points": {
+    "with_triage_module": {
+      "vital_signs": "Auto-populate from most recent triage record",
+      "chief_complaint": "Pre-fill from triage.chief_complaint",
+      "triage_notes": "Show nurse's clinical notes"
+    },
+    "with_patient_module": {
+      "allergies": "Display prominently with red banner if present",
+      "current_medications": "Pre-populate medication list",
+      "problem_list": "Display active problems",
+      "medical_history": "Show past medical history",
+      "recent_encounters": "Show last 5 encounters for context"
+    },
+    "with_appointment_module": {
+      "link_encounter": "Encounter linked to appointment via appointment_id",
+      "status_update": "Appointment.status updates: IN_PROGRESS → COMPLETED",
+      "duration_tracking": "Calculate actual consultation time"
+    },
+    "with_prescription_module_future": {
+      "e_prescribe": "Prescriptions created from encounter flow to pharmacy",
+      "allergy_check": "Real-time allergy checking before prescribing",
+      "interaction_check": "Drug-drug interaction alerts"
+    },
+    "with_lab_module_future": {
+      "order_creation": "Lab orders created from encounter",
+      "result_review": "Lab results displayed in encounter view",
+      "abnormal_alerts": "Notify doctor of abnormal results"
+    },
+    "with_billing_module_future": {
+      "auto_billing": "Encounter completion triggers invoice creation",
+      "icd10_for_nhis": "Primary diagnosis code used for NHIS claim",
+      "consultation_fee": "Encounter type determines consultation charge"
+    }
+  },
+
+  "frontend_components": {
+    "component_structure": [
+      {
+        "name": "EncounterWorkspace",
+        "type": "Main Page",
+        "route": "/encounters/:encounterId",
+        "layout": {
+          "left_sidebar": "Patient summary (20%)",
+          "main_area": "SOAP note editor (60%)",
+          "right_sidebar": "Orders, diagnoses, prescriptions (20%)"
+        },
+        "features": [
+          "Auto-save every 2 minutes",
+          "Tabbed interface (Subjective, Objective, Assessment, Plan)",
+          "Smart templates and quick text",
+          "ICD-10 search with autocomplete",
+          "Clinical decision support alerts",
+          "Order lab/radiology with one click"
+        ]
+      },
+      {
+        "name": "PatientContextPanel",
+        "type": "Sidebar Component",
+        "description": "Patient summary for quick reference",
+        "displays": [
+          "Patient photo, name, MRN, age, gender",
+          "Allergies (red banner if present)",
+          "Active problem list",
+          "Current medications",
+          "Recent vitals from triage",
+          "Recent encounters (last 3)"
+        ]
+      },
+      {
+        "name": "SOAPNoteEditor",
+        "type": "Main Editor Component",
+        "description": "Tabbed SOAP note interface",
+        "tabs": [
+          "Subjective",
+          "Objective",
+          "Assessment",
+          "Plan"
+        ],
+        "features": [
+          "Rich text editor for narrative sections",
+          "Structured templates for physical exam",
+          "Voice-to-text dictation (optional)",
+          "Quick text macros",
+          "Copy forward from previous encounter"
+        ]
+      },
+      {
+        "name": "ICD10SearchWidget",
+        "type": "Component",
+        "description": "Search and add diagnoses",
+        "features": [
+          "Real-time autocomplete search",
+          "Favorites (doctor's commonly used codes)",
+          "Recent (last 20 codes used by this doctor)",
+          "Ghana common diagnoses section",
+          "Display: Code + Description",
+          "Select primary vs secondary",
+          "Add to problem list checkbox"
+        ]
+      },
+      {
+        "name": "PhysicalExamBuilder",
+        "type": "Component",
+        "description": "Structured physical examination entry",
+        "features": [
+          "Select systems to examine",
+          "Normal/Abnormal toggle per system",
+          "Quick normal templates ('HEENT: WNL')",
+          "Free text for abnormal findings",
+          "Smart defaults based on chief complaint"
+        ]
+      },
+      {
+        "name": "OrderingInterface",
+        "type": "Component",
+        "description": "Order labs and imaging",
+        "features": [
+          "Lab test catalog with search",
+          "Common lab panels (CBC, BMP, LFT)",
+          "Radiology study catalog",
+          "Urgency selection (routine/urgent/stat)",
+          "Clinical indication required",
+          "Order sets (e.g., 'Diabetes workup' = HbA1c + Lipids + Creatinine)"
+        ]
+      },
+      {
+        "name": "EncounterListView",
+        "type": "Page",
+        "route": "/patient/:patientId/encounters",
+        "description": "Timeline of patient's encounters",
+        "displays": [
+          "Chronological list of encounters",
+          "Each card shows: Date, Doctor, Chief complaint, Diagnoses",
+          "Click to view full encounter",
+          "Filter by date range, doctor, diagnosis"
+        ]
+      }
+    ]
+  },
+
+  "ghana_specific_features": {
+    "nhis_integration": {
+      "importance": "Critical - Most patients use NHIS",
+      "requirements": [
+        "ICD-10 primary diagnosis for reimbursement",
+        "NHIS-approved drug formulary",
+        "Claim submission format",
+        "Pre-authorization for expensive procedures"
+      ],
+      "workflow": "Encounter complete → Extract ICD-10 code → Include in billing/claim"
+    },
+    "common_clinical_scenarios": {
+      "malaria": {
+        "presentation": "Fever, headache, chills, body aches",
+        "diagnostic": "Malaria RDT or microscopy",
+        "treatment": "Artemisinin-based combination therapy (ACT)",
+        "icd10": "B50.9",
+        "template": "Pre-built malaria encounter template"
+      },
+      "hypertension": {
+        "prevalence": ">25% of Ghanaian adults",
+        "management": "Lifestyle + medication (ACE-I, ARB, CCB, diuretics)",
+        "monitoring": "BP checks, renal function, lipids",
+        "icd10": "I10",
+        "complications": "Stroke, heart disease, kidney disease"
+      },
+      "diabetes": {
+        "rising_prevalence": "Urban Ghana ~6-8%",
+        "management": "Diet, exercise, metformin, insulin",
+        "monitoring": "HbA1c every 3 months, foot exams",
+        "icd10": "E11.9",
+        "complications": "Retinopathy, nephropathy, neuropathy"
+      },
+      "sickle_cell_disease": {
+        "prevalence": "15-30% carrier rate in Ghana",
+        "crisis_management": "Hydration, pain management, oxygen",
+        "icd10": "D57.0",
+        "special_consideration": "Avoid triggers, prophylactic penicillin"
+      },
+      "typhoid": {
+        "presentation": "Prolonged fever, headache, abdominal pain",
+        "diagnostic": "Blood culture, Widal test",
+        "treatment": "Ceftriaxone or azithromycin",
+        "icd10": "A01.0"
+      }
+    },
+    "traditional_medicine": {
+      "recognition": "Many Ghanaians use traditional remedies alongside modern medicine",
+      "documentation": "Social history should ask about traditional medicine use",
+      "interaction_screening": "Check for herb-drug interactions (common: antimalarials + herbs)"
+    },
+    "language_support": {
+      "interface": "English (primary), with local language support for patient instructions",
+      "common_languages": "Twi, Ga, Ewe, Dagbani",
+      "patient_education": "Printable instructions in local languages"
+    }
+  },
+
+  "performance_requirements": {
+    "encounter_times": {
+      "encounter_creation": "<1 second",
+      "auto_save": "Every 2 minutes in background",
+      "icd10_search": "<300ms",
+      "load_patient_context": "<500ms"
+    },
+    "data_completeness": {
+      "required_fields": "Chief complaint, at least one diagnosis, disposition",
+      "target_completeness": ">90% of encounters have complete SOAP documentation"
+    }
+  },
+
+  "analytics_and_reporting": {
+    "key_metrics": [
+      {
+        "metric": "Average Encounter Duration",
+        "formula": "(completed_at - started_at) for completed encounters",
+        "target": "<20 minutes for routine visits"
+      },
+      {
+        "metric": "Top Diagnoses",
+        "description": "Most common ICD-10 codes by frequency",
+        "use": "Epidemiology, resource planning"
+      },
+      {
+        "metric": "Encounter Completion Rate",
+        "formula": "(Completed encounters / Started encounters) × 100",
+        "target": ">95%"
+      },
+      {
+        "metric": "Documentation Quality Score",
+        "formula": "Completeness of SOAP sections",
+        "target": ">80% fully documented"
+      },
+      {
+        "metric": "NHIS Claim Accuracy",
+        "description": "% of encounters with valid ICD-10 codes",
+        "target": "100%"
+      }
+    ],
+    "dashboards": [
+      {
+        "name": "Doctor Dashboard",
+        "metrics": [
+          "My encounters today (in-progress, completed)",
+          "Patients seen this week/month",
+          "Most common diagnoses I make",
+          "Average encounter duration"
+        ]
+      },
+      {
+        "name": "Clinical Quality Dashboard",
+        "metrics": [
+          "Encounters missing diagnoses",
+          "Unsigned encounters >24 hours",
+          "Preventive care opportunities (screenings due)",
+          "Chronic disease management metrics"
+        ]
+      },
+      {
+        "name": "Epidemiology Dashboard",
+        "metrics": [
+          "Disease prevalence by ICD-10 code",
+          "Seasonal trends (e.g., malaria spikes)",
+          "Geographic distribution",
+          "Age/gender breakdown"
+        ]
+      }
+    ]
+  },
+
+  "success_criteria": {
+    "functional": [
+      "Doctors can create and complete encounters in <20 minutes",
+      "100% of encounters have at least one ICD-10 diagnosis",
+      "Clinical decision support alerts work (allergy, interactions)",
+      "SOAP documentation is complete and searchable",
+      "Orders (lab/radiology) automatically created"
+    ],
+    "usability": [
+      "Doctors rate system 4+ stars (ease of use)",
+      "Documentation time reduced by 30% vs paper",
+      "Template usage >50% of encounters",
+      "ICD-10 search finds codes in <3 clicks"
+    ],
+    "clinical_quality": [
+      "Improved diagnosis accuracy (via ICD-10 coding)",
+      "Reduced medication errors (via allergy/interaction alerts)",
+      "Better continuity of care (problem list visibility)",
+      "Preventive care reminders followed >60% of time"
+    ]
+  }
+}

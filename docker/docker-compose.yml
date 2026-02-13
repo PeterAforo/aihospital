@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: medicare-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  adminer:
+    image: adminer
+    container_name: medicare-adminer
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  redis_data:

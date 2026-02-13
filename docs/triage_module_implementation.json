@@ -1,0 +1,1346 @@
+{
+  "module_name": "Triage & Vital Signs Module",
+  "project": "MediCare Ghana Hospital Management System",
+  "phase": "Phase 2 - Clinical Core (Month 4)",
+  "priority": "Critical - Missing Link in Patient Flow",
+  "implementation_time": "1-2 weeks",
+  
+  "module_overview": {
+    "description": "Nurse-operated triage station for initial patient assessment, vital signs capture, and priority assignment before doctor consultation.",
+    "position_in_workflow": "Between appointment/queue and doctor consultation",
+    "key_objectives": [
+      "Capture vital signs for all patients before consultation",
+      "Assign triage priority levels (Red/Orange/Yellow/Green/Blue)",
+      "Document chief complaint and presenting symptoms",
+      "Re-prioritize walk-in queue based on clinical urgency",
+      "Provide early warning for deteriorating patients",
+      "Pre-populate EMR with vital signs for doctors",
+      "Track triage wait times and nurse performance"
+    ],
+    "clinical_standards": {
+      "triage_system": "Manchester Triage System (MTS) adapted for Ghana",
+      "vital_signs_standard": "World Health Organization (WHO) guidelines",
+      "pediatric_considerations": "Age-specific vital signs ranges",
+      "emergency_protocols": "Ghana Health Service emergency triage protocols"
+    }
+  },
+
+  "workflow_integration": {
+    "patient_flow": {
+      "step_1": "Patient arrives → Registration (if new)",
+      "step_2": "Check-in at reception → Appointment created or added to walk-in queue",
+      "step_3": "🆕 TRIAGE → Nurse calls patient, takes vital signs, assigns priority",
+      "step_4": "Patient returns to waiting area with updated priority",
+      "step_5": "Queue re-orders by triage priority (Red first, then Orange, Yellow, Green)",
+      "step_6": "Doctor calls patient → Consultation (vital signs already captured)",
+      "step_7": "Continue to lab/pharmacy/billing as needed"
+    },
+    "queue_enhancement": {
+      "before_triage": "Queue by arrival time (FIFO)",
+      "after_triage": "Queue by priority level, then arrival time within same level",
+      "example": [
+        "Red - Emergency (chest pain) - Immediate",
+        "Orange - Very Urgent (high fever) - Within 10 min",
+        "Orange - Very Urgent (severe pain) - Within 10 min",
+        "Yellow - Urgent (moderate illness) - Within 60 min",
+        "Green - Standard (routine checkup) - Normal queue",
+        "Green - Standard (minor complaint) - Normal queue"
+      ]
+    }
+  },
+
+  "triage_priority_levels": {
+    "system": "Manchester Triage System (5 levels)",
+    "levels": [
+      {
+        "level": 1,
+        "name": "Red - Immediate",
+        "color": "#DC2626",
+        "target_time": "Immediate (0 minutes)",
+        "description": "Life-threatening condition requiring immediate intervention",
+        "examples": [
+          "Cardiac arrest",
+          "Severe respiratory distress",
+          "Uncontrolled bleeding",
+          "Unconscious/Unresponsive",
+          "Severe trauma",
+          "Stroke symptoms (FAST positive)",
+          "Seizure in progress",
+          "Chest pain with SOB"
+        ],
+        "vital_signs_triggers": {
+          "blood_pressure_systolic": "<90 or >180",
+          "heart_rate": "<50 or >120",
+          "respiratory_rate": "<10 or >30",
+          "spo2": "<90%",
+          "temperature": ">40°C or <35°C",
+          "consciousness": "Unresponsive or GCS <13"
+        },
+        "action": "Bypass queue entirely, immediate doctor notification, alert emergency team"
+      },
+      {
+        "level": 2,
+        "name": "Orange - Very Urgent",
+        "color": "#EA580C",
+        "target_time": "Within 10 minutes",
+        "description": "Potentially serious condition requiring urgent attention",
+        "examples": [
+          "Severe pain (8-10/10)",
+          "High fever with altered mental state",
+          "Moderate respiratory distress",
+          "Persistent vomiting",
+          "Severe headache (sudden onset)",
+          "Suspected fracture with deformity",
+          "Diabetic crisis symptoms",
+          "Pregnant woman with complications"
+        ],
+        "vital_signs_triggers": {
+          "blood_pressure_systolic": "90-100 or 170-180",
+          "heart_rate": "50-60 or 110-120",
+          "respiratory_rate": "25-30 or 10-12",
+          "spo2": "90-93%",
+          "temperature": "39-40°C",
+          "pain_scale": "8-10/10"
+        },
+        "action": "Jump to front of queue, doctor notified within 5 minutes"
+      },
+      {
+        "level": 3,
+        "name": "Yellow - Urgent",
+        "color": "#EAB308",
+        "target_time": "Within 60 minutes",
+        "description": "Moderate symptoms requiring timely attention",
+        "examples": [
+          "Moderate pain (5-7/10)",
+          "Fever without alarming symptoms",
+          "Minor bleeding (controlled)",
+          "Abdominal pain",
+          "Ear pain",
+          "Minor burns",
+          "Suspected infection",
+          "Diarrhea/vomiting (stable vitals)"
+        ],
+        "vital_signs_triggers": {
+          "blood_pressure_systolic": "100-110 or 160-170",
+          "heart_rate": "60-100",
+          "respiratory_rate": "12-24",
+          "spo2": "94-95%",
+          "temperature": "38-39°C",
+          "pain_scale": "5-7/10"
+        },
+        "action": "Priority queue position, normal workflow"
+      },
+      {
+        "level": 4,
+        "name": "Green - Standard",
+        "color": "#16A34A",
+        "target_time": "Within 2 hours",
+        "description": "Non-urgent issues, stable patients",
+        "examples": [
+          "Mild pain (1-4/10)",
+          "Routine follow-up",
+          "Minor cold/cough",
+          "Skin rash (no systemic symptoms)",
+          "Minor injury (no suspected fracture)",
+          "Medication refill",
+          "Health screening"
+        ],
+        "vital_signs_triggers": {
+          "all_vitals": "Within normal ranges",
+          "pain_scale": "1-4/10"
+        },
+        "action": "Normal queue, standard wait time"
+      },
+      {
+        "level": 5,
+        "name": "Blue - Non-urgent",
+        "color": "#3B82F6",
+        "target_time": "Within 4 hours or can be rescheduled",
+        "description": "Very minor issues that can wait",
+        "examples": [
+          "Minor questions",
+          "Prescription queries",
+          "Immunization (well child)",
+          "Minor administrative issues",
+          "Health education request"
+        ],
+        "vital_signs_triggers": {
+          "all_vitals": "Normal",
+          "no_pain": true
+        },
+        "action": "Can wait or be rescheduled to another day"
+      }
+    ],
+    "decision_support": {
+      "algorithm": "Automatic suggestion based on vital signs + chief complaint",
+      "nurse_override": "Nurse can adjust based on clinical judgment",
+      "escalation_triggers": [
+        "Any vital sign in Red range → Automatic Red triage",
+        "2+ vital signs in Orange range → Suggest Orange",
+        "Patient reports severe pain + abnormal vitals → Escalate priority"
+      ]
+    }
+  },
+
+  "vital_signs_specification": {
+    "standard_vitals": [
+      {
+        "name": "Blood Pressure",
+        "type": "compound",
+        "unit": "mmHg",
+        "components": {
+          "systolic": {
+            "label": "Systolic (SBP)",
+            "normal_range_adult": "90-120 mmHg",
+            "critical_low": "<90",
+            "critical_high": ">180",
+            "validation": "50-300 mmHg"
+          },
+          "diastolic": {
+            "label": "Diastolic (DBP)",
+            "normal_range_adult": "60-80 mmHg",
+            "critical_low": "<60",
+            "critical_high": ">120",
+            "validation": "30-200 mmHg"
+          }
+        },
+        "measurement_method": "Automated BP monitor or manual sphygmomanometer",
+        "position": "Sitting, arm at heart level, after 5 min rest",
+        "display_format": "120/80 mmHg"
+      },
+      {
+        "name": "Temperature",
+        "type": "numeric",
+        "unit": "°C (Celsius)",
+        "normal_range_adult": "36.5-37.5°C",
+        "normal_range_child": "36.5-37.5°C",
+        "fever_threshold": ">37.5°C",
+        "high_fever": ">39°C",
+        "critical_low": "<35°C (Hypothermia)",
+        "critical_high": ">40°C (Hyperpyrexia)",
+        "validation": "30-45°C",
+        "measurement_sites": [
+          "Oral (most common)",
+          "Axillary (armpit - children)",
+          "Tympanic (ear)",
+          "Rectal (most accurate, used for infants)"
+        ],
+        "conversion": "°F = (°C × 9/5) + 32",
+        "display_format": "37.2°C"
+      },
+      {
+        "name": "Pulse/Heart Rate",
+        "type": "numeric",
+        "unit": "bpm (beats per minute)",
+        "normal_range_adult": "60-100 bpm",
+        "normal_range_child_1_12": "80-120 bpm",
+        "normal_range_infant": "100-160 bpm",
+        "critical_low": "<50 bpm (Bradycardia)",
+        "critical_high": ">120 bpm (Tachycardia)",
+        "validation": "30-250 bpm",
+        "measurement_method": "Pulse oximeter or manual palpation",
+        "measurement_sites": [
+          "Radial (wrist - most common)",
+          "Carotid (neck)",
+          "Apical (chest - children)"
+        ],
+        "additional_data": {
+          "rhythm": ["Regular", "Irregular"],
+          "strength": ["Weak", "Normal", "Bounding"]
+        },
+        "display_format": "72 bpm"
+      },
+      {
+        "name": "Respiratory Rate",
+        "type": "numeric",
+        "unit": "breaths/min",
+        "normal_range_adult": "12-20 breaths/min",
+        "normal_range_child": "20-30 breaths/min",
+        "normal_range_infant": "30-60 breaths/min",
+        "critical_low": "<10 breaths/min",
+        "critical_high": ">30 breaths/min (adult)",
+        "validation": "5-60 breaths/min",
+        "measurement_method": "Count breaths for 30 seconds, multiply by 2",
+        "observation": "Look for chest rise/fall, listen for sounds",
+        "additional_data": {
+          "pattern": ["Regular", "Irregular", "Labored"],
+          "depth": ["Shallow", "Normal", "Deep"],
+          "sounds": ["Clear", "Wheezing", "Crackles", "Stridor"]
+        },
+        "display_format": "16 /min"
+      },
+      {
+        "name": "SpO2 (Oxygen Saturation)",
+        "type": "numeric",
+        "unit": "%",
+        "normal_range": "95-100%",
+        "hypoxemia": "<95%",
+        "critical": "<90%",
+        "severe_hypoxemia": "<85%",
+        "validation": "70-100%",
+        "measurement_method": "Pulse oximeter (finger or ear)",
+        "notes": "Should be measured on all patients, especially respiratory complaints",
+        "factors_affecting": [
+          "Nail polish (remove before measurement)",
+          "Poor circulation",
+          "Carbon monoxide poisoning (false high reading)"
+        ],
+        "display_format": "98%"
+      },
+      {
+        "name": "Weight",
+        "type": "numeric",
+        "unit": "kg",
+        "validation": "0.5-300 kg",
+        "measurement_method": "Digital scale",
+        "pediatric_importance": "Critical for medication dosing in children",
+        "display_format": "70 kg"
+      },
+      {
+        "name": "Height",
+        "type": "numeric",
+        "unit": "cm",
+        "validation": "40-250 cm",
+        "measurement_method": "Stadiometer or measuring tape",
+        "display_format": "170 cm"
+      },
+      {
+        "name": "BMI (Body Mass Index)",
+        "type": "calculated",
+        "formula": "weight (kg) / (height (m))²",
+        "unit": "kg/m²",
+        "auto_calculated": true,
+        "categories": {
+          "underweight": "<18.5",
+          "normal": "18.5-24.9",
+          "overweight": "25-29.9",
+          "obese_class_1": "30-34.9",
+          "obese_class_2": "35-39.9",
+          "obese_class_3": "≥40"
+        },
+        "display_format": "24.2 kg/m² (Normal)"
+      },
+      {
+        "name": "Pain Scale",
+        "type": "numeric",
+        "scale": "0-10",
+        "labels": {
+          "0": "No pain",
+          "1-3": "Mild pain",
+          "4-6": "Moderate pain",
+          "7-9": "Severe pain",
+          "10": "Worst pain imaginable"
+        },
+        "assessment_method": "Ask patient: 'On a scale of 0-10, how bad is your pain?'",
+        "pediatric_scale": "Wong-Baker FACES scale (for children)",
+        "include_pain_location": true,
+        "include_pain_character": ["Sharp", "Dull", "Burning", "Throbbing", "Cramping"],
+        "display_format": "7/10 (Severe)"
+      }
+    ],
+    "pediatric_adjustments": {
+      "age_based_ranges": {
+        "newborn_0_3_months": {
+          "heart_rate": "100-160 bpm",
+          "respiratory_rate": "30-60 /min",
+          "systolic_bp": "60-90 mmHg"
+        },
+        "infant_3_12_months": {
+          "heart_rate": "100-150 bpm",
+          "respiratory_rate": "24-40 /min",
+          "systolic_bp": "70-100 mmHg"
+        },
+        "toddler_1_3_years": {
+          "heart_rate": "90-140 bpm",
+          "respiratory_rate": "20-30 /min",
+          "systolic_bp": "80-110 mmHg"
+        },
+        "preschool_3_6_years": {
+          "heart_rate": "80-120 bpm",
+          "respiratory_rate": "20-25 /min",
+          "systolic_bp": "90-110 mmHg"
+        },
+        "school_age_6_12_years": {
+          "heart_rate": "70-110 bpm",
+          "respiratory_rate": "18-22 /min",
+          "systolic_bp": "90-120 mmHg"
+        },
+        "adolescent_12_18_years": {
+          "heart_rate": "60-100 bpm",
+          "respiratory_rate": "12-20 /min",
+          "systolic_bp": "100-120 mmHg"
+        }
+      }
+    },
+    "pregnancy_considerations": {
+      "normal_changes": [
+        "Heart rate increases by 10-20 bpm",
+        "Blood pressure may decrease in 2nd trimester",
+        "Respiratory rate may increase slightly"
+      ],
+      "alert_thresholds": {
+        "systolic_bp": ">140 mmHg (Pre-eclampsia risk)",
+        "diastolic_bp": ">90 mmHg",
+        "severe_headache": "Urgent evaluation",
+        "visual_disturbances": "Urgent evaluation"
+      }
+    }
+  },
+
+  "chief_complaint_documentation": {
+    "description": "Patient's primary reason for visit in their own words",
+    "capture_method": "Free text + Structured dropdown",
+    "components": {
+      "complaint": {
+        "type": "text",
+        "label": "Chief Complaint",
+        "examples": [
+          "Fever for 3 days",
+          "Chest pain since morning",
+          "Cough and difficulty breathing",
+          "Abdominal pain"
+        ],
+        "max_length": 500
+      },
+      "common_complaints_dropdown": {
+        "description": "Quick select for common complaints",
+        "categories": {
+          "general": [
+            "Fever",
+            "Weakness/Fatigue",
+            "Weight loss",
+            "Loss of appetite",
+            "Night sweats"
+          ],
+          "respiratory": [
+            "Cough",
+            "Shortness of breath",
+            "Chest pain",
+            "Sore throat",
+            "Runny nose"
+          ],
+          "gastrointestinal": [
+            "Abdominal pain",
+            "Nausea/Vomiting",
+            "Diarrhea",
+            "Constipation",
+            "Heartburn"
+          ],
+          "cardiovascular": [
+            "Chest pain",
+            "Palpitations",
+            "Swelling of legs",
+            "Dizziness"
+          ],
+          "neurological": [
+            "Headache",
+            "Dizziness",
+            "Numbness/Tingling",
+            "Confusion",
+            "Seizure"
+          ],
+          "musculoskeletal": [
+            "Back pain",
+            "Joint pain",
+            "Muscle pain",
+            "Injury"
+          ],
+          "skin": [
+            "Rash",
+            "Itching",
+            "Wound",
+            "Swelling"
+          ],
+          "other": [
+            "Follow-up visit",
+            "Medication refill",
+            "Test results review",
+            "Routine checkup"
+          ]
+        }
+      },
+      "duration": {
+        "type": "text",
+        "label": "How long?",
+        "examples": [
+          "3 days",
+          "2 weeks",
+          "Since this morning",
+          "1 month"
+        ]
+      },
+      "severity": {
+        "type": "select",
+        "options": ["Mild", "Moderate", "Severe"],
+        "description": "Patient's subjective assessment"
+      },
+      "associated_symptoms": {
+        "type": "multi-select",
+        "label": "Other symptoms",
+        "description": "Additional symptoms patient is experiencing"
+      }
+    }
+  },
+
+  "triage_workflow_detailed": {
+    "nurse_interface_workflow": [
+      {
+        "step": 1,
+        "screen": "Queue/Patient List",
+        "nurse_sees": "List of patients waiting to be triaged (status = CHECKED_IN)",
+        "nurse_action": "Calls next patient by queue number",
+        "system_action": "Displays patient summary (name, MRN, age, photo, allergies)"
+      },
+      {
+        "step": 2,
+        "screen": "Vital Signs Entry",
+        "nurse_action": "Measures and enters vital signs",
+        "auto_calculations": [
+          "BMI from height and weight",
+          "Pulse pressure (SBP - DBP)",
+          "MAP (Mean Arterial Pressure) = DBP + (SBP - DBP)/3"
+        ],
+        "real_time_alerts": [
+          "Critical values highlighted in red",
+          "Warning values in orange",
+          "Suggested triage level appears automatically"
+        ],
+        "validation": "Cannot proceed if vital signs out of acceptable range (30-300 mmHg BP, etc.)"
+      },
+      {
+        "step": 3,
+        "screen": "Chief Complaint & Assessment",
+        "nurse_action": "Documents chief complaint, duration, severity",
+        "system_provides": "Common complaints dropdown for quick selection",
+        "clinical_notes": "Free text area for additional observations"
+      },
+      {
+        "step": 4,
+        "screen": "Triage Level Assignment",
+        "system_suggests": "Triage level based on vital signs + pain score",
+        "nurse_reviews": "Suggested level (Red/Orange/Yellow/Green/Blue)",
+        "nurse_can_override": "If clinical judgment differs from system suggestion",
+        "required_if_override": "Reason for override (free text)"
+      },
+      {
+        "step": 5,
+        "screen": "Confirmation & Save",
+        "nurse_reviews": "Complete triage summary",
+        "nurse_confirms": "Click 'Save Triage'",
+        "system_actions": [
+          "Save triage record",
+          "Update appointment status to TRIAGED",
+          "Re-prioritize queue based on triage level",
+          "If Red (Immediate): Alert doctor via SMS/notification",
+          "If Orange (Very Urgent): Move to front of queue",
+          "Print triage card for patient (optional)"
+        ]
+      },
+      {
+        "step": 6,
+        "screen": "Patient Returns to Waiting",
+        "nurse_instructs": "Patient returns to waiting area",
+        "system_updates": "Queue display shows updated priority order",
+        "next_action": "Nurse calls next patient from untriaged list"
+      }
+    ],
+    "time_targets": {
+      "per_patient": "3-5 minutes",
+      "peak_efficiency": "12-20 patients per hour"
+    }
+  },
+
+  "database_schema": {
+    "triage_records": {
+      "table_name": "triage_records",
+      "description": "Complete triage assessment for each patient visit",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NOT NULL REFERENCES tenants(id)",
+        "patient_id UUID NOT NULL REFERENCES patients(id)",
+        "appointment_id UUID NOT NULL REFERENCES appointments(id)",
+        "triaged_by UUID NOT NULL REFERENCES users(id) (Nurse who performed triage)",
+        "triage_date DATE NOT NULL",
+        "triage_time TIME NOT NULL",
+        
+        "-- Vital Signs --",
+        "bp_systolic INTEGER (mmHg)",
+        "bp_diastolic INTEGER (mmHg)",
+        "temperature DECIMAL(4,2) (°C)",
+        "temperature_site VARCHAR(20) (oral, axillary, tympanic, rectal)",
+        "pulse_rate INTEGER (bpm)",
+        "pulse_rhythm VARCHAR(20) (regular, irregular)",
+        "respiratory_rate INTEGER (breaths/min)",
+        "respiratory_pattern VARCHAR(20) (regular, irregular, labored)",
+        "spo2 INTEGER (%, oxygen saturation)",
+        "weight DECIMAL(5,2) (kg)",
+        "height INTEGER (cm)",
+        "bmi DECIMAL(4,1) (auto-calculated)",
+        "pain_scale INTEGER (0-10)",
+        "pain_location TEXT",
+        "pain_character VARCHAR(50) (sharp, dull, burning, etc.)",
+        
+        "-- Assessment --",
+        "chief_complaint TEXT NOT NULL",
+        "symptom_duration VARCHAR(100)",
+        "symptom_severity VARCHAR(20) (mild, moderate, severe)",
+        "associated_symptoms TEXT[] (array)",
+        "clinical_notes TEXT (Nurse's observations)",
+        
+        "-- Triage Classification --",
+        "triage_level INTEGER NOT NULL (1-5: Red/Orange/Yellow/Green/Blue)",
+        "triage_level_name VARCHAR(50) (Red - Immediate, etc.)",
+        "triage_level_color VARCHAR(7) (Hex color)",
+        "suggested_triage_level INTEGER (System's suggestion)",
+        "override_reason TEXT (If nurse overrode system suggestion)",
+        
+        "-- Timestamps --",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_patient_date ON (patient_id, triage_date)",
+        "INDEX idx_appointment ON (appointment_id)",
+        "INDEX idx_triage_level ON (triage_level)",
+        "INDEX idx_tenant_date ON (tenant_id, triage_date)"
+      ],
+      "constraints": [
+        "UNIQUE (appointment_id) - One triage per appointment",
+        "CHECK (triage_level BETWEEN 1 AND 5)",
+        "CHECK (bp_systolic > bp_diastolic)"
+      ]
+    },
+    "vital_signs_history": {
+      "table_name": "vital_signs_history",
+      "description": "Separate table for tracking vital signs over time (for trending)",
+      "note": "Can be a view of triage_records or separate for non-triage vital checks",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "patient_id UUID NOT NULL REFERENCES patients(id)",
+        "recorded_at TIMESTAMP NOT NULL",
+        "recorded_by UUID REFERENCES users(id)",
+        "source VARCHAR(50) (triage, consultation, nursing_round, etc.)",
+        "bp_systolic INTEGER",
+        "bp_diastolic INTEGER",
+        "temperature DECIMAL(4,2)",
+        "pulse_rate INTEGER",
+        "respiratory_rate INTEGER",
+        "spo2 INTEGER",
+        "weight DECIMAL(5,2)",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "use_case": "Charts showing vital signs trends over multiple visits"
+    },
+    "triage_alerts": {
+      "table_name": "triage_alerts",
+      "description": "Critical triage alerts sent to doctors",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "triage_id UUID NOT NULL REFERENCES triage_records(id)",
+        "alert_type VARCHAR(50) (red_triage, critical_vitals)",
+        "alert_message TEXT",
+        "sent_to UUID[] (Array of doctor user IDs)",
+        "sent_at TIMESTAMP NOT NULL",
+        "acknowledged_by UUID REFERENCES users(id)",
+        "acknowledged_at TIMESTAMP",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ]
+    }
+  },
+
+  "api_endpoints": {
+    "base_path": "/api/triage",
+    "authentication": "Required (JWT)",
+    "endpoints": [
+      {
+        "path": "/api/triage/queue",
+        "method": "GET",
+        "name": "Get Patients Awaiting Triage",
+        "description": "List of checked-in patients who haven't been triaged yet",
+        "permissions": ["TRIAGE_READ"],
+        "query_params": {
+          "date": "DATE (optional, defaults to today)",
+          "status": "STRING (optional: pending, in_progress, completed)"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "queue": [
+                {
+                  "appointmentId": "uuid",
+                  "queueNumber": "W-005",
+                  "patient": {
+                    "id": "uuid",
+                    "mrn": "RDG-2024-00001",
+                    "firstName": "Kwame",
+                    "lastName": "Mensah",
+                    "photo": "url",
+                    "age": 45,
+                    "gender": "Male",
+                    "allergies": ["Penicillin"]
+                  },
+                  "checkedInAt": "2024-01-15T09:15:00Z",
+                  "waitTime": "15 minutes",
+                  "chiefComplaint": "Fever for 3 days",
+                  "isTriaged": false
+                }
+              ],
+              "totalWaiting": 5,
+              "averageTriageTime": "4 minutes"
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/triage",
+        "method": "POST",
+        "name": "Create Triage Record",
+        "description": "Save complete triage assessment",
+        "permissions": ["TRIAGE_CREATE"],
+        "request_body": {
+          "appointmentId": "UUID (required)",
+          "patientId": "UUID (required)",
+          "vitalSigns": {
+            "bpSystolic": "INTEGER (required)",
+            "bpDiastolic": "INTEGER (required)",
+            "temperature": "DECIMAL (required)",
+            "temperatureSite": "STRING (oral/axillary/tympanic)",
+            "pulseRate": "INTEGER (required)",
+            "pulseRhythm": "STRING (regular/irregular)",
+            "respiratoryRate": "INTEGER (required)",
+            "respiratoryPattern": "STRING (regular/irregular/labored)",
+            "spo2": "INTEGER (required)",
+            "weight": "DECIMAL (optional)",
+            "height": "INTEGER (optional)",
+            "painScale": "INTEGER 0-10 (optional)",
+            "painLocation": "STRING (optional)",
+            "painCharacter": "STRING (optional)"
+          },
+          "assessment": {
+            "chiefComplaint": "STRING (required)",
+            "symptomDuration": "STRING (optional)",
+            "symptomSeverity": "STRING (mild/moderate/severe)",
+            "associatedSymptoms": "ARRAY of strings",
+            "clinicalNotes": "STRING (optional)"
+          },
+          "triageLevel": "INTEGER 1-5 (required)",
+          "overrideReason": "STRING (if triageLevel != suggestedTriageLevel)"
+        },
+        "validation": [
+          "Vital signs within acceptable ranges",
+          "BP systolic > diastolic",
+          "Triage level 1-5",
+          "Appointment must exist and be in CHECKED_IN status",
+          "Patient must match appointment"
+        ],
+        "response": {
+          "success": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "triageRecord": "{ complete triage object }",
+                "suggestedTriageLevel": 3,
+                "actualTriageLevel": 2,
+                "queueUpdated": true,
+                "alertSent": false
+              }
+            }
+          }
+        },
+        "side_effects": [
+          "Update appointment status to TRIAGED",
+          "Re-prioritize walk-in queue based on triage level",
+          "If triage level = 1 (Red): Send alert to doctor on duty",
+          "If triage level = 2 (Orange): Move patient to front of queue",
+          "Create vital_signs_history record",
+          "Log triage completion time"
+        ]
+      },
+      {
+        "path": "/api/triage/:id",
+        "method": "GET",
+        "name": "Get Triage Record",
+        "description": "Retrieve complete triage details",
+        "permissions": ["TRIAGE_READ"],
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "triage": "{ full triage record }",
+              "patient": "{ patient summary }",
+              "appointment": "{ appointment summary }",
+              "nurse": "{ nurse who performed triage }"
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/triage/:id",
+        "method": "PUT",
+        "name": "Update Triage Record",
+        "description": "Modify triage (e.g., if vital signs need correction)",
+        "permissions": ["TRIAGE_UPDATE"],
+        "note": "Only allow updates within 24 hours of creation",
+        "request_body": "Same as POST but all fields optional",
+        "side_effects": [
+          "Create audit log of changes",
+          "Re-evaluate triage level if vital signs changed significantly"
+        ]
+      },
+      {
+        "path": "/api/triage/patient/:patientId/history",
+        "method": "GET",
+        "name": "Get Patient Triage History",
+        "description": "Fetch all triage records for a patient",
+        "permissions": ["TRIAGE_READ"],
+        "query_params": {
+          "limit": "INTEGER (default 10)",
+          "date_from": "DATE (optional)",
+          "date_to": "DATE (optional)"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "triageRecords": "[array of triage records]",
+              "vitalSignsTrend": {
+                "description": "Chart data for trending",
+                "bloodPressure": "[{ date, systolic, diastolic }]",
+                "temperature": "[{ date, value }]",
+                "weight": "[{ date, value }]"
+              }
+            }
+          }
+        },
+        "use_case": "Doctor can see vital signs trends during consultation"
+      },
+      {
+        "path": "/api/triage/suggest-level",
+        "method": "POST",
+        "name": "Get AI-Suggested Triage Level",
+        "description": "Real-time triage level suggestion based on vital signs",
+        "permissions": ["TRIAGE_CREATE"],
+        "request_body": {
+          "vitalSigns": "{ all vital signs }",
+          "chiefComplaint": "STRING (optional)",
+          "painScale": "INTEGER (optional)"
+        },
+        "logic": [
+          "Apply triage decision rules",
+          "Check vital signs against thresholds",
+          "Consider pain scale",
+          "Analyze chief complaint keywords (chest pain = higher priority)",
+          "Return suggested level with confidence score"
+        ],
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "suggestedLevel": 2,
+              "suggestedLevelName": "Orange - Very Urgent",
+              "confidence": 0.85,
+              "triggers": [
+                "High blood pressure: 180/110",
+                "Severe pain: 9/10"
+              ],
+              "recommendation": "Patient should be seen within 10 minutes"
+            }
+          }
+        },
+        "use_case": "Called in real-time as nurse enters vital signs to assist with triage decision"
+      },
+      {
+        "path": "/api/triage/analytics",
+        "method": "GET",
+        "name": "Triage Analytics",
+        "description": "Statistics and metrics for triage performance",
+        "permissions": ["TRIAGE_ANALYTICS"],
+        "query_params": {
+          "date_from": "DATE (required)",
+          "date_to": "DATE (required)",
+          "nurse_id": "UUID (optional - filter by specific nurse)"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "totalTriaged": 150,
+              "averageTriageTime": "4.2 minutes",
+              "triageLevelDistribution": {
+                "red": 5,
+                "orange": 15,
+                "yellow": 50,
+                "green": 70,
+                "blue": 10
+              },
+              "criticalAlertsGenerated": 5,
+              "nursePerformance": [
+                {
+                  "nurseId": "uuid",
+                  "nurseName": "Alice Owusu",
+                  "patientsTriaged": 50,
+                  "averageTime": "3.8 minutes"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+
+  "frontend_components": {
+    "component_structure": [
+      {
+        "name": "TriageStation",
+        "type": "Main Page Component",
+        "route": "/triage",
+        "description": "Nurse's triage workstation",
+        "users": "Triage nurses",
+        "layout": {
+          "left_panel": "Queue of patients waiting to be triaged (30% width)",
+          "main_area": "Triage form (70% width)",
+          "top_bar": "Current patient being triaged + Timer"
+        },
+        "state": {
+          "currentPatient": "Patient object or null",
+          "triageQueue": "Array of patients",
+          "vitalSigns": "Object",
+          "assessment": "Object",
+          "suggestedTriageLevel": "Number or null",
+          "isSubmitting": "Boolean"
+        },
+        "features": [
+          "Auto-refresh queue every 30 seconds",
+          "Select patient from queue → Load patient summary",
+          "Timer showing how long current triage has taken",
+          "Keyboard shortcuts (Enter to move to next field, Ctrl+S to save)"
+        ]
+      },
+      {
+        "name": "TriageQueue",
+        "type": "Component (Left Panel)",
+        "description": "List of patients awaiting triage",
+        "display": [
+          "Queue number",
+          "Patient name + photo",
+          "Age, Gender",
+          "Check-in time",
+          "Wait time (updates every minute)",
+          "Chief complaint (if already provided)"
+        ],
+        "actions": [
+          "Click patient → Load into triage form",
+          "Status indicator (Waiting, In Progress, Completed)"
+        ],
+        "sorting": "By check-in time (oldest first)",
+        "refresh": "Real-time via WebSocket or 30-second polling"
+      },
+      {
+        "name": "VitalSignsForm",
+        "type": "Component (Main Form Section)",
+        "description": "Vital signs entry form with real-time validation",
+        "fields": [
+          {
+            "name": "Blood Pressure",
+            "inputs": ["Systolic (mmHg)", "Diastolic (mmHg)"],
+            "layout": "Side-by-side",
+            "validation": "Real-time (50-300 mmHg)",
+            "visual_feedback": "Green if normal, Orange if borderline, Red if critical",
+            "auto_calculate": "Pulse pressure = Systolic - Diastolic"
+          },
+          {
+            "name": "Temperature",
+            "inputs": ["Value (°C)", "Site (dropdown)"],
+            "conversion": "Show °F equivalent",
+            "validation": "30-45°C",
+            "visual_feedback": "Color-coded based on fever threshold"
+          },
+          {
+            "name": "Pulse Rate",
+            "inputs": ["Rate (bpm)", "Rhythm (regular/irregular)"],
+            "validation": "30-250 bpm"
+          },
+          {
+            "name": "Respiratory Rate",
+            "inputs": ["Rate (/min)", "Pattern (dropdown)"],
+            "validation": "5-60 /min"
+          },
+          {
+            "name": "SpO2",
+            "inputs": ["% (70-100)"],
+            "critical_alert": "Show warning if <95%"
+          },
+          {
+            "name": "Weight & Height",
+            "inputs": ["Weight (kg)", "Height (cm)"],
+            "auto_calculate": "BMI = weight / (height/100)²",
+            "display": "BMI with category (Underweight/Normal/Overweight/Obese)"
+          },
+          {
+            "name": "Pain Assessment",
+            "inputs": ["Pain scale (0-10)", "Location", "Character"],
+            "visual": "Pain scale with faces (Wong-Baker for children)",
+            "conditional": "Show location/character only if pain > 0"
+          }
+        ],
+        "layout": "Two-column grid on desktop, single column on mobile",
+        "real_time_features": [
+          "As nurse enters values, system calculates suggested triage level",
+          "Critical values highlighted in red with warning icon",
+          "Auto-save draft every 30 seconds to localStorage"
+        ]
+      },
+      {
+        "name": "ChiefComplaintForm",
+        "type": "Component (Main Form Section)",
+        "description": "Document patient's presenting complaint",
+        "fields": [
+          {
+            "name": "Chief Complaint",
+            "type": "Textarea + Dropdown combo",
+            "description": "Free text with common complaints dropdown for quick selection",
+            "common_complaints_button": "Opens modal with categorized complaints",
+            "max_length": 500
+          },
+          {
+            "name": "Duration",
+            "type": "Text input",
+            "placeholder": "e.g., 3 days, 2 weeks, since this morning"
+          },
+          {
+            "name": "Severity",
+            "type": "Radio buttons",
+            "options": ["Mild", "Moderate", "Severe"]
+          },
+          {
+            "name": "Associated Symptoms",
+            "type": "Multi-select checkbox",
+            "options": "Dynamic based on chief complaint category"
+          },
+          {
+            "name": "Clinical Notes",
+            "type": "Textarea",
+            "description": "Nurse's observations",
+            "placeholder": "Any additional relevant information..."
+          }
+        ]
+      },
+      {
+        "name": "TriageLevelSelector",
+        "type": "Component (Main Form Section)",
+        "description": "Assign triage priority level",
+        "display": {
+          "suggested_level": {
+            "show": "Large card with suggested level",
+            "content": "System suggests: Orange - Very Urgent",
+            "reasoning": "Triggers: High BP (180/110), Severe pain (9/10)",
+            "color": "Background color matches triage level color"
+          },
+          "level_selector": {
+            "type": "5 large cards (Red/Orange/Yellow/Green/Blue)",
+            "layout": "Horizontal row",
+            "interaction": "Click to select",
+            "selected_highlight": "Bold border around selected card"
+          }
+        },
+        "each_card_shows": [
+          "Color dot",
+          "Level name (Red - Immediate)",
+          "Target time (Within 10 minutes)",
+          "Brief description"
+        ],
+        "override_handling": {
+          "if_different_from_suggested": "Show text input: 'Why are you overriding the suggested level?'",
+          "required": "Must provide reason if override"
+        }
+      },
+      {
+        "name": "TriageSubmitButton",
+        "type": "Component",
+        "description": "Save triage with confirmation",
+        "validation": "All required fields filled",
+        "on_click": [
+          "Validate form",
+          "Show confirmation modal with summary",
+          "User confirms → POST to /api/triage",
+          "Show success message",
+          "Clear form",
+          "Load next patient from queue automatically"
+        ],
+        "loading_state": "Show spinner while saving",
+        "success_state": "Green checkmark + 'Triage saved!' message"
+      },
+      {
+        "name": "PatientVitalSignsChart",
+        "type": "Component (for Doctor's View)",
+        "description": "Visual chart showing vital signs trends",
+        "route": "/patients/:id/vitals",
+        "charts": [
+          {
+            "type": "Line chart",
+            "data": "Blood pressure over time (systolic and diastolic)",
+            "x_axis": "Date",
+            "y_axis": "mmHg"
+          },
+          {
+            "type": "Line chart",
+            "data": "Temperature over time",
+            "x_axis": "Date",
+            "y_axis": "°C"
+          },
+          {
+            "type": "Line chart",
+            "data": "Weight over time",
+            "x_axis": "Date",
+            "y_axis": "kg"
+          }
+        ],
+        "library": "Recharts or Chart.js",
+        "use_case": "Doctor can see trends during consultation"
+      },
+      {
+        "name": "TriageAlertModal",
+        "type": "Modal Component",
+        "description": "Pops up when Red (Immediate) triage is saved",
+        "trigger": "Automatically shows when triage level = 1",
+        "content": {
+          "title": "🚨 CRITICAL PATIENT ALERT",
+          "patient": "Kwame Mensah (MRN: RDG-2024-00001)",
+          "triage_level": "RED - IMMEDIATE",
+          "vital_signs": "Display critical values",
+          "chief_complaint": "Chest pain with shortness of breath",
+          "actions": [
+            "Alert doctor on duty (SMS sent)",
+            "Patient bypassed queue",
+            "Emergency team notified"
+          ]
+        },
+        "buttons": [
+          "Acknowledge",
+          "View Patient"
+        ]
+      }
+    ]
+  },
+
+  "integration_points": {
+    "with_appointment_module": {
+      "trigger": "Appointment status transitions",
+      "flow": [
+        "Patient checks in → Appointment status = CHECKED_IN",
+        "Triage completed → Appointment status = TRIAGED",
+        "Link triage record to appointment via appointment_id"
+      ],
+      "data_sharing": "Triage record accessible from appointment details"
+    },
+    "with_queue_module": {
+      "enhancement": "Queue re-prioritization after triage",
+      "before_triage": "Queue sorted by: Arrival time (FIFO)",
+      "after_triage": "Queue sorted by: Triage level (Red first), then arrival time within same level",
+      "visual": "Queue display shows triage level color badge next to patient name",
+      "example": [
+        "🔴 Red - Immediate: Kwame Mensah (9:15 AM)",
+        "🟠 Orange - Very Urgent: Ama Asante (9:00 AM)",
+        "🟠 Orange - Very Urgent: Kofi Owusu (9:20 AM)",
+        "🟢 Green - Standard: Yaw Boateng (8:45 AM)"
+      ]
+    },
+    "with_patient_module": {
+      "vital_signs_history": "All triage records linked to patient",
+      "allergies_alert": "Patient allergies displayed prominently during triage",
+      "medical_history": "Chronic conditions visible to nurse for context"
+    },
+    "with_emr_module_future": {
+      "pre_population": "When doctor opens consultation note, vital signs from triage auto-populate",
+      "workflow": "Doctor doesn't need to re-enter vital signs",
+      "benefit": "Saves time, reduces errors"
+    },
+    "with_billing_module_future": {
+      "triage_fee": "Some hospitals charge triage fee",
+      "auto_billing": "Triage completion triggers billing item creation"
+    }
+  },
+
+  "ghana_specific_considerations": {
+    "common_conditions": {
+      "malaria": {
+        "high_priority_if": "Fever + Headache + Chills, especially in children",
+        "vital_signs_alert": "Temperature >38.5°C in child"
+      },
+      "hypertension": {
+        "very_common": "Ghana has high prevalence of hypertension",
+        "screening": "Always measure BP even for non-BP complaints",
+        "critical_threshold": "Systolic >180 or Diastolic >120"
+      },
+      "diabetes": {
+        "complications": "Watch for diabetic emergencies",
+        "vitals": "Check for rapid pulse, confusion (hypoglycemia)"
+      },
+      "sickle_cell_crisis": {
+        "common_in_ghana": "Sickle cell disease prevalent",
+        "triage_high": "Severe pain in known sickle cell patient = Orange/Red",
+        "vitals": "May have tachycardia, low SpO2"
+      },
+      "maternal_health": {
+        "priority": "Pregnant women with complications = high priority",
+        "vitals": "BP >140/90 in pregnancy = Pre-eclampsia risk (Orange/Red)"
+      }
+    },
+    "language_support": {
+      "primary": "English",
+      "common_complaints_translations": {
+        "twi": "Common complaints in Twi for patient communication",
+        "ga": "Common complaints in Ga"
+      }
+    },
+    "equipment_availability": {
+      "basic_required": [
+        "BP monitor (manual or automated)",
+        "Thermometer (digital)",
+        "Pulse oximeter",
+        "Weighing scale",
+        "Stadiometer (height)"
+      ],
+      "nice_to_have": [
+        "Automated vital signs monitor (all-in-one)",
+        "Pediatric blood pressure cuffs"
+      ],
+      "fallback": "If equipment unavailable, manual assessment acceptable but document"
+    }
+  },
+
+  "performance_requirements": {
+    "triage_times": {
+      "target_per_patient": "3-5 minutes",
+      "peak_capacity": "12-20 patients per hour per nurse",
+      "total_wait_for_triage": "<15 minutes from check-in"
+    },
+    "system_performance": {
+      "form_save": "<1 second",
+      "queue_refresh": "Real-time (WebSocket) or <30 second polling",
+      "vital_signs_validation": "Instant (<100ms)",
+      "triage_level_suggestion": "<500ms"
+    },
+    "data_quality": {
+      "vital_signs_capture_rate": ">95% of patients",
+      "triage_level_assignment": "100% of patients",
+      "critical_alert_response_time": "<2 minutes from Red triage to doctor acknowledgment"
+    }
+  },
+
+  "analytics_and_reporting": {
+    "key_metrics": [
+      {
+        "metric": "Average Triage Time",
+        "formula": "Total time spent in triage / Number of patients triaged",
+        "target": "<5 minutes"
+      },
+      {
+        "metric": "Triage Level Distribution",
+        "description": "Percentage breakdown of Red/Orange/Yellow/Green/Blue",
+        "insight": "Helps staffing decisions (if mostly Green, maybe don't need 2 triage nurses)"
+      },
+      {
+        "metric": "Critical Alerts Generated",
+        "description": "Number of Red (Immediate) triage cases",
+        "target": "<5% of total patients"
+      },
+      {
+        "metric": "Vital Signs Abnormality Rate",
+        "description": "Percentage of patients with at least one abnormal vital sign",
+        "use": "Population health monitoring"
+      },
+      {
+        "metric": "Nurse Performance",
+        "description": "Patients triaged per nurse per hour",
+        "benchmark": "12-15 patients/hour"
+      }
+    ],
+    "dashboards": [
+      {
+        "name": "Triage Station Dashboard (for Nurses)",
+        "metrics": [
+          "Patients waiting to be triaged (count)",
+          "Average wait time for triage",
+          "My triage count today",
+          "Critical alerts generated today"
+        ]
+      },
+      {
+        "name": "Clinical Dashboard (for Doctors)",
+        "metrics": [
+          "Patients triaged and waiting by level",
+          "High-priority patients (Red/Orange) waiting",
+          "Average vital signs for today's patients",
+          "Alerts pending acknowledgment"
+        ]
+      },
+      {
+        "name": "Admin Dashboard",
+        "metrics": [
+          "Total patients triaged (daily/weekly/monthly)",
+          "Triage level distribution (pie chart)",
+          "Average triage time trend",
+          "Nurse performance comparison",
+          "Equipment utilization (if tracked)"
+        ]
+      }
+    ]
+  },
+
+  "training_and_documentation": {
+    "nurse_training_materials": [
+      "Triage system orientation (30 min)",
+      "How to use triage station software (1 hour)",
+      "Vital signs measurement techniques (2 hours)",
+      "Triage level decision-making (2 hours)",
+      "Emergency recognition and escalation (1 hour)"
+    ],
+    "quick_reference_guides": [
+      "Triage level criteria (laminated card)",
+      "Normal vital signs ranges by age (posted in triage room)",
+      "Critical vital signs thresholds (posted in triage room)",
+      "Emergency protocols (posted in triage room)"
+    ],
+    "system_documentation": [
+      "User manual for triage nurses",
+      "Troubleshooting guide",
+      "Equipment calibration procedures",
+      "Data privacy and HIPAA compliance"
+    ]
+  },
+
+  "success_criteria": {
+    "functional": [
+      "All patients triaged before seeing doctor",
+      "Vital signs captured for >95% of patients",
+      "Triage level assigned 100% of patients",
+      "Critical alerts sent within 30 seconds of Red triage",
+      "Queue automatically re-prioritizes after triage"
+    ],
+    "performance": [
+      "Average triage time <5 minutes",
+      "Wait for triage <15 minutes from check-in",
+      "12+ patients triaged per nurse per hour",
+      "Zero double-triaging (one triage per appointment)"
+    ],
+    "user_satisfaction": [
+      "Nurses: 4.5+ stars (system is easy to use)",
+      "Doctors: 4.5+ stars (vital signs available, accurate prioritization)",
+      "Patients: Reduced wait times for urgent cases"
+    ],
+    "clinical_impact": [
+      "Emergency cases (Red) seen within 5 minutes",
+      "Very urgent cases (Orange) seen within 15 minutes",
+      "Improved early warning for deteriorating patients"
+    ]
+  }
+}

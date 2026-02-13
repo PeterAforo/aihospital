@@ -1,0 +1,2261 @@
+{
+  "project_name": "Hospital Registration Wizard Implementation",
+  "component": "Multi-Step Hospital & User Registration System",
+  "target_market": "Ghana Healthcare SaaS",
+  "development_priority": "Critical - Phase 1 Foundation",
+  
+  "implementation_overview": {
+    "description": "A professional, multi-step registration wizard that combines hospital/institution registration with admin user account creation in a seamless flow with Ghana-specific validations and verification.",
+    "total_steps": 7,
+    "estimated_completion_time": "5-7 minutes",
+    "expected_completion_rate": "60-70%",
+    "key_features": [
+      "Smart combined wizard with progress tracking",
+      "Auto-save and resume capability",
+      "Real-time validation",
+      "Ghana-specific field validators",
+      "SMS OTP verification",
+      "Email verification",
+      "Document upload",
+      "Plan selection",
+      "Mobile-responsive design",
+      "Accessibility compliant"
+    ]
+  },
+
+  "registration_flow_specification": {
+    "step_1_pre_qualification": {
+      "title": "Get Started with MediCare Ghana",
+      "subtitle": "Join hundreds of hospitals transforming healthcare delivery",
+      "estimated_time": "30 seconds",
+      "progress_percentage": 0,
+      "fields": [
+        {
+          "name": "fullName",
+          "label": "Full Name",
+          "type": "text",
+          "required": true,
+          "placeholder": "e.g., Dr. Kwame Mensah",
+          "validation": {
+            "minLength": 3,
+            "maxLength": 100,
+            "pattern": "^[a-zA-Z\\s\\.]+$",
+            "errorMessage": "Please enter a valid name"
+          }
+        },
+        {
+          "name": "email",
+          "label": "Email Address",
+          "type": "email",
+          "required": true,
+          "placeholder": "your.email@hospital.com",
+          "validation": {
+            "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+            "errorMessage": "Please enter a valid email address",
+            "checkAvailability": true,
+            "apiEndpoint": "/api/registration/check-email"
+          }
+        },
+        {
+          "name": "phoneNumber",
+          "label": "Phone Number",
+          "type": "tel",
+          "required": true,
+          "placeholder": "+233 XX XXX XXXX",
+          "validation": {
+            "pattern": "^(\\+233|0)[2-5][0-9]{8}$",
+            "format": "ghana_phone",
+            "errorMessage": "Please enter a valid Ghana phone number",
+            "checkAvailability": true,
+            "apiEndpoint": "/api/registration/check-phone"
+          },
+          "formatting": {
+            "autoFormat": true,
+            "prefix": "+233",
+            "mask": "+233 XX XXX XXXX"
+          }
+        },
+        {
+          "name": "hospitalName",
+          "label": "Hospital Name",
+          "type": "text",
+          "required": true,
+          "placeholder": "e.g., Ridge Hospital",
+          "validation": {
+            "minLength": 3,
+            "maxLength": 200,
+            "errorMessage": "Please enter your hospital name"
+          }
+        },
+        {
+          "name": "userRole",
+          "label": "I am",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Owner/Director",
+            "Hospital Administrator",
+            "IT Manager",
+            "Medical Director",
+            "Other"
+          ],
+          "conditional": {
+            "showIf": "userRole === 'Other'",
+            "field": {
+              "name": "userRoleOther",
+              "label": "Please specify",
+              "type": "text",
+              "required": true
+            }
+          }
+        }
+      ],
+      "actions": {
+        "primary": {
+          "label": "Continue to Registration",
+          "type": "submit",
+          "apiEndpoint": "/api/registration/pre-qualify",
+          "method": "POST",
+          "validation": "validateStep1"
+        }
+      },
+      "analytics": {
+        "trackEvent": "registration_step1_completed",
+        "properties": ["userRole", "hospitalName"]
+      }
+    },
+
+    "step_2_hospital_details": {
+      "title": "Hospital/Institution Details",
+      "subtitle": "Help us verify your institution",
+      "estimated_time": "2-3 minutes",
+      "progress_percentage": 25,
+      "sections": [
+        {
+          "title": "Hospital Information",
+          "fields": [
+            {
+              "name": "officialHospitalName",
+              "label": "Official Hospital Name",
+              "type": "text",
+              "required": true,
+              "placeholder": "As registered with Ghana Health Service",
+              "helpText": "Must match your hospital license",
+              "prefillFrom": "hospitalName",
+              "validation": {
+                "minLength": 3,
+                "maxLength": 200
+              }
+            },
+            {
+              "name": "hospitalType",
+              "label": "Hospital Type",
+              "type": "select",
+              "required": true,
+              "options": [
+                {
+                  "value": "general_hospital",
+                  "label": "General Hospital"
+                },
+                {
+                  "value": "maternity_home",
+                  "label": "Maternity Home"
+                },
+                {
+                  "value": "polyclinic",
+                  "label": "Polyclinic"
+                },
+                {
+                  "value": "diagnostic_center",
+                  "label": "Diagnostic Center"
+                },
+                {
+                  "value": "specialist_hospital",
+                  "label": "Specialist Hospital"
+                },
+                {
+                  "value": "dental_clinic",
+                  "label": "Dental Clinic"
+                },
+                {
+                  "value": "eye_clinic",
+                  "label": "Eye Clinic"
+                },
+                {
+                  "value": "other",
+                  "label": "Other"
+                }
+              ]
+            },
+            {
+              "name": "numberOfBeds",
+              "label": "Number of Beds",
+              "type": "select",
+              "required": true,
+              "options": [
+                "1-10 beds",
+                "11-20 beds",
+                "21-50 beds",
+                "51-100 beds",
+                "101-200 beds",
+                "200+ beds",
+                "N/A (Outpatient only)"
+              ],
+              "helpText": "This helps us recommend the right plan"
+            },
+            {
+              "name": "hospitalLicenseNumber",
+              "label": "Hospital License Number",
+              "type": "text",
+              "required": true,
+              "placeholder": "e.g., GHS/HF/12345/2024",
+              "validation": {
+                "pattern": "^[A-Z0-9/-]+$",
+                "errorMessage": "Invalid license number format"
+              }
+            },
+            {
+              "name": "ghsRegistrationNumber",
+              "label": "Ghana Health Service Registration Number",
+              "type": "text",
+              "required": false,
+              "placeholder": "Optional"
+            }
+          ]
+        },
+        {
+          "title": "Contact Information",
+          "fields": [
+            {
+              "name": "hospitalPhone",
+              "label": "Hospital Main Phone Number",
+              "type": "tel",
+              "required": true,
+              "validation": {
+                "pattern": "^(\\+233|0)[2-5][0-9]{8}$",
+                "format": "ghana_phone"
+              }
+            },
+            {
+              "name": "hospitalEmail",
+              "label": "Official Hospital Email",
+              "type": "email",
+              "required": true,
+              "placeholder": "info@yourhospital.com",
+              "validation": {
+                "checkAvailability": true,
+                "apiEndpoint": "/api/registration/check-hospital-email"
+              }
+            },
+            {
+              "name": "hospitalWebsite",
+              "label": "Website (Optional)",
+              "type": "url",
+              "required": false,
+              "placeholder": "https://www.yourhospital.com"
+            }
+          ]
+        },
+        {
+          "title": "Physical Address",
+          "fields": [
+            {
+              "name": "streetAddress",
+              "label": "Street Address",
+              "type": "text",
+              "required": true,
+              "placeholder": "House/Plot number and street name"
+            },
+            {
+              "name": "ghanaPostGPS",
+              "label": "Ghana Post Digital Address",
+              "type": "text",
+              "required": false,
+              "placeholder": "e.g., GA-123-4567",
+              "helpText": "Your Ghana Post GPS address code",
+              "validation": {
+                "pattern": "^[A-Z]{2}-[0-9]{3,4}-[0-9]{4}$",
+                "errorMessage": "Invalid Ghana Post GPS format (e.g., GA-123-4567)"
+              }
+            },
+            {
+              "name": "region",
+              "label": "Region",
+              "type": "select",
+              "required": true,
+              "options": [
+                "Greater Accra",
+                "Ashanti",
+                "Western",
+                "Eastern",
+                "Central",
+                "Northern",
+                "Upper East",
+                "Upper West",
+                "Volta",
+                "Bono",
+                "Bono East",
+                "Ahafo",
+                "Oti",
+                "Savannah",
+                "North East",
+                "Western North"
+              ]
+            },
+            {
+              "name": "city",
+              "label": "City/Town",
+              "type": "text",
+              "required": true,
+              "placeholder": "e.g., Accra"
+            },
+            {
+              "name": "landmark",
+              "label": "Nearby Landmark (Optional)",
+              "type": "text",
+              "required": false,
+              "placeholder": "e.g., Near Ridge Roundabout"
+            }
+          ]
+        },
+        {
+          "title": "Documentation",
+          "fields": [
+            {
+              "name": "hospitalLicenseDocument",
+              "label": "Hospital License (Upload)",
+              "type": "file",
+              "required": true,
+              "accept": "image/*,application/pdf",
+              "maxSize": "5MB",
+              "helpText": "Upload a clear copy of your hospital license (PDF or image)",
+              "validation": {
+                "allowedTypes": ["image/jpeg", "image/png", "image/jpg", "application/pdf"],
+                "maxSizeBytes": 5242880
+              }
+            },
+            {
+              "name": "hospitalLogo",
+              "label": "Hospital Logo (Optional)",
+              "type": "file",
+              "required": false,
+              "accept": "image/*",
+              "maxSize": "2MB",
+              "helpText": "Square logo (min 200x200px)",
+              "validation": {
+                "allowedTypes": ["image/jpeg", "image/png", "image/jpg"],
+                "maxSizeBytes": 2097152,
+                "dimensions": {
+                  "minWidth": 200,
+                  "minHeight": 200
+                }
+              },
+              "preview": true
+            }
+          ]
+        }
+      ],
+      "actions": {
+        "secondary": {
+          "label": "Back",
+          "type": "button",
+          "action": "goToPreviousStep"
+        },
+        "primary": {
+          "label": "Continue",
+          "type": "submit",
+          "apiEndpoint": "/api/registration/hospital-details",
+          "method": "POST",
+          "validation": "validateStep2"
+        }
+      },
+      "autoSave": {
+        "enabled": true,
+        "interval": 30,
+        "storageKey": "registration_step2_draft"
+      }
+    },
+
+    "step_3_administrator_account": {
+      "title": "Create Administrator Account",
+      "subtitle": "This will be your main admin account with full system access",
+      "estimated_time": "1-2 minutes",
+      "progress_percentage": 50,
+      "fields": [
+        {
+          "name": "adminTitle",
+          "label": "Title",
+          "type": "select",
+          "required": true,
+          "options": ["Dr.", "Mr.", "Mrs.", "Ms.", "Prof.", "Rev."]
+        },
+        {
+          "name": "adminFirstName",
+          "label": "First Name",
+          "type": "text",
+          "required": true,
+          "prefillFrom": "fullName",
+          "prefillStrategy": "extractFirstName",
+          "validation": {
+            "minLength": 2,
+            "maxLength": 50
+          }
+        },
+        {
+          "name": "adminLastName",
+          "label": "Last Name",
+          "type": "text",
+          "required": true,
+          "prefillFrom": "fullName",
+          "prefillStrategy": "extractLastName",
+          "validation": {
+            "minLength": 2,
+            "maxLength": 50
+          }
+        },
+        {
+          "name": "adminOtherNames",
+          "label": "Other Names (Optional)",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "adminPhone",
+          "label": "Phone Number",
+          "type": "tel",
+          "required": true,
+          "prefillFrom": "phoneNumber",
+          "disabled": true,
+          "helpText": "This number will be verified in the next step"
+        },
+        {
+          "name": "adminEmail",
+          "label": "Email Address",
+          "type": "email",
+          "required": true,
+          "prefillFrom": "email",
+          "disabled": true
+        },
+        {
+          "name": "adminPosition",
+          "label": "Position/Role at Hospital",
+          "type": "select",
+          "required": true,
+          "prefillFrom": "userRole",
+          "options": [
+            "Hospital Administrator",
+            "Medical Director",
+            "Director/Owner",
+            "IT Manager",
+            "Operations Manager",
+            "Other"
+          ]
+        },
+        {
+          "name": "professionalLicenseNumber",
+          "label": "Professional License Number (If applicable)",
+          "type": "text",
+          "required": false,
+          "placeholder": "e.g., Medical/Dental Council License",
+          "helpText": "For doctors, nurses, pharmacists, etc.",
+          "conditional": {
+            "showIf": "adminTitle === 'Dr.' || adminTitle === 'Prof.'"
+          }
+        },
+        {
+          "name": "password",
+          "label": "Create Password",
+          "type": "password",
+          "required": true,
+          "validation": {
+            "minLength": 8,
+            "maxLength": 128,
+            "requireUppercase": true,
+            "requireLowercase": true,
+            "requireNumber": true,
+            "requireSpecialChar": true,
+            "errorMessage": "Password must be at least 8 characters with uppercase, lowercase, number, and special character"
+          },
+          "showStrengthMeter": true,
+          "helpText": "Minimum 8 characters, include uppercase, lowercase, number, and special character"
+        },
+        {
+          "name": "confirmPassword",
+          "label": "Confirm Password",
+          "type": "password",
+          "required": true,
+          "validation": {
+            "matchField": "password",
+            "errorMessage": "Passwords do not match"
+          }
+        },
+        {
+          "name": "enable2FA",
+          "label": "Enable Two-Factor Authentication (Recommended)",
+          "type": "checkbox",
+          "required": false,
+          "defaultValue": true,
+          "helpText": "We'll send a verification code to your phone when logging in"
+        }
+      ],
+      "actions": {
+        "secondary": {
+          "label": "Back",
+          "type": "button",
+          "action": "goToPreviousStep"
+        },
+        "primary": {
+          "label": "Continue",
+          "type": "submit",
+          "apiEndpoint": "/api/registration/admin-account",
+          "method": "POST",
+          "validation": "validateStep3"
+        }
+      }
+    },
+
+    "step_4_subscription_plan": {
+      "title": "Choose Your Plan",
+      "subtitle": "Start with a 30-day free trial. No credit card required.",
+      "estimated_time": "1 minute",
+      "progress_percentage": 75,
+      "plans": [
+        {
+          "id": "starter",
+          "name": "Starter",
+          "price": 500,
+          "currency": "GHS",
+          "billingCycle": "monthly",
+          "recommended": false,
+          "features": [
+            "Up to 20 beds",
+            "Core modules (Patient, Appointments, Billing)",
+            "2 branches",
+            "Basic reporting",
+            "Email support",
+            "Mobile apps access"
+          ],
+          "limitations": [
+            "No NHIS integration",
+            "No AI features",
+            "Basic support only"
+          ],
+          "trialDays": 30,
+          "setupFee": 0
+        },
+        {
+          "id": "professional",
+          "name": "Professional",
+          "price": 1500,
+          "currency": "GHS",
+          "billingCycle": "monthly",
+          "recommended": true,
+          "badge": "Most Popular",
+          "features": [
+            "Up to 50 beds",
+            "All modules including NHIS & Lab",
+            "5 branches",
+            "AI-powered features (No-show prediction, Claims optimization)",
+            "Advanced reporting & analytics",
+            "Phone & email support",
+            "Mobile apps access",
+            "Onboarding assistance",
+            "SMS notifications (500/month included)"
+          ],
+          "limitations": [],
+          "trialDays": 30,
+          "setupFee": 0,
+          "discount": {
+            "annual": {
+              "percentage": 15,
+              "description": "Save 15% with annual billing"
+            }
+          }
+        },
+        {
+          "id": "enterprise",
+          "name": "Enterprise",
+          "price": null,
+          "currency": "GHS",
+          "billingCycle": "custom",
+          "recommended": false,
+          "badge": "Custom",
+          "features": [
+            "Unlimited beds",
+            "All features",
+            "Unlimited branches",
+            "Dedicated account manager",
+            "Custom integrations",
+            "Priority support (24/7)",
+            "Advanced AI models",
+            "Custom training",
+            "API access",
+            "White-label options"
+          ],
+          "limitations": [],
+          "trialDays": 30,
+          "setupFee": null,
+          "contactSales": true
+        }
+      ],
+      "fields": [
+        {
+          "name": "selectedPlan",
+          "type": "radio",
+          "required": true,
+          "options": "plans",
+          "defaultValue": "professional"
+        },
+        {
+          "name": "billingCycle",
+          "label": "Billing Cycle",
+          "type": "radio",
+          "required": true,
+          "options": [
+            {
+              "value": "monthly",
+              "label": "Monthly"
+            },
+            {
+              "value": "annual",
+              "label": "Annual (Save 15%)",
+              "badge": "Best Value"
+            }
+          ],
+          "defaultValue": "monthly",
+          "conditional": {
+            "hideIf": "selectedPlan === 'enterprise'"
+          }
+        }
+      ],
+      "pricing_notes": [
+        "All plans include 30-day free trial",
+        "No credit card required for trial",
+        "Upgrade or downgrade anytime",
+        "Pay with mobile money, bank transfer, or card",
+        "Prices exclude applicable taxes"
+      ],
+      "actions": {
+        "secondary": {
+          "label": "Back",
+          "type": "button",
+          "action": "goToPreviousStep"
+        },
+        "primary": {
+          "label": "Continue",
+          "type": "submit",
+          "apiEndpoint": "/api/registration/select-plan",
+          "method": "POST",
+          "validation": "validateStep4"
+        },
+        "tertiary": {
+          "label": "Contact Sales",
+          "type": "button",
+          "action": "openContactSalesModal",
+          "conditional": {
+            "showIf": "selectedPlan === 'enterprise'"
+          }
+        }
+      }
+    },
+
+    "step_5_setup_preferences": {
+      "title": "Setup Preferences",
+      "subtitle": "A few quick settings to personalize your experience",
+      "estimated_time": "1 minute",
+      "progress_percentage": 90,
+      "sections": [
+        {
+          "title": "Business Configuration",
+          "fields": [
+            {
+              "name": "primaryLanguage",
+              "label": "Primary Language",
+              "type": "select",
+              "required": true,
+              "defaultValue": "english",
+              "options": [
+                {
+                  "value": "english",
+                  "label": "English"
+                },
+                {
+                  "value": "twi",
+                  "label": "Twi"
+                },
+                {
+                  "value": "ga",
+                  "label": "Ga"
+                },
+                {
+                  "value": "ewe",
+                  "label": "Ewe"
+                }
+              ],
+              "helpText": "You can add more languages later"
+            },
+            {
+              "name": "timeZone",
+              "label": "Time Zone",
+              "type": "select",
+              "required": true,
+              "defaultValue": "Africa/Accra",
+              "options": [
+                {
+                  "value": "Africa/Accra",
+                  "label": "GMT (Accra)"
+                }
+              ]
+            },
+            {
+              "name": "dateFormat",
+              "label": "Date Format",
+              "type": "select",
+              "required": true,
+              "defaultValue": "DD/MM/YYYY",
+              "options": [
+                "DD/MM/YYYY",
+                "MM/DD/YYYY",
+                "YYYY-MM-DD"
+              ]
+            },
+            {
+              "name": "operatingHours",
+              "label": "Operating Hours",
+              "type": "custom",
+              "component": "OperatingHoursSelector",
+              "defaultValue": {
+                "weekdays": {
+                  "start": "08:00",
+                  "end": "17:00"
+                },
+                "weekends": {
+                  "enabled": false,
+                  "start": "08:00",
+                  "end": "13:00"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "title": "Financial Settings",
+          "fields": [
+            {
+              "name": "currency",
+              "label": "Currency",
+              "type": "select",
+              "required": true,
+              "defaultValue": "GHS",
+              "disabled": true,
+              "options": [
+                {
+                  "value": "GHS",
+                  "label": "Ghana Cedis (GHS)"
+                }
+              ]
+            },
+            {
+              "name": "applyVAT",
+              "label": "Apply VAT (12.5%)",
+              "type": "checkbox",
+              "required": false,
+              "defaultValue": true
+            },
+            {
+              "name": "applyNHIL",
+              "label": "Apply NHIL (2.5%)",
+              "type": "checkbox",
+              "required": false,
+              "defaultValue": true
+            },
+            {
+              "name": "applyGETFund",
+              "label": "Apply GETFund Levy (2.5%)",
+              "type": "checkbox",
+              "required": false,
+              "defaultValue": true
+            }
+          ]
+        },
+        {
+          "title": "First Branch Setup",
+          "fields": [
+            {
+              "name": "branchName",
+              "label": "Branch Name",
+              "type": "text",
+              "required": true,
+              "prefillFrom": "officialHospitalName",
+              "prefillStrategy": "append",
+              "prefillValue": " - Main Branch",
+              "helpText": "e.g., Ridge Hospital - Main Branch"
+            },
+            {
+              "name": "sameAsHospitalAddress",
+              "label": "Same as hospital address",
+              "type": "checkbox",
+              "defaultValue": true,
+              "onChange": "toggleBranchAddressFields"
+            },
+            {
+              "name": "branchAddress",
+              "label": "Branch Address",
+              "type": "text",
+              "required": true,
+              "conditional": {
+                "hideIf": "sameAsHospitalAddress === true"
+              }
+            }
+          ]
+        },
+        {
+          "title": "Optional Information",
+          "fields": [
+            {
+              "name": "referralSource",
+              "label": "How did you hear about us?",
+              "type": "select",
+              "required": false,
+              "options": [
+                "Google Search",
+                "Social Media (Facebook, Twitter, LinkedIn)",
+                "Referral from another hospital",
+                "Healthcare conference/event",
+                "Industry publication",
+                "Sales representative",
+                "Other"
+              ]
+            },
+            {
+              "name": "specificNeeds",
+              "label": "Any specific requirements or questions?",
+              "type": "textarea",
+              "required": false,
+              "rows": 3,
+              "maxLength": 500,
+              "placeholder": "Tell us about your specific needs..."
+            }
+          ]
+        }
+      ],
+      "legal": [
+        {
+          "name": "agreeToTerms",
+          "label": "I agree to the Terms of Service and Privacy Policy",
+          "type": "checkbox",
+          "required": true,
+          "links": [
+            {
+              "text": "Terms of Service",
+              "url": "/terms-of-service"
+            },
+            {
+              "text": "Privacy Policy",
+              "url": "/privacy-policy"
+            }
+          ],
+          "validation": {
+            "mustBeTrue": true,
+            "errorMessage": "You must agree to the Terms of Service and Privacy Policy to continue"
+          }
+        },
+        {
+          "name": "agreeToDataProcessing",
+          "label": "I consent to the processing of my data as described in the Privacy Policy (Ghana Data Protection Act, 2012)",
+          "type": "checkbox",
+          "required": true,
+          "validation": {
+            "mustBeTrue": true,
+            "errorMessage": "Consent to data processing is required"
+          }
+        }
+      ],
+      "actions": {
+        "secondary": {
+          "label": "Back",
+          "type": "button",
+          "action": "goToPreviousStep"
+        },
+        "primary": {
+          "label": "Create My Account",
+          "type": "submit",
+          "apiEndpoint": "/api/registration/complete",
+          "method": "POST",
+          "validation": "validateStep5",
+          "showLoadingState": true,
+          "loadingText": "Creating your account..."
+        }
+      }
+    },
+
+    "step_6_verification": {
+      "title": "Account Verification",
+      "subtitle": "We've sent a verification code to your phone",
+      "estimated_time": "1 minute",
+      "progress_percentage": 95,
+      "automatic_actions": [
+        "Create tenant (hospital) record in database",
+        "Create admin user account",
+        "Create main branch",
+        "Initialize database schema for tenant",
+        "Send SMS verification code",
+        "Send welcome email",
+        "Create default settings",
+        "Set up trial period"
+      ],
+      "verification_flow": {
+        "phone_verification": {
+          "enabled": true,
+          "sms_provider": "Hubtel",
+          "code_length": 6,
+          "code_expiry_minutes": 10,
+          "max_attempts": 3,
+          "resend_cooldown_seconds": 60,
+          "template": "Your MediCare Ghana verification code is: {{code}}. Valid for 10 minutes. Do not share this code.",
+          "fields": [
+            {
+              "name": "verificationCode",
+              "label": "Enter 6-digit code",
+              "type": "text",
+              "required": true,
+              "pattern": "^[0-9]{6}$",
+              "maxLength": 6,
+              "autoFocus": true,
+              "inputMode": "numeric"
+            }
+          ],
+          "actions": {
+            "primary": {
+              "label": "Verify & Continue",
+              "type": "submit",
+              "apiEndpoint": "/api/registration/verify-phone",
+              "method": "POST"
+            },
+            "secondary": {
+              "label": "Resend Code",
+              "type": "button",
+              "apiEndpoint": "/api/registration/resend-code",
+              "method": "POST",
+              "cooldown": 60,
+              "disabledText": "Resend in {{seconds}}s"
+            }
+          }
+        },
+        "email_verification": {
+          "enabled": true,
+          "send_on_registration": true,
+          "required_before_full_access": false,
+          "template": "welcome_email_with_verification_link"
+        }
+      },
+      "success_message": {
+        "title": "🎉 Account Created Successfully!",
+        "message": "Your hospital account is ready. Redirecting to your dashboard...",
+        "redirect_url": "/onboarding/welcome",
+        "redirect_delay_seconds": 3
+      },
+      "error_handling": {
+        "invalid_code": {
+          "message": "Invalid verification code. Please try again.",
+          "allow_retry": true
+        },
+        "code_expired": {
+          "message": "Verification code has expired. Please request a new one.",
+          "action": "resend_code"
+        },
+        "max_attempts_exceeded": {
+          "message": "Maximum verification attempts exceeded. Please contact support.",
+          "action": "show_support_contact"
+        }
+      }
+    },
+
+    "step_7_onboarding_tour": {
+      "title": "Welcome to MediCare Ghana!",
+      "subtitle": "Let's get you started with a quick tour",
+      "progress_percentage": 100,
+      "optional": true,
+      "skippable": true,
+      "tour_steps": [
+        {
+          "id": "dashboard_overview",
+          "title": "Your Dashboard",
+          "description": "Here's where you'll see key metrics, upcoming appointments, and alerts",
+          "target": "#dashboard",
+          "position": "center"
+        },
+        {
+          "id": "add_patient",
+          "title": "Add Your First Patient",
+          "description": "Let's register a patient. Click here to get started.",
+          "target": "#add-patient-button",
+          "position": "bottom",
+          "action": {
+            "type": "open_modal",
+            "modal": "patient_registration"
+          }
+        },
+        {
+          "id": "schedule_appointment",
+          "title": "Schedule Appointments",
+          "description": "Book appointments and manage your calendar here",
+          "target": "#appointments-menu",
+          "position": "right"
+        },
+        {
+          "id": "billing",
+          "title": "Billing & Payments",
+          "description": "Process payments, generate invoices, and track revenue",
+          "target": "#billing-menu",
+          "position": "right"
+        },
+        {
+          "id": "settings",
+          "title": "Customize Your Settings",
+          "description": "Configure your hospital settings, add staff, and manage permissions",
+          "target": "#settings-menu",
+          "position": "right"
+        }
+      ],
+      "completion_reward": {
+        "type": "badge",
+        "name": "Quick Learner",
+        "description": "Completed the onboarding tour"
+      },
+      "actions": {
+        "primary": {
+          "label": "Start Tour",
+          "type": "button",
+          "action": "startTour"
+        },
+        "secondary": {
+          "label": "Skip Tour",
+          "type": "button",
+          "action": "skipTour",
+          "redirect": "/dashboard"
+        }
+      }
+    }
+  },
+
+  "backend_api_specification": {
+    "base_url": "/api/registration",
+    "authentication": "none (public endpoints)",
+    "rate_limiting": {
+      "enabled": true,
+      "max_requests_per_ip": 10,
+      "time_window_minutes": 60,
+      "block_duration_minutes": 30
+    },
+    "endpoints": [
+      {
+        "path": "/api/registration/check-email",
+        "method": "POST",
+        "description": "Check if email is already registered",
+        "request_body": {
+          "email": "string"
+        },
+        "response": {
+          "available": "boolean",
+          "message": "string"
+        },
+        "validation": [
+          "Email format validation",
+          "Check against users and pending registrations tables"
+        ]
+      },
+      {
+        "path": "/api/registration/check-phone",
+        "method": "POST",
+        "description": "Check if phone number is already registered",
+        "request_body": {
+          "phoneNumber": "string"
+        },
+        "response": {
+          "available": "boolean",
+          "message": "string"
+        },
+        "validation": [
+          "Ghana phone format validation",
+          "Check against users table"
+        ]
+      },
+      {
+        "path": "/api/registration/check-hospital-email",
+        "method": "POST",
+        "description": "Check if hospital email is already registered",
+        "request_body": {
+          "hospitalEmail": "string"
+        },
+        "response": {
+          "available": "boolean",
+          "message": "string"
+        }
+      },
+      {
+        "path": "/api/registration/pre-qualify",
+        "method": "POST",
+        "description": "Submit step 1 pre-qualification data",
+        "request_body": {
+          "fullName": "string",
+          "email": "string",
+          "phoneNumber": "string",
+          "hospitalName": "string",
+          "userRole": "string"
+        },
+        "response": {
+          "success": "boolean",
+          "registrationId": "string (UUID)",
+          "message": "string"
+        },
+        "actions": [
+          "Create pending registration record",
+          "Generate unique registration ID",
+          "Send confirmation email",
+          "Track analytics event"
+        ]
+      },
+      {
+        "path": "/api/registration/hospital-details",
+        "method": "POST",
+        "description": "Submit step 2 hospital details",
+        "request_body": {
+          "registrationId": "string",
+          "officialHospitalName": "string",
+          "hospitalType": "string",
+          "numberOfBeds": "string",
+          "hospitalLicenseNumber": "string",
+          "ghsRegistrationNumber": "string",
+          "hospitalPhone": "string",
+          "hospitalEmail": "string",
+          "hospitalWebsite": "string",
+          "streetAddress": "string",
+          "ghanaPostGPS": "string",
+          "region": "string",
+          "city": "string",
+          "landmark": "string",
+          "hospitalLicenseDocument": "file (multipart/form-data)",
+          "hospitalLogo": "file (optional)"
+        },
+        "response": {
+          "success": "boolean",
+          "message": "string"
+        },
+        "file_handling": {
+          "storage": "AWS S3 or local storage",
+          "folder_structure": "/uploads/registrations/{registrationId}/",
+          "file_naming": "{timestamp}_{originalname}",
+          "virus_scan": true,
+          "generate_thumbnails": true
+        },
+        "actions": [
+          "Upload and store documents",
+          "Update pending registration record",
+          "Validate hospital license format",
+          "Save progress to database"
+        ]
+      },
+      {
+        "path": "/api/registration/admin-account",
+        "method": "POST",
+        "description": "Submit step 3 admin account details",
+        "request_body": {
+          "registrationId": "string",
+          "adminTitle": "string",
+          "adminFirstName": "string",
+          "adminLastName": "string",
+          "adminOtherNames": "string",
+          "adminPhone": "string",
+          "adminEmail": "string",
+          "adminPosition": "string",
+          "professionalLicenseNumber": "string",
+          "password": "string",
+          "enable2FA": "boolean"
+        },
+        "response": {
+          "success": "boolean",
+          "message": "string"
+        },
+        "security": [
+          "Hash password with bcrypt (salt rounds: 12)",
+          "Validate password strength",
+          "Store hashed password only",
+          "Never log or transmit plain password"
+        ],
+        "actions": [
+          "Update pending registration",
+          "Prepare user credentials",
+          "Generate 2FA secret if enabled"
+        ]
+      },
+      {
+        "path": "/api/registration/select-plan",
+        "method": "POST",
+        "description": "Submit step 4 plan selection",
+        "request_body": {
+          "registrationId": "string",
+          "selectedPlan": "string (starter|professional|enterprise)",
+          "billingCycle": "string (monthly|annual)"
+        },
+        "response": {
+          "success": "boolean",
+          "message": "string",
+          "planDetails": {
+            "planId": "string",
+            "planName": "string",
+            "price": "number",
+            "trialEndDate": "date"
+          }
+        },
+        "actions": [
+          "Update pending registration with plan",
+          "Calculate trial end date (30 days from now)",
+          "Store plan selection"
+        ]
+      },
+      {
+        "path": "/api/registration/complete",
+        "method": "POST",
+        "description": "Complete registration (step 5)",
+        "request_body": {
+          "registrationId": "string",
+          "primaryLanguage": "string",
+          "timeZone": "string",
+          "dateFormat": "string",
+          "operatingHours": "object",
+          "currency": "string",
+          "applyVAT": "boolean",
+          "applyNHIL": "boolean",
+          "applyGETFund": "boolean",
+          "branchName": "string",
+          "sameAsHospitalAddress": "boolean",
+          "branchAddress": "string",
+          "referralSource": "string",
+          "specificNeeds": "string",
+          "agreeToTerms": "boolean",
+          "agreeToDataProcessing": "boolean"
+        },
+        "response": {
+          "success": "boolean",
+          "message": "string",
+          "tenantId": "string",
+          "userId": "string",
+          "verificationRequired": "boolean"
+        },
+        "database_transactions": [
+          {
+            "step": 1,
+            "action": "Create tenant (hospital) record",
+            "table": "tenants",
+            "fields": [
+              "id (UUID)",
+              "name (from officialHospitalName)",
+              "subdomain (auto-generate from hospital name)",
+              "type (from hospitalType)",
+              "license_number",
+              "phone",
+              "email",
+              "address",
+              "region",
+              "city",
+              "ghana_post_gps",
+              "logo_url",
+              "is_active (true)",
+              "subscription_plan",
+              "trial_ends_at (now + 30 days)",
+              "created_at",
+              "updated_at"
+            ]
+          },
+          {
+            "step": 2,
+            "action": "Create main branch",
+            "table": "branches",
+            "fields": [
+              "id (UUID)",
+              "tenant_id (from step 1)",
+              "name (from branchName)",
+              "address",
+              "is_main (true)",
+              "is_active (true)",
+              "created_at",
+              "updated_at"
+            ]
+          },
+          {
+            "step": 3,
+            "action": "Create admin user",
+            "table": "users",
+            "fields": [
+              "id (UUID)",
+              "tenant_id (from step 1)",
+              "email",
+              "phone",
+              "password_hash",
+              "first_name",
+              "last_name",
+              "other_names",
+              "title",
+              "role (HOSPITAL_ADMIN)",
+              "position",
+              "professional_license",
+              "is_active (true)",
+              "email_verified (false)",
+              "phone_verified (false)",
+              "mfa_enabled (from enable2FA)",
+              "mfa_secret (if enabled)",
+              "created_at",
+              "updated_at"
+            ]
+          },
+          {
+            "step": 4,
+            "action": "Create tenant settings",
+            "table": "tenant_settings",
+            "fields": [
+              "tenant_id",
+              "language",
+              "timezone",
+              "date_format",
+              "currency",
+              "operating_hours",
+              "tax_settings (VAT, NHIL, GETFund)",
+              "created_at",
+              "updated_at"
+            ]
+          },
+          {
+            "step": 5,
+            "action": "Create subscription record",
+            "table": "subscriptions",
+            "fields": [
+              "tenant_id",
+              "plan_id",
+              "billing_cycle",
+              "status (trial)",
+              "trial_ends_at",
+              "started_at",
+              "created_at"
+            ]
+          },
+          {
+            "step": 6,
+            "action": "Generate verification code",
+            "table": "verification_codes",
+            "fields": [
+              "user_id",
+              "code (6-digit random)",
+              "type (phone)",
+              "expires_at (now + 10 minutes)",
+              "attempts (0)",
+              "created_at"
+            ]
+          },
+          {
+            "step": 7,
+            "action": "Delete pending registration",
+            "table": "pending_registrations",
+            "action": "DELETE where id = registrationId"
+          }
+        ],
+        "notification_actions": [
+          {
+            "type": "sms",
+            "provider": "Hubtel",
+            "recipient": "admin phone",
+            "template": "verification_code",
+            "data": {
+              "code": "{{verificationCode}}",
+              "expiryMinutes": 10
+            }
+          },
+          {
+            "type": "email",
+            "provider": "SendGrid or AWS SES",
+            "recipient": "admin email",
+            "template": "welcome_email",
+            "data": {
+              "firstName": "{{adminFirstName}}",
+              "hospitalName": "{{hospitalName}}",
+              "verificationLink": "{{verificationLink}}",
+              "dashboardUrl": "{{dashboardUrl}}"
+            }
+          },
+          {
+            "type": "internal_notification",
+            "recipient": "Sales team",
+            "message": "New hospital registered: {{hospitalName}} - {{selectedPlan}} plan"
+          }
+        ],
+        "error_handling": {
+          "rollback_on_failure": true,
+          "log_errors": true,
+          "notify_admins": true
+        }
+      },
+      {
+        "path": "/api/registration/verify-phone",
+        "method": "POST",
+        "description": "Verify phone number with code",
+        "request_body": {
+          "userId": "string",
+          "code": "string (6 digits)"
+        },
+        "response": {
+          "success": "boolean",
+          "message": "string",
+          "accessToken": "string (JWT)",
+          "refreshToken": "string"
+        },
+        "logic": [
+          "Fetch verification code from database",
+          "Check if code matches",
+          "Check if code is not expired",
+          "Check attempts < 3",
+          "If valid: Mark phone as verified, generate JWT tokens",
+          "If invalid: Increment attempts, return error",
+          "If max attempts: Lock verification, require new code"
+        ],
+        "jwt_payload": {
+          "userId": "string",
+          "tenantId": "string",
+          "role": "string",
+          "exp": "timestamp (15 minutes for access, 7 days for refresh)"
+        }
+      },
+      {
+        "path": "/api/registration/resend-code",
+        "method": "POST",
+        "description": "Resend verification code",
+        "request_body": {
+          "userId": "string"
+        },
+        "response": {
+          "success": "boolean",
+          "message": "string",
+          "canResendAt": "timestamp"
+        },
+        "rate_limiting": {
+          "cooldown_seconds": 60,
+          "max_resends_per_hour": 3
+        },
+        "actions": [
+          "Generate new 6-digit code",
+          "Save to verification_codes table",
+          "Invalidate previous codes",
+          "Send SMS via Hubtel",
+          "Log resend event"
+        ]
+      },
+      {
+        "path": "/api/registration/upload",
+        "method": "POST",
+        "description": "Upload files during registration",
+        "request_body": "multipart/form-data",
+        "fields": {
+          "registrationId": "string",
+          "fileType": "string (license|logo)",
+          "file": "binary"
+        },
+        "response": {
+          "success": "boolean",
+          "fileUrl": "string",
+          "fileName": "string"
+        },
+        "validation": [
+          "File type validation (images, PDF)",
+          "File size limit (5MB for license, 2MB for logo)",
+          "Virus scanning",
+          "Image dimension validation for logo"
+        ],
+        "storage": {
+          "provider": "AWS S3",
+          "bucket": "medicare-ghana-uploads",
+          "folder": "registrations/{registrationId}/",
+          "access": "private (pre-signed URLs)"
+        }
+      }
+    ]
+  },
+
+  "frontend_components": {
+    "technology_stack": {
+      "framework": "React 18+",
+      "language": "TypeScript",
+      "state_management": "Zustand or Redux Toolkit",
+      "form_handling": "React Hook Form",
+      "validation": "Yup or Zod",
+      "ui_library": "Ant Design",
+      "routing": "React Router v6",
+      "api_client": "Axios with React Query",
+      "file_upload": "react-dropzone",
+      "animations": "Framer Motion"
+    },
+    "component_structure": [
+      {
+        "name": "RegistrationWizard",
+        "type": "Container Component",
+        "description": "Main wizard container managing step flow and state",
+        "props": {},
+        "state": {
+          "currentStep": "number",
+          "completedSteps": "number[]",
+          "registrationData": "object",
+          "registrationId": "string | null",
+          "isLoading": "boolean",
+          "error": "string | null"
+        },
+        "methods": [
+          "goToStep(stepNumber: number)",
+          "nextStep()",
+          "previousStep()",
+          "saveProgress(data: object)",
+          "loadProgress()",
+          "submitRegistration()"
+        ],
+        "features": [
+          "Progress tracking",
+          "Auto-save to localStorage",
+          "Resume from saved progress",
+          "Step validation",
+          "Analytics tracking"
+        ]
+      },
+      {
+        "name": "ProgressIndicator",
+        "type": "Presentational Component",
+        "description": "Visual progress bar showing completion",
+        "props": {
+          "currentStep": "number",
+          "totalSteps": "number",
+          "completedSteps": "number[]",
+          "stepLabels": "string[]"
+        },
+        "features": [
+          "Responsive design",
+          "Clickable steps (if completed)",
+          "Mobile-friendly breadcrumb",
+          "Percentage display"
+        ]
+      },
+      {
+        "name": "Step1PreQualification",
+        "type": "Form Component",
+        "description": "Pre-qualification form (step 1)",
+        "validation": {
+          "schema": "Yup",
+          "rules": {
+            "fullName": "required, min 3 chars, max 100 chars",
+            "email": "required, email format, unique check",
+            "phoneNumber": "required, Ghana phone format, unique check",
+            "hospitalName": "required, min 3 chars",
+            "userRole": "required"
+          }
+        },
+        "api_calls": [
+          "checkEmailAvailability (debounced)",
+          "checkPhoneAvailability (debounced)",
+          "submitPreQualification"
+        ]
+      },
+      {
+        "name": "Step2HospitalDetails",
+        "type": "Form Component",
+        "description": "Hospital details form (step 2)",
+        "sub_components": [
+          "HospitalInfoSection",
+          "ContactInfoSection",
+          "AddressSection",
+          "DocumentUploadSection"
+        ],
+        "file_uploads": [
+          {
+            "field": "hospitalLicenseDocument",
+            "accept": "image/*, application/pdf",
+            "maxSize": "5MB",
+            "preview": true
+          },
+          {
+            "field": "hospitalLogo",
+            "accept": "image/*",
+            "maxSize": "2MB",
+            "preview": true,
+            "cropEnabled": true
+          }
+        ]
+      },
+      {
+        "name": "Step3AdminAccount",
+        "type": "Form Component",
+        "description": "Administrator account creation (step 3)",
+        "features": [
+          "Password strength meter",
+          "Real-time password validation",
+          "Confirm password matching",
+          "Show/hide password toggle",
+          "2FA toggle"
+        ],
+        "validation": {
+          "password": {
+            "minLength": 8,
+            "requireUppercase": true,
+            "requireLowercase": true,
+            "requireNumber": true,
+            "requireSpecialChar": true
+          }
+        }
+      },
+      {
+        "name": "Step4PlanSelection",
+        "type": "Selection Component",
+        "description": "Subscription plan selection (step 4)",
+        "sub_components": [
+          "PlanCard",
+          "PlanComparison",
+          "BillingCycleToggle"
+        ],
+        "features": [
+          "Plan comparison table",
+          "Highlight recommended plan",
+          "Annual vs monthly toggle",
+          "Discount badge",
+          "Contact sales modal for enterprise"
+        ]
+      },
+      {
+        "name": "Step5SetupPreferences",
+        "type": "Form Component",
+        "description": "Setup preferences (step 5)",
+        "sub_components": [
+          "OperatingHoursSelector",
+          "TaxConfigurationToggles",
+          "LanguageSelector"
+        ],
+        "features": [
+          "Time picker for operating hours",
+          "Custom operating hours for weekdays/weekends",
+          "Legal checkbox with links to terms"
+        ]
+      },
+      {
+        "name": "Step6Verification",
+        "type": "Verification Component",
+        "description": "Phone verification (step 6)",
+        "features": [
+          "6-digit code input",
+          "Auto-focus on mount",
+          "Resend code with cooldown timer",
+          "Loading state during verification",
+          "Error handling for invalid codes"
+        ],
+        "sub_components": [
+          "CodeInput (6 separate inputs)",
+          "ResendButton (with countdown)",
+          "VerificationStatus"
+        ]
+      },
+      {
+        "name": "Step7OnboardingTour",
+        "type": "Interactive Component",
+        "description": "Optional onboarding tour (step 7)",
+        "library": "react-joyride or intro.js",
+        "features": [
+          "Interactive product tour",
+          "Spotlight on features",
+          "Skip option",
+          "Progress through tour steps"
+        ]
+      },
+      {
+        "name": "FormField",
+        "type": "Reusable Component",
+        "description": "Generic form field wrapper",
+        "props": {
+          "name": "string",
+          "label": "string",
+          "type": "string",
+          "required": "boolean",
+          "validation": "object",
+          "helpText": "string",
+          "placeholder": "string",
+          "disabled": "boolean"
+        },
+        "features": [
+          "Error display",
+          "Required indicator (*)",
+          "Help text tooltip",
+          "Accessible labels"
+        ]
+      },
+      {
+        "name": "FileUpload",
+        "type": "Reusable Component",
+        "description": "File upload with preview",
+        "library": "react-dropzone",
+        "features": [
+          "Drag and drop",
+          "Click to browse",
+          "File type validation",
+          "File size validation",
+          "Image preview",
+          "Upload progress",
+          "Remove uploaded file"
+        ]
+      },
+      {
+        "name": "PhoneInput",
+        "type": "Reusable Component",
+        "description": "Ghana phone number input",
+        "library": "react-phone-input-2 or custom",
+        "features": [
+          "Auto-format (+233 XX XXX XXXX)",
+          "Network detection (MTN, Vodafone, AirtelTigo)",
+          "Real-time validation",
+          "Country flag (Ghana)"
+        ]
+      },
+      {
+        "name": "PasswordStrengthMeter",
+        "type": "Reusable Component",
+        "description": "Visual password strength indicator",
+        "features": [
+          "Color-coded strength (weak=red, medium=yellow, strong=green)",
+          "Progress bar",
+          "Strength label",
+          "Requirements checklist"
+        ]
+      }
+    ],
+    "state_management": {
+      "store_structure": {
+        "registrationStore": {
+          "currentStep": "number",
+          "registrationId": "string | null",
+          "formData": {
+            "step1": "object",
+            "step2": "object",
+            "step3": "object",
+            "step4": "object",
+            "step5": "object"
+          },
+          "validatedSteps": "number[]",
+          "errors": "object",
+          "isLoading": "boolean"
+        }
+      },
+      "actions": [
+        "setCurrentStep(step: number)",
+        "updateFormData(step: number, data: object)",
+        "setRegistrationId(id: string)",
+        "markStepAsValidated(step: number)",
+        "setError(error: string)",
+        "clearError()",
+        "resetRegistration()"
+      ],
+      "persistence": {
+        "localStorage_key": "medicaregha_registration_draft",
+        "auto_save_interval": 30000,
+        "expiry_days": 7
+      }
+    },
+    "routing": {
+      "paths": [
+        "/register (main wizard)",
+        "/register/step-1",
+        "/register/step-2",
+        "/register/step-3",
+        "/register/step-4",
+        "/register/step-5",
+        "/register/verify",
+        "/register/welcome"
+      ],
+      "protected": false,
+      "redirect_if_authenticated": "/dashboard"
+    }
+  },
+
+  "validation_utilities": {
+    "ghana_specific_validators": [
+      {
+        "name": "validateGhanaPhoneNumber",
+        "description": "Validate Ghana phone number format",
+        "regex": "^(\\+233|0)[2-5][0-9]{8}$",
+        "examples": [
+          "+233244123456 (valid)",
+          "0244123456 (valid)",
+          "+233 24 412 3456 (valid with spaces)",
+          "244123456 (invalid - missing prefix)"
+        ],
+        "implementation": "function validateGhanaPhoneNumber(phone: string): boolean"
+      },
+      {
+        "name": "formatGhanaPhoneNumber",
+        "description": "Format phone number to +233XXXXXXXXX",
+        "implementation": "function formatGhanaPhoneNumber(phone: string): string",
+        "logic": [
+          "Remove all spaces and dashes",
+          "If starts with 0, replace with +233",
+          "If starts with 233, add +",
+          "Return formatted number"
+        ]
+      },
+      {
+        "name": "detectMobileNetwork",
+        "description": "Detect mobile network provider",
+        "implementation": "function detectMobileNetwork(phone: string): 'MTN' | 'Vodafone' | 'AirtelTigo' | 'Unknown'",
+        "logic": {
+          "MTN": ["024", "054", "055", "059"],
+          "Vodafone": ["020", "050"],
+          "AirtelTigo": ["027", "057", "026", "056"]
+        }
+      },
+      {
+        "name": "validateGhanaPostGPS",
+        "description": "Validate Ghana Post GPS address format",
+        "regex": "^[A-Z]{2}-[0-9]{3,4}-[0-9]{4}$",
+        "examples": [
+          "GA-123-4567 (valid)",
+          "AK-1234-5678 (valid)",
+          "GA-12-345 (invalid)"
+        ]
+      },
+      {
+        "name": "validateHospitalLicenseNumber",
+        "description": "Validate hospital license number format",
+        "regex": "^[A-Z0-9/-]+$",
+        "note": "Format may vary; basic alphanumeric validation"
+      }
+    ],
+    "password_validator": {
+      "name": "validatePasswordStrength",
+      "rules": [
+        "Minimum 8 characters",
+        "At least 1 uppercase letter",
+        "At least 1 lowercase letter",
+        "At least 1 number",
+        "At least 1 special character (!@#$%^&*)"
+      ],
+      "strength_calculation": {
+        "weak": "< 3 rules met",
+        "medium": "3-4 rules met",
+        "strong": "All 5 rules met"
+      },
+      "implementation": "function validatePasswordStrength(password: string): { isValid: boolean; strength: string; unmetRules: string[] }"
+    },
+    "file_validators": [
+      {
+        "name": "validateFileType",
+        "allowedTypes": ["image/jpeg", "image/png", "image/jpg", "application/pdf"],
+        "implementation": "function validateFileType(file: File, allowedTypes: string[]): boolean"
+      },
+      {
+        "name": "validateFileSize",
+        "maxSizeBytes": 5242880,
+        "implementation": "function validateFileSize(file: File, maxSizeBytes: number): boolean"
+      },
+      {
+        "name": "validateImageDimensions",
+        "minWidth": 200,
+        "minHeight": 200,
+        "implementation": "function validateImageDimensions(file: File, minWidth: number, minHeight: number): Promise<boolean>"
+      }
+    ]
+  },
+
+  "database_schema": {
+    "tables": [
+      {
+        "name": "pending_registrations",
+        "description": "Temporary storage for in-progress registrations",
+        "columns": [
+          "id VARCHAR(36) PRIMARY KEY (UUID)",
+          "full_name VARCHAR(100)",
+          "email VARCHAR(255) UNIQUE",
+          "phone VARCHAR(20) UNIQUE",
+          "hospital_name VARCHAR(200)",
+          "user_role VARCHAR(100)",
+          "step_data JSONB (stores all form data by step)",
+          "current_step INT DEFAULT 1",
+          "expires_at TIMESTAMP (registration expires after 7 days)",
+          "created_at TIMESTAMP DEFAULT NOW()",
+          "updated_at TIMESTAMP DEFAULT NOW()"
+        ],
+        "indexes": [
+          "idx_email ON email",
+          "idx_phone ON phone",
+          "idx_expires_at ON expires_at"
+        ]
+      },
+      {
+        "name": "tenants",
+        "description": "Hospital/institution records",
+        "columns": [
+          "id VARCHAR(36) PRIMARY KEY (UUID)",
+          "name VARCHAR(200) NOT NULL",
+          "subdomain VARCHAR(100) UNIQUE",
+          "custom_domain VARCHAR(255)",
+          "type VARCHAR(50) (general_hospital, maternity_home, etc.)",
+          "number_of_beds VARCHAR(50)",
+          "license_number VARCHAR(100)",
+          "ghs_registration_number VARCHAR(100)",
+          "phone VARCHAR(20)",
+          "email VARCHAR(255)",
+          "website VARCHAR(255)",
+          "address TEXT",
+          "ghana_post_gps VARCHAR(20)",
+          "region VARCHAR(50)",
+          "city VARCHAR(100)",
+          "landmark VARCHAR(255)",
+          "logo_url VARCHAR(500)",
+          "license_document_url VARCHAR(500)",
+          "subscription_plan VARCHAR(50) (starter, professional, enterprise)",
+          "subscription_status VARCHAR(50) (trial, active, expired, cancelled)",
+          "trial_ends_at TIMESTAMP",
+          "subscription_started_at TIMESTAMP",
+          "is_active BOOLEAN DEFAULT TRUE",
+          "is_verified BOOLEAN DEFAULT FALSE",
+          "verified_at TIMESTAMP",
+          "verified_by VARCHAR(36)",
+          "created_at TIMESTAMP DEFAULT NOW()",
+          "updated_at TIMESTAMP DEFAULT NOW()"
+        ],
+        "indexes": [
+          "idx_subdomain ON subdomain",
+          "idx_email ON email",
+          "idx_subscription_status ON subscription_status"
+        ]
+      },
+      {
+        "name": "users",
+        "description": "User accounts",
+        "columns": [
+          "id VARCHAR(36) PRIMARY KEY (UUID)",
+          "tenant_id VARCHAR(36) REFERENCES tenants(id) ON DELETE CASCADE",
+          "email VARCHAR(255) NOT NULL",
+          "phone VARCHAR(20) NOT NULL",
+          "password_hash VARCHAR(255) NOT NULL",
+          "first_name VARCHAR(50)",
+          "last_name VARCHAR(50)",
+          "other_names VARCHAR(100)",
+          "title VARCHAR(10) (Dr., Mr., Mrs., etc.)",
+          "role VARCHAR(50) (HOSPITAL_ADMIN, DOCTOR, NURSE, etc.)",
+          "position VARCHAR(100)",
+          "professional_license VARCHAR(100)",
+          "is_active BOOLEAN DEFAULT TRUE",
+          "email_verified BOOLEAN DEFAULT FALSE",
+          "email_verified_at TIMESTAMP",
+          "phone_verified BOOLEAN DEFAULT FALSE",
+          "phone_verified_at TIMESTAMP",
+          "mfa_enabled BOOLEAN DEFAULT FALSE",
+          "mfa_secret VARCHAR(100)",
+          "last_login_at TIMESTAMP",
+          "password_changed_at TIMESTAMP",
+          "created_at TIMESTAMP DEFAULT NOW()",
+          "updated_at TIMESTAMP DEFAULT NOW()"
+        ],
+        "indexes": [
+          "idx_tenant_email ON (tenant_id, email) UNIQUE",
+          "idx_tenant_phone ON (tenant_id, phone)",
+          "idx_email ON email"
+        ]
+      },
+      {
+        "name": "verification_codes",
+        "description": "OTP codes for phone/email verification",
+        "columns": [
+          "id SERIAL PRIMARY KEY",
+          "user_id VARCHAR(36) REFERENCES users(id) ON DELETE CASCADE",
+          "code VARCHAR(6) NOT NULL",
+          "type VARCHAR(20) (phone, email)",
+          "attempts INT DEFAULT 0",
+          "max_attempts INT DEFAULT 3",
+          "is_used BOOLEAN DEFAULT FALSE",
+          "expires_at TIMESTAMP NOT NULL",
+          "created_at TIMESTAMP DEFAULT NOW()"
+        ],
+        "indexes": [
+          "idx_user_type ON (user_id, type)",
+          "idx_expires_at ON expires_at"
+        ]
+      },
+      {
+        "name": "tenant_settings",
+        "description": "Hospital-specific settings",
+        "columns": [
+          "tenant_id VARCHAR(36) PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE",
+          "language VARCHAR(20) DEFAULT 'english'",
+          "timezone VARCHAR(50) DEFAULT 'Africa/Accra'",
+          "date_format VARCHAR(20) DEFAULT 'DD/MM/YYYY'",
+          "currency VARCHAR(10) DEFAULT 'GHS'",
+          "operating_hours JSONB",
+          "tax_settings JSONB (VAT, NHIL, GETFund)",
+          "notification_settings JSONB",
+          "created_at TIMESTAMP DEFAULT NOW()",
+          "updated_at TIMESTAMP DEFAULT NOW()"
+        ]
+      },
+      {
+        "name": "subscriptions",
+        "description": "Subscription records",
+        "columns": [
+          "id VARCHAR(36) PRIMARY KEY (UUID)",
+          "tenant_id VARCHAR(36) REFERENCES tenants(id) ON DELETE CASCADE",
+          "plan_id VARCHAR(50) (starter, professional, enterprise)",
+          "billing_cycle VARCHAR(20) (monthly, annual)",
+          "status VARCHAR(50) (trial, active, past_due, cancelled, expired)",
+          "trial_ends_at TIMESTAMP",
+          "current_period_start TIMESTAMP",
+          "current_period_end TIMESTAMP",
+          "cancel_at_period_end BOOLEAN DEFAULT FALSE",
+          "cancelled_at TIMESTAMP",
+          "created_at TIMESTAMP DEFAULT NOW()",
+          "updated_at TIMESTAMP DEFAULT NOW()"
+        ]
+      }
+    ]
+  },
+
+  "security_considerations": {
+    "data_protection": [
+      "Never store plain text passwords",
+      "Use bcrypt with 12 salt rounds for password hashing",
+      "Implement HTTPS only (redirect HTTP to HTTPS)",
+      "Use CORS with whitelist of allowed origins",
+      "Sanitize all user inputs to prevent XSS",
+      "Use parameterized queries to prevent SQL injection",
+      "Implement CSRF protection",
+      "Rate limit API endpoints (especially registration)"
+    ],
+    "authentication": [
+      "JWT with short expiry (15 minutes access, 7 days refresh)",
+      "Rotate refresh tokens on use",
+      "Store refresh tokens securely (httpOnly cookies or secure storage)",
+      "Implement token blacklist for logout",
+      "Add device fingerprinting for suspicious activity detection"
+    ],
+    "verification": [
+      "SMS OTP must expire in 10 minutes",
+      "Limit OTP attempts to 3",
+      "Implement cooldown between OTP resends (60 seconds)",
+      "Log all verification attempts",
+      "Block account after 5 failed verification attempts"
+    ],
+    "file_uploads": [
+      "Validate file types (whitelist, not blacklist)",
+      "Scan uploaded files for viruses (ClamAV or cloud service)",
+      "Store files outside web root or use signed URLs",
+      "Limit file sizes strictly",
+      "Generate random filenames to prevent overwrites",
+      "Never execute uploaded files"
+    ],
+    "compliance": [
+      "Ghana Data Protection Act, 2012 compliance",
+      "Obtain explicit consent for data processing",
+      "Provide privacy policy and terms of service",
+      "Allow users to request data deletion",
+      "Implement audit logging for sensitive operations",
+      "Encrypt sensitive data at rest (Ghana Card numbers, etc.)"
+    ]
+  },
+
+  "error_handling": {
+    "frontend": {
+      "display_strategy": "Toast notifications for errors, inline for form validation",
+      "error_boundary": "Wrap components in error boundaries to catch React errors",
+      "user_messages": [
+        "Network errors: 'Unable to connect. Please check your internet connection.'",
+        "Validation errors: Display inline with field",
+        "Server errors: 'Something went wrong. Please try again.'",
+        "File upload errors: 'File upload failed. Please try again.'"
+      ]
+    },
+    "backend": {
+      "response_format": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {},
+            "message": "Operation successful"
+          }
+        },
+        "error": {
+          "status": "4xx or 5xx",
+          "body": {
+            "success": false,
+            "error": {
+              "code": "ERROR_CODE",
+              "message": "User-friendly error message",
+              "details": {}
+            }
+          }
+        }
+      },
+      "error_codes": [
+        "EMAIL_ALREADY_EXISTS",
+        "PHONE_ALREADY_EXISTS",
+        "INVALID_VERIFICATION_CODE",
+        "VERIFICATION_CODE_EXPIRED",
+        "MAX_ATTEMPTS_EXCEEDED",
+        "FILE_TOO_LARGE",
+        "INVALID_FILE_TYPE",
+        "REGISTRATION_NOT_FOUND",
+        "REGISTRATION_EXPIRED"
+      ],
+      "logging": {
+        "tool": "Winston or Pino",
+        "levels": ["error", "warn", "info", "debug"],
+        "log_to": ["console", "file", "external service (Sentry, LogRocket)"],
+        "include_in_logs": ["timestamp", "level", "message", "error stack", "user context", "request ID"]
+      }
+    }
+  },
+
+  "analytics_tracking": {
+    "events_to_track": [
+      {
+        "event": "registration_started",
+        "properties": ["timestamp", "utm_source", "utm_medium"]
+      },
+      {
+        "event": "registration_step_completed",
+        "properties": ["step_number", "step_name", "time_spent"]
+      },
+      {
+        "event": "registration_abandoned",
+        "properties": ["last_completed_step", "time_on_page"]
+      },
+      {
+        "event": "registration_completed",
+        "properties": ["plan_selected", "billing_cycle", "total_time", "referral_source"]
+      },
+      {
+        "event": "verification_sent",
+        "properties": ["type", "success"]
+      },
+      {
+        "event": "verification_failed",
+        "properties": ["reason", "attempts"]
+      },
+      {
+        "event": "file_uploaded",
+        "properties": ["file_type", "file_size", "success"]
+      }
+    ],
+    "analytics_tools": [
+      "Google Analytics 4",
+      "Mixpanel or Amplitude for product analytics",
+      "Hotjar for heatmaps and session recordings"
+    ],
+    "conversion_funnel": [
+      "Step 1 started",
+      "Step 1 completed",
+      "Step 2 completed",
+      "Step 3 completed",
+      "Step 4 completed",
+      "Step 5 completed",
+      "Phone verified",
+      "First login"
+    ]
+  },
+
+  "testing_requirements": {
+    "unit_tests": [
+      "Validation functions (phone, email, Ghana Card, etc.)",
+      "Password strength calculator",
+      "Form field validators",
+      "Utility functions"
+    ],
+    "integration_tests": [
+      "Registration API endpoints",
+      "File upload flow",
+      "Verification code generation and validation",
+      "Database transactions"
+    ],
+    "e2e_tests": [
+      "Complete registration flow (happy path)",
+      "Registration with invalid data",
+      "File upload",
+      "Phone verification",
+      "Resend verification code",
+      "Abandoned registration resume"
+    ],
+    "test_frameworks": {
+      "frontend": "Jest + React Testing Library + Cypress",
+      "backend": "Jest + Supertest"
+    },
+    "test_coverage_goal": "80%+"
+  },
+
+  "deployment_considerations": {
+    "environment_variables": [
+      "DATABASE_URL",
+      "JWT_SECRET",
+      "JWT_REFRESH_SECRET",
+      "HUBTEL_CLIENT_ID",
+      "HUBTEL_CLIENT_SECRET",
+      "HUBTEL_SMS_API_URL",
+      "AWS_S3_BUCKET",
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "SENDGRID_API_KEY or AWS_SES_CONFIG",
+      "FRONTEND_URL",
+      "ALLOWED_ORIGINS",
+      "RATE_LIMIT_MAX_REQUESTS",
+      "NODE_ENV"
+    ],
+    "database_migrations": [
+      "Create pending_registrations table",
+      "Create tenants table",
+      "Create users table",
+      "Create verification_codes table",
+      "Create tenant_settings table",
+      "Create subscriptions table",
+      "Add indexes"
+    ],
+    "cdn_setup": "CloudFlare for static assets and DDoS protection",
+    "monitoring": "Set up Sentry for error tracking, Uptime monitoring",
+    "backup_strategy": "Daily automated backups of pending_registrations (important during high registration periods)"
+  },
+
+  "development_workflow": {
+    "recommended_order": [
+      "1. Set up database schema and migrations",
+      "2. Implement backend validation utilities",
+      "3. Create backend API endpoints (start with /pre-qualify)",
+      "4. Test each endpoint with Postman/Insomnia",
+      "5. Build frontend components (RegistrationWizard shell first)",
+      "6. Implement Step 1, test thoroughly",
+      "7. Implement Steps 2-5 incrementally",
+      "8. Integrate file upload",
+      "9. Implement SMS verification (test with real Hubtel account)",
+      "10. Add auto-save and resume functionality",
+      "11. Implement error handling and user feedback",
+      "12. Add analytics tracking",
+      "13. Write tests",
+      "14. Deploy to staging and conduct UAT",
+      "15. Deploy to production"
+    ],
+    "estimated_timeline": {
+      "backend_api": "1 week",
+      "frontend_components": "2 weeks",
+      "file_upload_integration": "2-3 days",
+      "sms_verification": "2-3 days",
+      "testing_and_debugging": "1 week",
+      "total": "4-5 weeks"
+    }
+  },
+
+  "success_metrics": {
+    "kpis": [
+      "Registration completion rate (target: 60-70%)",
+      "Average time to complete registration (target: 5-7 minutes)",
+      "Phone verification success rate (target: 95%+)",
+      "Form field error rate (target: <10%)",
+      "File upload success rate (target: 98%+)",
+      "Registration abandonment at each step",
+      "Same-day trial activation rate (target: 40%+)"
+    ]
+  }
+}

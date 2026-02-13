@@ -1,0 +1,1578 @@
+{
+  "module_name": "Appointment Scheduling & Queue Management Module",
+  "project": "MediCare Ghana Hospital Management System",
+  "phase": "Phase 1 - Critical Module",
+  "priority": "High - Revenue & Patient Satisfaction Impact",
+  "primary_challenge": "Managing Walk-ins vs Appointments",
+  
+  "module_overview": {
+    "description": "Advanced appointment scheduling system with intelligent walk-in queue management, omnichannel booking, and AI-optimized slot allocation for Ghana healthcare facilities.",
+    "key_objectives": [
+      "Seamlessly manage walk-ins alongside pre-booked appointments",
+      "Maximize doctor utilization (>85% slot fill rate)",
+      "Reduce no-show rates from 30-40% to <15%",
+      "Support 5 booking channels (reception, portal, phone, WhatsApp, walk-in)",
+      "AI-optimize appointment durations based on historical data",
+      "Real-time queue management with patient notifications",
+      "Automated SMS/WhatsApp reminders and confirmations"
+    ],
+    "target_metrics": {
+      "doctor_utilization": ">85%",
+      "no_show_rate": "<15%",
+      "average_wait_time_appointments": "<10 minutes",
+      "average_wait_time_walkins": "<45 minutes",
+      "booking_success_rate": ">95%",
+      "patient_satisfaction": "4.5+ stars"
+    }
+  },
+
+  "hybrid_scheduling_strategy": {
+    "core_principle": "Reserved slots for appointments + Dynamic buffer for walk-ins",
+    "slot_allocation_model": {
+      "description": "Divide doctor's available time between appointments and walk-in capacity",
+      "default_split": {
+        "appointments": "70%",
+        "walk_in_buffer": "20%",
+        "emergency_buffer": "10%"
+      },
+      "example_schedule": {
+        "doctor": "Dr. Mensah",
+        "date": "Monday, 15 Jan 2024",
+        "working_hours": "9:00 AM - 5:00 PM (8 hours)",
+        "total_available": "480 minutes",
+        "allocation": {
+          "scheduled_appointments": "336 minutes (70%) = ~11 slots @ 30min",
+          "walk_in_buffer": "96 minutes (20%) = ~3-4 walk-ins",
+          "emergency_buffer": "48 minutes (10%) = urgent cases"
+        }
+      },
+      "dynamic_adjustment": {
+        "description": "AI adjusts split based on historical patterns",
+        "monday_morning": {
+          "pattern": "High walk-in traffic",
+          "adjusted_split": "60% appointments / 30% walk-in / 10% emergency"
+        },
+        "friday_afternoon": {
+          "pattern": "Low walk-in traffic",
+          "adjusted_split": "80% appointments / 10% walk-in / 10% emergency"
+        }
+      }
+    },
+    "walk_in_integration": {
+      "check_in_process": [
+        "1. Walk-in patient arrives (no appointment)",
+        "2. Receptionist checks doctor's schedule",
+        "3. System shows: a) Next available walk-in slot, b) Estimated wait time",
+        "4. Patient added to walk-in queue",
+        "5. Patient receives queue number and SMS with wait time",
+        "6. Queue updates in real-time as appointments progress",
+        "7. SMS sent when patient's turn is approaching (10 min before)",
+        "8. Patient called to consultation room"
+      ],
+      "queue_prioritization": {
+        "emergency": "Priority 1 - Immediate (bypass queue)",
+        "urgent": "Priority 2 - Within 1 hour",
+        "walk_in_senior_citizen": "Priority 3 - Age >65",
+        "walk_in_pregnant": "Priority 3 - Pregnant women",
+        "walk_in_with_child": "Priority 3 - Parent with infant",
+        "walk_in_regular": "Priority 4 - FIFO (first in, first out)",
+        "walk_in_late": "Priority 5 - Arrived >30min late to appointment"
+      },
+      "overflow_handling": {
+        "when": "Walk-in queue exceeds buffer capacity",
+        "options": [
+          "1. Offer next available appointment slot",
+          "2. Suggest alternative doctor with shorter queue",
+          "3. Estimate extended wait time (>2 hours) and let patient decide",
+          "4. Add to overflow list for callback if slot opens"
+        ]
+      }
+    },
+    "appointment_protection": {
+      "description": "Ensure scheduled appointments are not displaced by walk-ins",
+      "rules": [
+        "Scheduled appointments have guaranteed slots",
+        "Walk-ins can only fill buffer slots or cancellations",
+        "If appointment is running late, subsequent appointments get priority",
+        "Doctors can manually insert urgent walk-in into schedule with approval"
+      ]
+    }
+  },
+
+  "ai_slot_optimization": {
+    "objective": "Learn from historical data to predict optimal appointment durations",
+    "ml_model": {
+      "type": "Gradient Boosting Regressor (XGBoost or LightGBM)",
+      "target_variable": "actual_appointment_duration (minutes)",
+      "features": [
+        "appointment_type (new_consultation, follow_up, procedure, etc.)",
+        "doctor_id",
+        "patient_age",
+        "patient_gender",
+        "chief_complaint (text - use TF-IDF or embeddings)",
+        "time_of_day (morning appointments often longer)",
+        "day_of_week (Mondays busier than Fridays)",
+        "patient_history_complexity (number of chronic conditions)",
+        "previous_appointment_duration (for follow-ups)",
+        "doctor_experience_years",
+        "is_first_appointment_of_day (first apt often longer)"
+      ],
+      "training_data": {
+        "source": "Historical appointment records (min 3-6 months)",
+        "minimum_samples": "1000+ appointments per doctor",
+        "data_preparation": [
+          "Extract completed appointments (status = COMPLETED)",
+          "Calculate duration: check_out_time - check_in_time",
+          "Remove outliers (duration > 2 hours or < 5 minutes)",
+          "Balance dataset across appointment types",
+          "Split: 80% train, 20% test"
+        ]
+      },
+      "model_outputs": {
+        "predicted_duration": "number (minutes)",
+        "confidence_interval": "e.g., 25-35 minutes (80% confidence)",
+        "recommendation": "Suggested slot length (round to 15min increments)"
+      },
+      "retraining": {
+        "frequency": "Monthly",
+        "trigger": "New doctors, new appointment types, significant drift in predictions"
+      }
+    },
+    "slot_generation": {
+      "workflow": [
+        "1. Admin creates doctor's weekly schedule template",
+        "2. For each appointment type, AI suggests optimal duration",
+        "3. System generates time slots based on predictions",
+        "4. Buffer added between slots (5-10 min) to prevent cascading delays",
+        "5. Slots made available for booking"
+      ],
+      "example": {
+        "doctor": "Dr. Mensah",
+        "appointment_type": "New Consultation",
+        "historical_average": "35 minutes",
+        "ai_prediction_for_monday_9am": "40 minutes (Monday mornings are busier)",
+        "generated_slots": [
+          "9:00 AM - 9:40 AM (New Consultation)",
+          "9:50 AM - 10:30 AM (New Consultation) [10min buffer added]",
+          "10:40 AM - 11:15 AM (Follow-up) [AI predicts 25min for follow-ups]"
+        ]
+      }
+    },
+    "adaptive_scheduling": {
+      "description": "Real-time adjustments based on how the day is progressing",
+      "scenarios": {
+        "running_ahead": {
+          "condition": "Doctor finishes appointments faster than predicted",
+          "action": "Pull walk-ins from queue earlier, notify via SMS"
+        },
+        "running_behind": {
+          "condition": "Appointments taking longer than predicted (>15min delay)",
+          "action": "Send SMS to upcoming patients: 'Running 20min late. OK to wait or reschedule?'"
+        },
+        "no_show": {
+          "condition": "Patient doesn't show up",
+          "action": "Offer slot to walk-in queue or call waiting list patients"
+        }
+      }
+    },
+    "fallback": {
+      "description": "If insufficient historical data for AI predictions",
+      "default_durations": {
+        "new_consultation": "30 minutes",
+        "follow_up": "20 minutes",
+        "procedure": "60 minutes",
+        "vaccination": "15 minutes",
+        "pre_natal": "30 minutes"
+      },
+      "learning_mode": "Start with defaults, AI learns and improves over time"
+    }
+  },
+
+  "omnichannel_booking": {
+    "channel_1_reception_desk": {
+      "name": "Reception Desk Booking (Primary Channel)",
+      "users": "Receptionists, Front desk staff",
+      "workflow": [
+        "1. Patient arrives or calls hospital",
+        "2. Receptionist searches for patient (or registers new)",
+        "3. Selects doctor (or specialty if patient unsure)",
+        "4. System shows available slots with AI-predicted durations",
+        "5. Receptionist selects slot",
+        "6. Appointment type selected (auto-suggests based on history)",
+        "7. Optional: Add chief complaint/reason for visit",
+        "8. Confirm booking",
+        "9. System sends SMS confirmation to patient",
+        "10. Print appointment card (optional)"
+      ],
+      "features": [
+        "Fast booking (target: <90 seconds)",
+        "View doctor's full schedule",
+        "Double-booking capability (with approval for urgent cases)",
+        "Block multiple slots for procedures",
+        "Recurring appointments (e.g., weekly therapy sessions)",
+        "Group appointments (e.g., family vaccination)",
+        "Preferred doctor selection"
+      ],
+      "ui_optimizations": [
+        "Keyboard shortcuts (Ctrl+N for new appointment)",
+        "Recent doctors dropdown",
+        "Quick filters (Today, Tomorrow, This Week)",
+        "Color-coded slot availability (green=free, orange=limited, red=full)",
+        "Drag-and-drop rescheduling"
+      ]
+    },
+    "channel_2_patient_portal": {
+      "name": "Patient Self-Booking (Portal/Website)",
+      "users": "Patients (self-service)",
+      "workflow": [
+        "1. Patient logs into portal (SMS OTP authentication)",
+        "2. Clicks 'Book Appointment'",
+        "3. Selects specialty or specific doctor",
+        "4. System shows available dates (next 30 days)",
+        "5. Patient selects date, sees available time slots",
+        "6. Selects appointment type and time",
+        "7. Optional: Adds chief complaint",
+        "8. Reviews and confirms",
+        "9. Receives SMS confirmation",
+        "10. Appointment added to portal calendar"
+      ],
+      "features": [
+        "View doctor profiles (specialty, photo, bio, ratings)",
+        "See next available appointment",
+        "Filter by date range, time of day",
+        "Reschedule existing appointment (up to 24 hours before)",
+        "Cancel appointment (with cancellation reason)",
+        "Add to Google/Apple Calendar",
+        "View appointment history",
+        "Receive SMS reminders"
+      ],
+      "restrictions": {
+        "booking_window": "Can book up to 30 days in advance",
+        "same_day_booking": "Allowed only if slot >2 hours away",
+        "reschedule_limit": "Can reschedule max 2 times per appointment",
+        "cancel_deadline": "Must cancel at least 4 hours before (or charged no-show fee)"
+      },
+      "ui_design": {
+        "mobile_first": "Optimized for mobile (80% of Ghana users on mobile)",
+        "simple_calendar": "Calendar view with green dots for available dates",
+        "slot_cards": "Cards showing time, doctor, estimated duration",
+        "confirmation_screen": "Summary with date, time, doctor, location, SMS opt-in"
+      }
+    },
+    "channel_3_phone_booking": {
+      "name": "Phone Booking (Call Center)",
+      "users": "Call center agents",
+      "workflow": [
+        "1. Patient calls hospital hotline",
+        "2. Agent answers, verifies patient identity (MRN or Ghana Card)",
+        "3. If new patient, quick registration over phone",
+        "4. Agent accesses same booking interface as reception",
+        "5. Books appointment on behalf of patient",
+        "6. Reads back appointment details for confirmation",
+        "7. System sends SMS confirmation",
+        "8. Agent logs call (for quality assurance)"
+      ],
+      "features": [
+        "Integrated with reception booking system (same backend)",
+        "Call recording for quality assurance",
+        "Script prompts for agents (guided conversation)",
+        "Transfer to nurse for medical triage if needed",
+        "Schedule callback if no slots available",
+        "Multi-language support (English, Twi, Ga)"
+      ],
+      "call_center_metrics": [
+        "Average handle time: <3 minutes per booking",
+        "First call resolution: >90%",
+        "Call abandonment rate: <5%"
+      ]
+    },
+    "channel_4_whatsapp_booking": {
+      "name": "WhatsApp Booking Bot",
+      "users": "Patients (via WhatsApp Business)",
+      "technology": "WhatsApp Business API + Chatbot (Dialogflow or custom NLP)",
+      "workflow": [
+        "1. Patient sends message to hospital WhatsApp number",
+        "2. Bot greets: 'Hi! I can help you book an appointment. May I have your phone number?'",
+        "3. Patient provides phone (used to identify patient record)",
+        "4. Bot: 'Great! Which doctor would you like to see?' + Quick reply buttons",
+        "5. Patient selects doctor or specialty",
+        "6. Bot: 'When would you like to come?' + Date options (Today, Tomorrow, This Week, Choose Date)",
+        "7. Patient selects date",
+        "8. Bot shows available time slots as quick reply buttons",
+        "9. Patient selects time",
+        "10. Bot: 'Confirm: Dr. Mensah on Monday 15 Jan at 9:30 AM?' [Confirm] [Change]",
+        "11. Patient confirms",
+        "12. Bot: 'Appointment confirmed! 📅' + sends details + location map",
+        "13. Appointment saved in system"
+      ],
+      "bot_capabilities": [
+        "Natural language understanding (can handle 'I need to see a doctor tomorrow')",
+        "Multi-turn conversation",
+        "Quick reply buttons for easy selection",
+        "Send images (hospital location, doctor photo)",
+        "Send appointment card (PDF)",
+        "Handle rescheduling: 'I need to reschedule my appointment'",
+        "Handle cancellation: 'Cancel my appointment'",
+        "Check appointment status: 'When is my next appointment?'"
+      ],
+      "fallback": {
+        "complex_queries": "Transfer to human agent",
+        "medical_advice": "Bot disclaims medical advice, suggests calling or visiting",
+        "emergencies": "Bot detects emergency keywords → provides emergency number"
+      },
+      "whatsapp_specific_features": {
+        "rich_media": "Send location map via WhatsApp location message",
+        "interactive_buttons": "Confirm, Reschedule, Cancel as message buttons",
+        "appointment_reminders": "Automated reminder messages 24 hours before",
+        "two_way_confirmation": "Patient can reply 'YES' to confirm"
+      },
+      "cost_optimization": {
+        "note": "WhatsApp charges per 24-hour conversation window",
+        "strategy": "Complete booking in single conversation to minimize cost",
+        "estimated_cost": "GHS 0.15 per booking conversation"
+      }
+    },
+    "channel_5_walk_in_queue": {
+      "name": "Walk-in Queue Management",
+      "users": "Walk-in patients (no prior appointment)",
+      "workflow": [
+        "1. Patient arrives at hospital without appointment",
+        "2. Receptionist registers patient (if new) or searches existing",
+        "3. Receptionist selects doctor patient wants to see",
+        "4. System checks: a) Current queue length, b) Next available walk-in slot",
+        "5. System displays: 'Dr. Mensah - Walk-in Queue: 3 patients, Est. wait: 45 minutes'",
+        "6. Receptionist asks patient: 'Wait now or book appointment for later?'",
+        "7. If patient chooses to wait:",
+        "   a. System assigns queue number (e.g., W-005)",
+        "   b. Prints queue ticket with number and estimated wait time",
+        "   c. Sends SMS: 'You're #5 in queue. Est. wait: 45 mins. We'll SMS when ready.'",
+        "8. Patient waits in waiting area",
+        "9. System updates queue in real-time (displayed on TV)",
+        "10. When patient's turn approaches (2 patients ahead):",
+        "    SMS: 'Your turn soon! Please be ready in waiting area.'",
+        "11. When it's patient's turn:",
+        "    a. TV displays: 'Queue #W-005 - Kwame Mensah - Room 201'",
+        "    b. SMS: 'Your turn! Please proceed to Room 201.'",
+        "    c. Announcement on PA system (optional)",
+        "12. Patient proceeds to consultation"
+      ],
+      "queue_display": {
+        "tv_screen": {
+          "layout": "Large screen in waiting area",
+          "content": [
+            "Now Serving: W-003 - Ama Asante - Room 201",
+            "Queue:",
+            "W-004 Kofi Owusu (Next)",
+            "W-005 Kwame Mensah (Est. 10 min)",
+            "W-006 Yaw Boateng (Est. 25 min)"
+          ],
+          "refresh": "Real-time updates every 30 seconds"
+        },
+        "mobile_check": {
+          "description": "Patients can check queue status via SMS",
+          "command": "Send 'QUEUE W-005' to hospital number",
+          "response": "You're #3 in queue. Est. wait: 15 minutes."
+        }
+      },
+      "queue_management_features": [
+        "Priority queue for emergencies (bypass entire queue)",
+        "VIP queue (premium patients - optional)",
+        "Queue pausing (if doctor takes break)",
+        "Queue transfer (if doctor unavailable, transfer queue to another doctor)",
+        "No-show removal (if patient called but doesn't respond, skip after 5 min)",
+        "Re-queue option (patient can step out, rejoin queue later with penalty)"
+      ],
+      "integration_with_appointments": {
+        "coexistence": "Walk-in queue runs parallel to appointments",
+        "slot_filling": "Walk-ins fill buffer slots between appointments",
+        "dynamic_switching": "If appointment is no-show, pull walk-in to fill slot",
+        "overflow_handling": "If walk-in queue too long (>2 hour wait), offer next appointment slot"
+      }
+    }
+  },
+
+  "sms_whatsapp_notifications": {
+    "provider": "Hubtel (Ghana SMS provider)",
+    "whatsapp_provider": "Meta WhatsApp Business API",
+    "notification_types": {
+      "booking_confirmation": {
+        "trigger": "Appointment created",
+        "timing": "Immediate",
+        "sms_template": "Hi {patient_name},\n\nYour appointment is confirmed:\n📅 {date}\n🕐 {time}\n👨‍⚕️ {doctor_name}\n📍 {hospital_name}\n\nReply CANCEL to cancel.\n\n-{hospital_name}",
+        "whatsapp_template": "Same as SMS but with:\n- Hospital logo image\n- Location map button\n- [Add to Calendar] button\n- [View Details] button (opens portal)"
+      },
+      "reminder_24h": {
+        "trigger": "24 hours before appointment",
+        "timing": "8:00 AM day before",
+        "sms_template": "Reminder: Your appointment with Dr. {doctor_name} is TOMORROW at {time}.\n\nReply:\n1-CONFIRM\n2-RESCHEDULE\n3-CANCEL\n\n-{hospital_name}",
+        "interactive_replies": {
+          "1": "Thank you for confirming! See you tomorrow.",
+          "2": "To reschedule, visit {portal_link} or call {phone}.",
+          "3": "Your appointment has been cancelled. Book again anytime."
+        }
+      },
+      "reminder_2h": {
+        "trigger": "2 hours before appointment",
+        "timing": "Calculated based on appointment time",
+        "sms_template": "Your appointment with Dr. {doctor_name} is in 2 HOURS at {time}.\n\nSee you soon at {hospital_name}!\n\n{location_link}",
+        "skip_if": "Patient already checked in"
+      },
+      "running_late_notification": {
+        "trigger": "Doctor running >15 minutes late",
+        "timing": "Real-time",
+        "sms_template": "Update: Dr. {doctor_name} is running 20 minutes late.\n\nYour new estimated time: {new_time}\n\nReply 1 to WAIT or 2 to RESCHEDULE.",
+        "auto_reschedule": "If patient replies 2, offer alternative slots"
+      },
+      "walk_in_queue_update": {
+        "trigger": "Patient added to walk-in queue",
+        "timing": "Immediate",
+        "sms_template": "You're #{queue_number} in queue for Dr. {doctor_name}.\n\nEstimated wait: {wait_time} minutes.\n\nWe'll SMS when you're next!\n\n-{hospital_name}"
+      },
+      "walk_in_turn_soon": {
+        "trigger": "2 patients ahead in queue",
+        "timing": "Real-time",
+        "sms_template": "Your turn is coming up!\n\nPlease be ready in the waiting area.\n\nQueue: #{queue_number}\n\n-{hospital_name}"
+      },
+      "walk_in_turn_now": {
+        "trigger": "Patient's turn",
+        "timing": "Real-time",
+        "sms_template": "It's your turn!\n\nPlease proceed to Room {room_number}.\n\n-{hospital_name}"
+      },
+      "no_show_flag": {
+        "trigger": "Patient doesn't show up 15 min after appointment time",
+        "timing": "15 minutes after appointment time",
+        "sms_template": "We missed you at your {time} appointment.\n\nPlease call to reschedule: {phone}\n\n-{hospital_name}",
+        "system_action": "Mark appointment as NO_SHOW, add to patient's record"
+      },
+      "rescheduled": {
+        "trigger": "Appointment rescheduled",
+        "timing": "Immediate",
+        "sms_template": "Your appointment has been rescheduled:\n\nNEW: {new_date} at {new_time}\nOLD: {old_date} at {old_time}\n\n-{hospital_name}"
+      },
+      "cancelled": {
+        "trigger": "Appointment cancelled",
+        "timing": "Immediate",
+        "sms_template": "Your appointment on {date} at {time} has been cancelled.\n\nReason: {reason}\n\nBook again: {portal_link}\n\n-{hospital_name}"
+      }
+    },
+    "sms_cost_optimization": {
+      "ghana_sms_cost": "GHS 0.05 per SMS (Hubtel)",
+      "monthly_estimate": {
+        "assumptions": "100 appointments/day, 80% SMS opt-in",
+        "sms_per_appointment": "3 (confirmation + 24h reminder + 2h reminder)",
+        "monthly_appointments": "3000",
+        "monthly_sms": "7200 (3000 × 0.8 × 3)",
+        "monthly_cost": "GHS 360 (7200 × 0.05)"
+      },
+      "cost_reduction_strategies": [
+        "Allow patients to opt out of 2h reminder (keep 24h only)",
+        "Skip confirmation SMS for portal bookings (already confirmed in portal)",
+        "Batch walk-in queue updates (send every 10 min, not every queue movement)",
+        "Use WhatsApp for patients who have WhatsApp (cheaper per conversation)"
+      ]
+    },
+    "whatsapp_advantages": {
+      "richer_content": "Images, location maps, buttons, PDFs",
+      "higher_engagement": "Read rates: WhatsApp 98% vs SMS 75%",
+      "two_way_interaction": "Patients can reply with buttons, not just text codes",
+      "multimedia": "Send appointment card as PDF, hospital map as image",
+      "cost_effective": "GHS 0.15 per 24-hour conversation (can send multiple messages)"
+    }
+  },
+
+  "database_schema": {
+    "doctor_schedules": {
+      "table_name": "doctor_schedules",
+      "description": "Weekly schedule templates for doctors",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NOT NULL REFERENCES tenants(id)",
+        "doctor_id UUID NOT NULL REFERENCES users(id)",
+        "day_of_week INTEGER NOT NULL (0=Sunday, 1=Monday, ...6=Saturday)",
+        "start_time TIME NOT NULL",
+        "end_time TIME NOT NULL",
+        "location VARCHAR(200) (Room/Clinic location)",
+        "appointment_types_allowed TEXT[] (array of allowed types)",
+        "is_active BOOLEAN DEFAULT TRUE",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_doctor_day ON (doctor_id, day_of_week)",
+        "INDEX idx_tenant_doctor ON (tenant_id, doctor_id)"
+      ],
+      "example_data": {
+        "doctor_id": "dr_mensah_uuid",
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "17:00:00",
+        "location": "Room 201, Cardiology Wing",
+        "appointment_types_allowed": ["new_consultation", "follow_up", "procedure"]
+      }
+    },
+    "schedule_exceptions": {
+      "table_name": "schedule_exceptions",
+      "description": "Overrides for specific dates (leave, conferences, holidays)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "doctor_id UUID NOT NULL REFERENCES users(id)",
+        "date DATE NOT NULL",
+        "exception_type VARCHAR(50) (leave, conference, holiday, emergency)",
+        "is_available BOOLEAN DEFAULT FALSE",
+        "custom_start_time TIME NULL",
+        "custom_end_time TIME NULL",
+        "reason TEXT",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "use_cases": [
+        "Doctor on leave: date='2024-01-20', is_available=false, reason='Annual leave'",
+        "Working on holiday: date='2024-01-01', is_available=true, start='10:00', end='14:00'",
+        "Half day: date='2024-01-15', custom_end_time='13:00', reason='Conference'"
+      ]
+    },
+    "appointment_types": {
+      "table_name": "appointment_types",
+      "description": "Types of appointments with default durations",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NOT NULL REFERENCES tenants(id)",
+        "name VARCHAR(100) NOT NULL",
+        "description TEXT",
+        "default_duration_minutes INTEGER NOT NULL",
+        "color_code VARCHAR(7) (hex color for calendar display)",
+        "requires_preparation BOOLEAN DEFAULT FALSE",
+        "requires_fasting BOOLEAN DEFAULT FALSE",
+        "is_active BOOLEAN DEFAULT TRUE",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "default_types": [
+        {
+          "name": "New Consultation",
+          "default_duration_minutes": 30,
+          "color_code": "#4CAF50"
+        },
+        {
+          "name": "Follow-up",
+          "default_duration_minutes": 20,
+          "color_code": "#2196F3"
+        },
+        {
+          "name": "Procedure",
+          "default_duration_minutes": 60,
+          "color_code": "#FF9800"
+        },
+        {
+          "name": "Vaccination",
+          "default_duration_minutes": 15,
+          "color_code": "#9C27B0"
+        },
+        {
+          "name": "Pre-natal",
+          "default_duration_minutes": 30,
+          "color_code": "#E91E63"
+        },
+        {
+          "name": "Telemedicine",
+          "default_duration_minutes": 20,
+          "color_code": "#00BCD4"
+        }
+      ]
+    },
+    "appointments": {
+      "table_name": "appointments",
+      "description": "Main appointments table",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NOT NULL REFERENCES tenants(id)",
+        "patient_id UUID NOT NULL REFERENCES patients(id)",
+        "doctor_id UUID NOT NULL REFERENCES users(id)",
+        "appointment_type_id UUID NOT NULL REFERENCES appointment_types(id)",
+        "appointment_date DATE NOT NULL",
+        "start_time TIME NOT NULL",
+        "end_time TIME NOT NULL",
+        "duration_minutes INTEGER NOT NULL",
+        "status VARCHAR(50) NOT NULL DEFAULT 'SCHEDULED'",
+        "booking_channel VARCHAR(50) (reception, portal, phone, whatsapp, walkin)",
+        "chief_complaint TEXT",
+        "special_instructions TEXT",
+        "location VARCHAR(200) (Room number)",
+        "is_walk_in BOOLEAN DEFAULT FALSE",
+        "queue_number VARCHAR(20) NULL (e.g., 'W-005' for walk-ins)",
+        "priority INTEGER DEFAULT 0 (0=normal, 1=urgent, 2=emergency)",
+        "confirmed_at TIMESTAMP NULL",
+        "checked_in_at TIMESTAMP NULL",
+        "started_at TIMESTAMP NULL",
+        "completed_at TIMESTAMP NULL",
+        "actual_duration_minutes INTEGER NULL (calculated after completion)",
+        "no_show_reason TEXT NULL",
+        "cancellation_reason TEXT NULL",
+        "cancelled_by UUID NULL REFERENCES users(id)",
+        "cancelled_at TIMESTAMP NULL",
+        "reminder_24h_sent BOOLEAN DEFAULT FALSE",
+        "reminder_2h_sent BOOLEAN DEFAULT FALSE",
+        "booked_by UUID NOT NULL REFERENCES users(id) (staff who created booking)",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "status_enum": [
+        "SCHEDULED - Initial state after booking",
+        "CONFIRMED - Patient confirmed attendance (via SMS reply or portal)",
+        "CHECKED_IN - Patient arrived and checked in at reception",
+        "IN_PROGRESS - Patient currently with doctor",
+        "COMPLETED - Consultation finished",
+        "RESCHEDULED - Moved to different date/time",
+        "CANCELLED - Cancelled by patient or hospital",
+        "NO_SHOW - Patient didn't show up"
+      ],
+      "indexes": [
+        "INDEX idx_doctor_date ON (doctor_id, appointment_date)",
+        "INDEX idx_patient_date ON (patient_id, appointment_date)",
+        "INDEX idx_status ON (status)",
+        "INDEX idx_walk_in_queue ON (is_walk_in, queue_number, appointment_date)",
+        "INDEX idx_date_time ON (appointment_date, start_time)"
+      ]
+    },
+    "walk_in_queue": {
+      "table_name": "walk_in_queue",
+      "description": "Active walk-in queue (subset of appointments where is_walk_in=true)",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "appointment_id UUID NOT NULL REFERENCES appointments(id)",
+        "queue_number VARCHAR(20) NOT NULL",
+        "queue_position INTEGER NOT NULL",
+        "estimated_wait_minutes INTEGER",
+        "priority INTEGER DEFAULT 0",
+        "sms_sent_turn_soon BOOLEAN DEFAULT FALSE",
+        "sms_sent_turn_now BOOLEAN DEFAULT FALSE",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "note": "This is a view/materialized view of appointments where is_walk_in=true and status in ('SCHEDULED', 'CONFIRMED', 'CHECKED_IN')"
+    },
+    "appointment_reminders": {
+      "table_name": "appointment_reminders",
+      "description": "Log of SMS reminders sent",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "appointment_id UUID NOT NULL REFERENCES appointments(id)",
+        "reminder_type VARCHAR(50) (confirmation, 24h_reminder, 2h_reminder, running_late, etc.)",
+        "sent_at TIMESTAMP NOT NULL",
+        "sent_via VARCHAR(20) (sms, whatsapp)",
+        "message_text TEXT",
+        "delivery_status VARCHAR(50) (sent, delivered, failed)",
+        "patient_response TEXT NULL (if patient replied)",
+        "cost_ghs DECIMAL(10,2) (cost of sending this message)"
+      ]
+    },
+    "appointment_reschedule_history": {
+      "table_name": "appointment_reschedule_history",
+      "description": "Audit trail of rescheduling",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "appointment_id UUID NOT NULL REFERENCES appointments(id)",
+        "old_date DATE NOT NULL",
+        "old_start_time TIME NOT NULL",
+        "new_date DATE NOT NULL",
+        "new_start_time TIME NOT NULL",
+        "reason TEXT",
+        "rescheduled_by UUID REFERENCES users(id)",
+        "rescheduled_at TIMESTAMP DEFAULT NOW()"
+      ]
+    },
+    "ai_slot_predictions": {
+      "table_name": "ai_slot_predictions",
+      "description": "Store AI predictions for appointment durations",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "tenant_id UUID NOT NULL REFERENCES tenants(id)",
+        "doctor_id UUID NOT NULL REFERENCES users(id)",
+        "appointment_type_id UUID NOT NULL REFERENCES appointment_types(id)",
+        "day_of_week INTEGER",
+        "time_of_day VARCHAR(20) (morning, afternoon, evening)",
+        "predicted_duration_minutes INTEGER NOT NULL",
+        "confidence_score DECIMAL(3,2) (0.00-1.00)",
+        "lower_bound_minutes INTEGER (95% confidence interval)",
+        "upper_bound_minutes INTEGER",
+        "sample_size INTEGER (number of historical appointments used)",
+        "model_version VARCHAR(50)",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "use_case": "When creating appointment slots, lookup predicted duration based on doctor, type, day, time"
+    }
+  },
+
+  "api_endpoints": {
+    "base_path": "/api/appointments",
+    "authentication": "Required (JWT)",
+    "endpoints": [
+      {
+        "path": "/api/appointments",
+        "method": "POST",
+        "name": "Create Appointment",
+        "description": "Book a new appointment",
+        "permissions": ["APPOINTMENT_CREATE"],
+        "request_body": {
+          "patient_id": "UUID (required)",
+          "doctor_id": "UUID (required)",
+          "appointment_type_id": "UUID (required)",
+          "appointment_date": "DATE (required)",
+          "start_time": "TIME (required)",
+          "duration_minutes": "INTEGER (optional - will use AI prediction if not provided)",
+          "booking_channel": "STRING (reception, portal, phone, whatsapp)",
+          "chief_complaint": "STRING (optional)",
+          "special_instructions": "STRING (optional)",
+          "is_walk_in": "BOOLEAN (default: false)"
+        },
+        "validation": [
+          "Check doctor is available at requested time",
+          "Check for appointment conflicts (double booking)",
+          "Verify patient exists",
+          "Verify doctor works on that day",
+          "Check if slot is within doctor's working hours"
+        ],
+        "response": {
+          "success": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "appointment": "{ appointment object }",
+                "confirmation_sms_sent": true,
+                "queue_number": "W-005 (if walk-in)"
+              }
+            }
+          },
+          "conflict": {
+            "status": 409,
+            "body": {
+              "success": false,
+              "error": {
+                "code": "SLOT_NOT_AVAILABLE",
+                "message": "This time slot is already booked",
+                "alternative_slots": "[array of next 5 available slots]"
+              }
+            }
+          }
+        },
+        "side_effects": [
+          "If is_walk_in=true: Assign queue number, add to queue, send queue SMS",
+          "If is_walk_in=false: Send booking confirmation SMS",
+          "Create appointment reminder job (24h before)",
+          "Log booking in appointment_reminders table"
+        ]
+      },
+      {
+        "path": "/api/appointments/:id",
+        "method": "GET",
+        "name": "Get Appointment Details",
+        "description": "Retrieve full appointment information",
+        "permissions": ["APPOINTMENT_READ"],
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "appointment": "{ full appointment object }",
+              "patient": "{ patient summary }",
+              "doctor": "{ doctor summary }",
+              "reminders_sent": "[ array of reminder logs ]"
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/appointments/:id",
+        "method": "PUT",
+        "name": "Update Appointment",
+        "description": "Update appointment details (reschedule, update notes, etc.)",
+        "permissions": ["APPOINTMENT_UPDATE"],
+        "request_body": {
+          "appointment_date": "DATE (optional)",
+          "start_time": "TIME (optional)",
+          "chief_complaint": "STRING (optional)",
+          "special_instructions": "STRING (optional)",
+          "status": "STRING (optional - to mark checked-in, in-progress, etc.)"
+        },
+        "validation": [
+          "If rescheduling (date or time changed): Check new slot availability",
+          "Cannot reschedule if status is COMPLETED",
+          "Cannot reschedule within 4 hours of appointment (policy)"
+        ],
+        "side_effects": [
+          "If rescheduled: Create record in appointment_reschedule_history",
+          "If rescheduled: Send SMS notification of new date/time",
+          "If status changed to CHECKED_IN: Record checked_in_at timestamp"
+        ]
+      },
+      {
+        "path": "/api/appointments/:id/cancel",
+        "method": "POST",
+        "name": "Cancel Appointment",
+        "description": "Cancel an appointment",
+        "permissions": ["APPOINTMENT_CANCEL"],
+        "request_body": {
+          "cancellation_reason": "STRING (required)",
+          "send_notification": "BOOLEAN (default: true)"
+        },
+        "side_effects": [
+          "Set status to CANCELLED",
+          "Record cancelled_at timestamp and cancelled_by user",
+          "Send cancellation SMS to patient",
+          "If walk-in queue: Remove from queue, notify next patient",
+          "Offer slot to waiting list or walk-in queue"
+        ]
+      },
+      {
+        "path": "/api/appointments/search",
+        "method": "GET",
+        "name": "Search Appointments",
+        "description": "Find appointments by various criteria",
+        "query_params": {
+          "patient_id": "UUID (optional)",
+          "doctor_id": "UUID (optional)",
+          "date_from": "DATE (optional)",
+          "date_to": "DATE (optional)",
+          "status": "STRING (optional)",
+          "is_walk_in": "BOOLEAN (optional)",
+          "page": "INTEGER (default: 1)",
+          "limit": "INTEGER (default: 50, max: 100)"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "appointments": "[ array of appointments ]",
+              "total": 150,
+              "page": 1,
+              "pages": 3
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/appointments/available-slots",
+        "method": "GET",
+        "name": "Get Available Time Slots",
+        "description": "Fetch available appointment slots for a doctor on a specific date",
+        "query_params": {
+          "doctor_id": "UUID (required)",
+          "date": "DATE (required)",
+          "appointment_type_id": "UUID (optional - for AI-optimized duration)"
+        },
+        "logic": [
+          "1. Fetch doctor's schedule for that day of week",
+          "2. Check schedule_exceptions for that specific date",
+          "3. Get existing appointments for that doctor on that date",
+          "4. If appointment_type_id provided, get AI-predicted duration",
+          "5. Generate available slots (working_hours - booked_slots - buffer_for_walkins)",
+          "6. Return slots with start_time, end_time, duration"
+        ],
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "date": "2024-01-15",
+              "doctor": "{ doctor summary }",
+              "slots": [
+                {
+                  "start_time": "09:00",
+                  "end_time": "09:30",
+                  "duration_minutes": 30,
+                  "is_available": true,
+                  "slot_type": "appointment"
+                },
+                {
+                  "start_time": "09:30",
+                  "end_time": "10:00",
+                  "duration_minutes": 30,
+                  "is_available": false,
+                  "booked_by": "Kwame Mensah",
+                  "slot_type": "appointment"
+                },
+                {
+                  "start_time": "10:00",
+                  "end_time": "10:30",
+                  "duration_minutes": 30,
+                  "is_available": true,
+                  "slot_type": "walk_in_buffer"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/appointments/walk-in/add",
+        "method": "POST",
+        "name": "Add Walk-in to Queue",
+        "description": "Register walk-in patient and add to queue",
+        "request_body": {
+          "patient_id": "UUID (required)",
+          "doctor_id": "UUID (required)",
+          "priority": "INTEGER (0=normal, 1=urgent, 2=emergency)"
+        },
+        "logic": [
+          "1. Check doctor's current queue length",
+          "2. Estimate wait time based on: current_queue_length × average_consultation_duration",
+          "3. Generate queue number (e.g., W-005)",
+          "4. Create appointment with is_walk_in=true, status=CHECKED_IN",
+          "5. Add to walk_in_queue table",
+          "6. Send SMS with queue number and estimated wait"
+        ],
+        "response": {
+          "status": 201,
+          "body": {
+            "success": true,
+            "data": {
+              "queue_number": "W-005",
+              "queue_position": 5,
+              "estimated_wait_minutes": 45,
+              "doctor": "Dr. Mensah",
+              "sms_sent": true
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/appointments/walk-in/queue",
+        "method": "GET",
+        "name": "Get Walk-in Queue",
+        "description": "Fetch current walk-in queue for a doctor",
+        "query_params": {
+          "doctor_id": "UUID (required)",
+          "date": "DATE (optional, defaults to today)"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "doctor": "Dr. Mensah",
+              "date": "2024-01-15",
+              "current_patient": {
+                "queue_number": "W-003",
+                "patient_name": "Ama Asante",
+                "started_at": "10:15"
+              },
+              "queue": [
+                {
+                  "queue_number": "W-004",
+                  "patient_name": "Kofi Owusu",
+                  "priority": 0,
+                  "estimated_wait_minutes": 15,
+                  "checked_in_at": "10:00"
+                },
+                {
+                  "queue_number": "W-005",
+                  "patient_name": "Kwame Mensah",
+                  "priority": 0,
+                  "estimated_wait_minutes": 30,
+                  "checked_in_at": "10:05"
+                }
+              ],
+              "total_in_queue": 2
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/appointments/walk-in/next",
+        "method": "POST",
+        "name": "Call Next Walk-in",
+        "description": "Pull next patient from walk-in queue",
+        "request_body": {
+          "doctor_id": "UUID (required)"
+        },
+        "logic": [
+          "1. Get next patient in queue (sorted by priority, then queue_position)",
+          "2. Update appointment status to IN_PROGRESS",
+          "3. Send SMS to patient: 'It's your turn! Room 201'",
+          "4. Update queue display (remove from waiting queue)",
+          "5. Update estimated wait times for remaining patients"
+        ],
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "next_patient": {
+                "appointment_id": "uuid",
+                "patient": "{ patient object }",
+                "queue_number": "W-004",
+                "sms_sent": true
+              }
+            }
+          }
+        }
+      },
+      {
+        "path": "/api/appointments/:id/check-in",
+        "method": "POST",
+        "name": "Check-in Patient",
+        "description": "Mark patient as checked in (for scheduled appointments)",
+        "side_effects": [
+          "Update status to CHECKED_IN",
+          "Record checked_in_at timestamp",
+          "If patient is early/late, log the difference",
+          "Notify doctor if patient has arrived"
+        ]
+      },
+      {
+        "path": "/api/appointments/:id/complete",
+        "method": "POST",
+        "name": "Complete Appointment",
+        "description": "Mark appointment as completed",
+        "request_body": {
+          "actual_duration_minutes": "INTEGER (optional - calculated if not provided)"
+        },
+        "side_effects": [
+          "Update status to COMPLETED",
+          "Record completed_at timestamp",
+          "Calculate actual_duration_minutes (completed_at - started_at)",
+          "Store duration for AI model retraining",
+          "If walk-in queue: Call next patient automatically"
+        ]
+      },
+      {
+        "path": "/api/appointments/no-show/:id",
+        "method": "POST",
+        "name": "Mark as No-Show",
+        "description": "Record that patient didn't show up",
+        "request_body": {
+          "no_show_reason": "STRING (optional)"
+        },
+        "side_effects": [
+          "Update status to NO_SHOW",
+          "Add to patient's no-show history",
+          "Send SMS: 'We missed you today...'",
+          "Offer slot to walk-in queue",
+          "Update patient's no-show risk score (for AI prediction)"
+        ]
+      },
+      {
+        "path": "/api/appointments/reschedule/:id",
+        "method": "POST",
+        "name": "Reschedule Appointment",
+        "description": "Move appointment to different date/time",
+        "request_body": {
+          "new_date": "DATE (required)",
+          "new_start_time": "TIME (required)",
+          "reason": "STRING (optional)"
+        },
+        "validation": [
+          "Check new slot is available",
+          "Enforce reschedule deadline (e.g., must be >4 hours before appointment)",
+          "Limit reschedules (max 2 times per appointment)"
+        ],
+        "side_effects": [
+          "Update appointment date and time",
+          "Log in appointment_reschedule_history",
+          "Send SMS with new date/time",
+          "Cancel old reminder jobs, create new ones for new time"
+        ]
+      }
+    ]
+  },
+
+  "frontend_components": {
+    "component_structure": [
+      {
+        "name": "AppointmentCalendar",
+        "type": "Main Calendar View",
+        "route": "/appointments",
+        "description": "Multi-doctor calendar showing all appointments",
+        "views": [
+          "Day View - Timeline with hourly slots",
+          "Week View - 7-day grid",
+          "Month View - Calendar month with appointment counts",
+          "List View - Sortable list of appointments"
+        ],
+        "features": [
+          "Color-coded by appointment type",
+          "Status indicators (scheduled, confirmed, checked-in, in-progress, completed)",
+          "Click appointment to view details",
+          "Drag-and-drop to reschedule (with confirmation)",
+          "Quick actions: Check-in, Cancel, Reschedule",
+          "Filter by: Doctor, Status, Appointment Type",
+          "Search by patient name",
+          "Today button to jump to current date",
+          "Walk-in queue panel (sidebar)"
+        ],
+        "ui_library": "FullCalendar React or react-big-calendar"
+      },
+      {
+        "name": "BookAppointmentModal",
+        "type": "Modal Component",
+        "description": "Multi-step appointment booking wizard",
+        "steps": [
+          {
+            "step": 1,
+            "title": "Select Patient",
+            "content": "Search and select patient (or quick register new)"
+          },
+          {
+            "step": 2,
+            "title": "Select Doctor & Type",
+            "content": "Choose doctor (or specialty), select appointment type"
+          },
+          {
+            "step": 3,
+            "title": "Choose Date & Time",
+            "content": "Calendar view with available slots highlighted"
+          },
+          {
+            "step": 4,
+            "title": "Add Details",
+            "content": "Chief complaint, special instructions"
+          },
+          {
+            "step": 5,
+            "title": "Confirm",
+            "content": "Review all details, confirm booking"
+          }
+        ],
+        "ux_features": [
+          "Step indicator (1/5, 2/5, etc.)",
+          "Back button to previous step",
+          "Smart defaults (doctor from previous booking, default appointment type)",
+          "AI-suggested slot duration shown",
+          "Alternative slot suggestions if preferred time unavailable",
+          "SMS opt-in checkbox (for reminders)",
+          "Booking confirmation screen with print option"
+        ]
+      },
+      {
+        "name": "WalkInQueue",
+        "type": "Queue Management Component",
+        "description": "Real-time walk-in queue display and management",
+        "layout": {
+          "header": "Doctor selector dropdown + Date",
+          "current_patient": "Now serving: W-003 - Ama Asante",
+          "queue_list": "List of waiting patients with estimated wait times",
+          "actions": "[Call Next] [Add to Queue] [Refresh]"
+        },
+        "features": [
+          "Real-time updates (WebSocket or polling every 30 sec)",
+          "Priority badges (Emergency=red, Urgent=orange, Normal=green)",
+          "Drag-and-drop to reorder queue (manual override)",
+          "Remove from queue (if patient left)",
+          "Transfer to another doctor",
+          "Estimated wait time auto-updates",
+          "Send SMS reminder to specific patient",
+          "Queue statistics (avg wait time, total served today)"
+        ],
+        "display_fields_per_patient": [
+          "Queue number (W-005)",
+          "Patient name + photo",
+          "Priority indicator",
+          "Time checked in",
+          "Estimated wait (updates in real-time)",
+          "Actions: [Call Now] [Remove] [Send SMS]"
+        ]
+      },
+      {
+        "name": "AddWalkInModal",
+        "type": "Modal Component",
+        "description": "Register walk-in patient and add to queue",
+        "workflow": [
+          "1. Search/select patient (or quick register)",
+          "2. Select doctor",
+          "3. Select priority (Normal, Urgent, Emergency)",
+          "4. System shows: Current queue length, Estimated wait time",
+          "5. Receptionist asks patient: 'Estimated wait is 45 minutes. OK to wait?'",
+          "6. If yes: Add to queue, print queue ticket, send SMS",
+          "7. If no: Offer to book appointment instead"
+        ],
+        "queue_ticket_printout": {
+          "content": [
+            "Hospital logo",
+            "Queue Number: W-005",
+            "Doctor: Dr. Mensah",
+            "Estimated Wait: 45 minutes",
+            "Date: 15 Jan 2024, 10:30 AM",
+            "Please stay in waiting area. We'll call you via SMS and PA system."
+          ]
+        }
+      },
+      {
+        "name": "DoctorScheduleView",
+        "type": "Doctor's Personal Schedule",
+        "route": "/appointments/my-schedule",
+        "users": "Doctors",
+        "description": "Doctor's view of their own schedule",
+        "layout": {
+          "header": "Doctor's name + Date picker",
+          "next_patient_card": "Prominent card showing next patient (name, time, chief complaint)",
+          "timeline": "Today's schedule in timeline format",
+          "walk_in_queue": "Walk-in patients waiting (count + [View Queue] button)",
+          "stats": "Patients seen today, Running on time/behind/ahead"
+        },
+        "features": [
+          "Next patient prominently displayed",
+          "Click patient to view full record",
+          "Mark appointment as in-progress (one button)",
+          "Mark appointment as completed (one button)",
+          "Call next walk-in (one button)",
+          "Running time indicator (on time, 10 min behind, 15 min ahead)",
+          "Block time for break (lunch, emergency)",
+          "Mobile-optimized (doctors often use tablets)"
+        ]
+      },
+      {
+        "name": "AppointmentDetailsModal",
+        "type": "Modal Component",
+        "description": "Full appointment details and actions",
+        "sections": [
+          {
+            "section": "Patient Info",
+            "content": "Name, MRN, photo, age, gender, phone"
+          },
+          {
+            "section": "Appointment Info",
+            "content": "Date, time, doctor, type, duration, status"
+          },
+          {
+            "section": "Visit Info",
+            "content": "Chief complaint, special instructions, booking channel"
+          },
+          {
+            "section": "Status Timeline",
+            "content": "Booked at, Confirmed at, Checked in at, Started at, Completed at"
+          },
+          {
+            "section": "Reminders Sent",
+            "content": "Log of SMS/WhatsApp notifications sent"
+          }
+        ],
+        "actions": {
+          "if_scheduled": ["Check In", "Reschedule", "Cancel", "Send Reminder"],
+          "if_checked_in": ["Start Consultation", "Call Patient", "Cancel"],
+          "if_in_progress": ["Complete", "Add Notes"],
+          "if_completed": ["View Encounter", "View Bill"],
+          "always": ["View Patient Record", "Print Appointment Card"]
+        }
+      },
+      {
+        "name": "QueueDisplayScreen",
+        "type": "TV Display Component",
+        "description": "Large screen for waiting area (no interaction)",
+        "url": "/queue-display?doctor_id=xxx",
+        "layout": "Full-screen, auto-refresh every 30 seconds",
+        "content": {
+          "header": "Hospital logo + Current time",
+          "now_serving": {
+            "display": "Large text",
+            "content": "NOW SERVING: W-003 - Ama Asante - ROOM 201"
+          },
+          "queue": {
+            "display": "Table",
+            "columns": ["Queue #", "Patient Name", "Status"],
+            "rows": [
+              "W-004 | Kofi Owusu | NEXT",
+              "W-005 | Kwame Mensah | WAITING",
+              "W-006 | Yaw Boateng | WAITING"
+            ]
+          }
+        },
+        "styling": {
+          "font_size": "Very large for readability from distance",
+          "colors": "High contrast (black text on white or hospital brand colors)",
+          "animations": "Highlight when queue updates (flash or sound)"
+        }
+      },
+      {
+        "name": "PatientPortalBooking",
+        "type": "Patient Self-Booking (Portal)",
+        "route": "/portal/book-appointment",
+        "description": "Patient-facing appointment booking",
+        "workflow": [
+          "1. Select doctor or specialty",
+          "2. View doctor's profile (photo, bio, specialty, ratings)",
+          "3. Select date (next 30 days available)",
+          "4. Select time from available slots",
+          "5. Select appointment type",
+          "6. Add reason for visit (optional)",
+          "7. Review and confirm",
+          "8. Confirmation screen with details + Add to Calendar button"
+        ],
+        "features": [
+          "Doctor ratings and reviews (if enabled)",
+          "Next available appointment highlighted",
+          "Filter by: Date range, Time of day (morning/afternoon)",
+          "Reschedule existing appointment (up to 24 hours before)",
+          "Cancel appointment (with reason)",
+          "View appointment history",
+          "SMS reminder opt-in/out"
+        ],
+        "mobile_optimized": true
+      },
+      {
+        "name": "WhatsAppBotInterface",
+        "type": "Chatbot (Backend Integration)",
+        "description": "WhatsApp booking bot logic",
+        "platform": "WhatsApp Business API + Dialogflow/Custom NLP",
+        "conversation_flow": {
+          "step_1_greeting": {
+            "bot": "Hi! I'm the MediCare booking assistant. I can help you book an appointment. May I have your phone number?",
+            "user": "+233244123456",
+            "bot_action": "Lookup patient by phone"
+          },
+          "step_2_patient_found": {
+            "bot": "Great! Hi Kwame Mensah. Which doctor would you like to see?",
+            "quick_replies": ["Dr. Mensah (Cardiology)", "Dr. Asante (Pediatrics)", "Dr. Owusu (Surgery)", "Other"],
+            "user": "Dr. Mensah"
+          },
+          "step_3_select_date": {
+            "bot": "When would you like to see Dr. Mensah?",
+            "quick_replies": ["Today", "Tomorrow", "This Week", "Choose Date"],
+            "user": "Tomorrow"
+          },
+          "step_4_select_time": {
+            "bot": "Available times for tomorrow (16 Jan):",
+            "quick_replies": ["9:00 AM", "10:00 AM", "2:00 PM", "3:30 PM"],
+            "user": "9:00 AM"
+          },
+          "step_5_confirm": {
+            "bot": "Confirm booking:\n📅 16 Jan 2024\n🕐 9:00 AM\n👨‍⚕️ Dr. Mensah\n📍 Ridge Hospital",
+            "quick_replies": ["✅ Confirm", "✏️ Change"],
+            "user": "✅ Confirm"
+          },
+          "step_6_success": {
+            "bot": "✅ Appointment confirmed!\n\nYou'll receive a reminder 24 hours before.\n\nSee you tomorrow! 🏥",
+            "bot_sends_location": "Ridge Hospital location map",
+            "bot_sends_calendar_file": "appointment.ics file for adding to calendar"
+          }
+        },
+        "nlp_intents": [
+          "book_appointment",
+          "reschedule_appointment",
+          "cancel_appointment",
+          "check_appointment_status",
+          "doctor_availability"
+        ],
+        "entity_extraction": [
+          "doctor_name",
+          "date (today, tomorrow, next Monday, 15th Jan)",
+          "time (9am, morning, afternoon)"
+        ]
+      }
+    ]
+  },
+
+  "no_show_prediction_ai": {
+    "model_type": "Binary Classification (Logistic Regression or Random Forest)",
+    "target_variable": "will_show (0 = no-show, 1 = showed up)",
+    "features": [
+      "patient_age",
+      "patient_gender",
+      "appointment_lead_time_days (days between booking and appointment)",
+      "appointment_time_of_day (morning, afternoon, evening)",
+      "day_of_week (Monday - Sunday)",
+      "is_first_appointment (boolean)",
+      "patient_no_show_history_rate (% of previous no-shows)",
+      "patient_cancel_history_rate",
+      "distance_from_hospital_km (calculated from patient address)",
+      "appointment_type (new_consultation, follow_up, etc.)",
+      "booking_channel (reception, portal, phone, whatsapp)",
+      "confirmed_24h_reminder (boolean - did patient confirm?)",
+      "weather_forecast (rainy_day - if available)",
+      "is_public_holiday_eve (day before holiday)"
+    ],
+    "training_data": {
+      "source": "Historical appointments with status = COMPLETED or NO_SHOW",
+      "minimum_samples": "1000+ appointments",
+      "class_balance": "Handle imbalance (typically 70% show, 30% no-show) using SMOTE or class weights"
+    },
+    "model_output": {
+      "prediction": "0 (will no-show) or 1 (will show)",
+      "probability": "0.0 - 1.0 (e.g., 0.75 = 75% chance of showing up)",
+      "risk_score": "0-100 (100 - probability × 100)"
+    },
+    "actions_based_on_risk": {
+      "low_risk_0_30": "No special action, standard reminder",
+      "medium_risk_31_60": "Send extra reminder, emphasize importance",
+      "high_risk_61_100": "Call patient day before, require confirmation, consider overbooking slot"
+    },
+    "retraining": "Monthly with new data",
+    "use_in_system": [
+      "Display risk score when booking (receptionist can see 'High no-show risk: 75%')",
+      "Trigger extra reminders for high-risk appointments",
+      "Inform overbooking decisions",
+      "Analytics dashboard showing predicted vs actual no-shows"
+    ]
+  },
+
+  "performance_requirements": {
+    "api_response_times": {
+      "get_available_slots": "<500ms",
+      "create_appointment": "<1 second",
+      "get_walk_in_queue": "<200ms",
+      "search_appointments": "<500ms"
+    },
+    "real_time_updates": {
+      "walk_in_queue": "Update every 30 seconds (WebSocket preferred, polling acceptable)",
+      "appointment_status_changes": "Immediate notification to relevant users",
+      "queue_display_tv": "Refresh every 30 seconds"
+    },
+    "scalability": {
+      "concurrent_bookings": "Support 50+ simultaneous booking operations",
+      "daily_appointments": "Handle 500+ appointments per day per hospital",
+      "walk_in_queue": "Manage 50+ walk-ins per doctor per day"
+    }
+  },
+
+  "analytics_and_reporting": {
+    "key_metrics": [
+      {
+        "metric": "Doctor Utilization Rate",
+        "formula": "(booked_slots / total_available_slots) × 100",
+        "target": ">85%"
+      },
+      {
+        "metric": "No-Show Rate",
+        "formula": "(no_shows / total_appointments) × 100",
+        "target": "<15%"
+      },
+      {
+        "metric": "Average Wait Time (Walk-ins)",
+        "formula": "Average of (check_in_time - started_time) for walk-ins",
+        "target": "<45 minutes"
+      },
+      {
+        "metric": "On-Time Performance",
+        "formula": "(appointments_started_on_time / total_appointments) × 100",
+        "target": ">80%"
+      },
+      {
+        "metric": "Booking Channel Distribution",
+        "formula": "Breakdown by reception, portal, phone, WhatsApp, walk-in",
+        "insight": "Identify popular channels, optimize resources"
+      },
+      {
+        "metric": "Revenue per Slot",
+        "formula": "Total revenue / total appointments",
+        "insight": "Measure financial efficiency"
+      }
+    ],
+    "dashboards": [
+      {
+        "name": "Receptionist Dashboard",
+        "metrics": [
+          "Today's appointments (count by status)",
+          "Walk-in queue status (by doctor)",
+          "No-shows today",
+          "Next 5 appointments",
+          "Quick actions (Book, Check-in, Call Walk-in)"
+        ]
+      },
+      {
+        "name": "Doctor Dashboard",
+        "metrics": [
+          "My today's schedule",
+          "Next patient",
+          "Walk-ins waiting for me (count)",
+          "Patients seen today / Total for today",
+          "Running ahead/behind by X minutes"
+        ]
+      },
+      {
+        "name": "Admin Dashboard",
+        "metrics": [
+          "Utilization rate by doctor (weekly/monthly)",
+          "No-show trends (graph over time)",
+          "Walk-in vs appointment ratio",
+          "Peak booking hours",
+          "Revenue trends",
+          "AI model performance (predicted vs actual durations, no-shows)"
+        ]
+      }
+    ]
+  },
+
+  "implementation_phases": {
+    "phase_1a_weeks_1_2": {
+      "name": "Core Scheduling",
+      "deliverables": [
+        "Database schema (all appointment tables)",
+        "Doctor schedule management (weekly templates, exceptions)",
+        "Appointment CRUD APIs",
+        "Available slots API",
+        "Reception booking interface (calendar + booking modal)",
+        "Basic SMS notifications (confirmation only)"
+      ]
+    },
+    "phase_1b_weeks_3_4": {
+      "name": "Walk-in Queue Management",
+      "deliverables": [
+        "Walk-in queue system (add to queue, call next)",
+        "Queue APIs",
+        "Walk-in queue component (for receptionists)",
+        "Queue display TV screen",
+        "SMS notifications for queue updates"
+      ]
+    },
+    "phase_1c_weeks_5_6": {
+      "name": "Patient Portal Booking",
+      "deliverables": [
+        "Patient portal booking interface",
+        "Doctor profiles/ratings",
+        "Reschedule/cancel functionality",
+        "SMS reminders (24h, 2h)"
+      ]
+    },
+    "phase_1d_weeks_7_8": {
+      "name": "WhatsApp Bot",
+      "deliverables": [
+        "WhatsApp Business API integration",
+        "Chatbot conversation flow (Dialogflow or custom)",
+        "NLP for booking intents",
+        "WhatsApp notifications"
+      ]
+    },
+    "phase_1e_weeks_9_10": {
+      "name": "AI Optimization",
+      "deliverables": [
+        "Collect historical appointment data",
+        "Train duration prediction model",
+        "Train no-show prediction model",
+        "Integrate AI predictions into booking flow",
+        "Adaptive scheduling logic"
+      ]
+    },
+    "phase_1f_weeks_11_12": {
+      "name": "Phone Booking & Polish",
+      "deliverables": [
+        "Call center interface (same as reception)",
+        "Call logging",
+        "Analytics dashboards",
+        "Testing (all workflows)",
+        "User training materials",
+        "Documentation"
+      ]
+    }
+  },
+
+  "success_criteria": {
+    "functional": [
+      "All 5 booking channels operational",
+      "Walk-in queue seamlessly coexists with appointments",
+      "AI predicts durations within ±10 minutes accuracy",
+      "SMS/WhatsApp notifications delivered reliably (>95% delivery rate)",
+      "Zero double-bookings (conflict prevention works)"
+    ],
+    "performance": [
+      "Doctor utilization >85%",
+      "No-show rate reduced to <15% (from 30-40%)",
+      "Average wait time for walk-ins <45 minutes",
+      "Booking process takes <2 minutes (reception)",
+      "Queue display updates in real-time"
+    ],
+    "user_satisfaction": [
+      "Receptionists: 4.5+ stars (ease of booking)",
+      "Doctors: 4.5+ stars (schedule visibility, queue management)",
+      "Patients: 4.5+ stars (booking convenience, wait time)"
+    ]
+  }
+}

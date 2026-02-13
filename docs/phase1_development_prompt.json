@@ -1,0 +1,939 @@
+{
+  "project_name": "MediCare Ghana - Hospital Management System",
+  "project_type": "Multi-tenant SaaS Hospital Management System",
+  "target_market": "Ghana Healthcare Sector",
+  "development_phase": "Phase 1 - MVP (6 Months)",
+  
+  "project_overview": {
+    "description": "A comprehensive, AI-powered, multi-branch hospital management system tailored for Ghana's healthcare sector with NHIS integration, mobile money payments, and offline-first capabilities.",
+    "key_differentiators": [
+      "NHIS claims processing and compliance",
+      "Mobile money integration (MTN, Vodafone, AirtelTigo)",
+      "Offline-first PWA architecture",
+      "WhatsApp/SMS patient engagement",
+      "Multi-tenancy for hospital chains",
+      "Ghana Health Service reporting compliance"
+    ]
+  },
+
+  "technology_stack": {
+    "backend": {
+      "framework": "Node.js with Express.js or NestJS",
+      "alternative": "Python with FastAPI",
+      "orm": "Prisma or TypeORM",
+      "authentication": "JWT with refresh tokens",
+      "api_style": "RESTful API with optional GraphQL"
+    },
+    "database": {
+      "primary": "PostgreSQL 15+",
+      "caching": "Redis",
+      "search": "PostgreSQL Full-Text Search (Elasticsearch for Phase 2)",
+      "multi_tenancy_approach": "Separate schemas per tenant in single database"
+    },
+    "frontend": {
+      "framework": "React 18+ with TypeScript",
+      "state_management": "Redux Toolkit or Zustand",
+      "ui_library": "Ant Design or Material-UI",
+      "forms": "React Hook Form with Yup validation",
+      "data_fetching": "React Query (TanStack Query)"
+    },
+    "mobile": {
+      "framework": "React Native with Expo",
+      "offline_storage": "WatermelonDB or Realm",
+      "platforms": "Android priority, iOS secondary"
+    },
+    "ai_ml": {
+      "runtime": "Python microservice",
+      "frameworks": "scikit-learn, TensorFlow Lite",
+      "deployment": "Docker containers",
+      "initial_models": [
+        "Patient no-show prediction",
+        "NHIS claim approval likelihood",
+        "Appointment duration estimation"
+      ]
+    },
+    "infrastructure": {
+      "hosting": "AWS (Africa Cape Town region) or Azure",
+      "cdn": "CloudFlare",
+      "file_storage": "AWS S3 or MinIO",
+      "deployment": "Docker + Kubernetes (or AWS ECS)",
+      "ci_cd": "GitHub Actions",
+      "monitoring": "Sentry for errors, Prometheus + Grafana for metrics"
+    },
+    "third_party_integrations": {
+      "sms_gateway": "Hubtel or SMSGH",
+      "mobile_money": "Hubtel Payment API or direct integrations",
+      "whatsapp": "WhatsApp Business API (Twilio or official)",
+      "ghana_card": "National Identification Authority API (if available)",
+      "nhis": "NHIS claims portal integration"
+    }
+  },
+
+  "architecture_patterns": {
+    "overall": "Modular monolith with microservices for AI/ML",
+    "multi_tenancy": {
+      "strategy": "Separate database schemas per tenant",
+      "tenant_identification": "Subdomain (hospital1.medicaresaas.com) or custom domain",
+      "data_isolation": "Schema-level isolation with row-level security",
+      "shared_resources": "Application code, AI models, authentication service"
+    },
+    "offline_first": {
+      "approach": "Service Workers + IndexedDB",
+      "sync_strategy": "Optimistic UI updates with background sync",
+      "conflict_resolution": "Last-write-wins with conflict queue"
+    },
+    "security": {
+      "authentication": "Multi-factor authentication (SMS-based)",
+      "authorization": "Role-based access control (RBAC)",
+      "data_encryption": "AES-256 for data at rest, TLS 1.3 for transit",
+      "audit_logging": "Complete audit trail for all data modifications",
+      "compliance": "Ghana Data Protection Act, 2012 compliance"
+    }
+  },
+
+  "phase_1_modules": {
+    "module_1_patient_management": {
+      "priority": "Critical",
+      "features": [
+        "Patient registration with Ghana Card integration",
+        "Demographic information capture",
+        "Photo capture and storage",
+        "Medical history and allergies",
+        "Emergency contact information",
+        "Family/relative management",
+        "Patient search (by name, phone, Ghana Card, MRN)",
+        "Patient merge functionality (duplicate resolution)",
+        "Visit history tracking",
+        "Patient portal access (view appointments, results, bills)"
+      ],
+      "database_entities": [
+        "patients",
+        "patient_contacts",
+        "patient_medical_history",
+        "patient_allergies",
+        "patient_relatives",
+        "patient_visits"
+      ],
+      "api_endpoints": [
+        "POST /api/patients - Create patient",
+        "GET /api/patients/:id - Get patient details",
+        "PUT /api/patients/:id - Update patient",
+        "GET /api/patients/search - Search patients",
+        "POST /api/patients/:id/merge - Merge duplicate patients",
+        "GET /api/patients/:id/visits - Get patient visit history"
+      ],
+      "ghana_specific": [
+        "Ghana Card number validation",
+        "Ghana phone number format (+233)",
+        "Support for local languages (Twi, Ga, Ewe) in patient communication"
+      ]
+    },
+
+    "module_2_appointment_scheduling": {
+      "priority": "Critical",
+      "features": [
+        "Doctor availability management (calendar)",
+        "Appointment booking (walk-in and online)",
+        "Appointment types (consultation, follow-up, procedure)",
+        "Queue management for walk-ins",
+        "Appointment status tracking (scheduled, checked-in, in-progress, completed, cancelled)",
+        "Automatic SMS reminders (24 hours before)",
+        "WhatsApp appointment confirmations",
+        "Rescheduling and cancellation",
+        "No-show tracking",
+        "Doctor schedule templates (weekly patterns)",
+        "Block time for emergencies/procedures",
+        "Patient self-booking portal"
+      ],
+      "database_entities": [
+        "appointments",
+        "doctor_schedules",
+        "appointment_types",
+        "queue_entries",
+        "notification_logs"
+      ],
+      "api_endpoints": [
+        "POST /api/appointments - Book appointment",
+        "GET /api/appointments/:id - Get appointment details",
+        "PUT /api/appointments/:id - Update/reschedule appointment",
+        "DELETE /api/appointments/:id - Cancel appointment",
+        "GET /api/doctors/:id/availability - Check doctor availability",
+        "POST /api/appointments/:id/check-in - Check-in patient",
+        "GET /api/queue/current - Get current queue status"
+      ],
+      "ai_features": [
+        "No-show prediction (80% accuracy target)",
+        "Optimal appointment duration suggestion",
+        "Smart overbooking recommendations"
+      ]
+    },
+
+    "module_3_emr_clinical_notes": {
+      "priority": "Critical",
+      "features": [
+        "Vital signs recording (BP, temperature, pulse, weight, height, BMI)",
+        "Chief complaint and history of present illness",
+        "Physical examination notes",
+        "Diagnosis (ICD-10 coding support)",
+        "Clinical notes (SOAP format)",
+        "Treatment plan",
+        "Follow-up instructions",
+        "Clinical forms and templates",
+        "Doctor signature (digital)",
+        "Note amendment with audit trail",
+        "Allergies and warnings display",
+        "Previous visit summaries"
+      ],
+      "database_entities": [
+        "clinical_encounters",
+        "vital_signs",
+        "diagnoses",
+        "clinical_notes",
+        "icd10_codes"
+      ],
+      "api_endpoints": [
+        "POST /api/encounters - Create clinical encounter",
+        "PUT /api/encounters/:id - Update encounter",
+        "POST /api/encounters/:id/vitals - Record vitals",
+        "POST /api/encounters/:id/diagnosis - Add diagnosis",
+        "GET /api/encounters/:id - Get encounter details",
+        "GET /api/patients/:id/encounters - Get patient encounter history"
+      ]
+    },
+
+    "module_4_prescription_management": {
+      "priority": "Critical",
+      "features": [
+        "E-prescription creation",
+        "Drug database (generic and brand names)",
+        "Dosage and frequency selection",
+        "Duration of treatment",
+        "Prescription printing",
+        "Drug interaction checking",
+        "Allergy warnings",
+        "Prescription history",
+        "Refill management",
+        "NHIS drug list compliance",
+        "Prescription status (pending, dispensed, partially dispensed)"
+      ],
+      "database_entities": [
+        "prescriptions",
+        "prescription_items",
+        "drugs_master",
+        "drug_interactions",
+        "nhis_drug_list"
+      ],
+      "api_endpoints": [
+        "POST /api/prescriptions - Create prescription",
+        "GET /api/prescriptions/:id - Get prescription details",
+        "PUT /api/prescriptions/:id/status - Update prescription status",
+        "GET /api/drugs/search - Search drug database",
+        "POST /api/drugs/check-interactions - Check drug interactions"
+      ]
+    },
+
+    "module_5_pharmacy_management": {
+      "priority": "Critical",
+      "features": [
+        "Medication inventory management",
+        "Stock in/out tracking",
+        "Batch and expiry tracking",
+        "Prescription dispensing",
+        "POS for over-the-counter sales",
+        "Low stock alerts",
+        "Expiry alerts (3 months before)",
+        "Drug pricing (cash and NHIS prices)",
+        "Dispensing history",
+        "Stock adjustment (damage, loss)",
+        "Daily sales reporting",
+        "Pharmacy billing integration"
+      ],
+      "database_entities": [
+        "pharmacy_stock",
+        "stock_batches",
+        "stock_transactions",
+        "dispensing_records",
+        "pharmacy_sales"
+      ],
+      "api_endpoints": [
+        "POST /api/pharmacy/dispense - Dispense medication",
+        "GET /api/pharmacy/stock - Get stock levels",
+        "POST /api/pharmacy/stock-in - Record stock receipt",
+        "POST /api/pharmacy/stock-out - Record stock issue",
+        "GET /api/pharmacy/expiring - Get expiring medications",
+        "GET /api/pharmacy/low-stock - Get low stock items"
+      ]
+    },
+
+    "module_6_laboratory_management": {
+      "priority": "High",
+      "features": [
+        "Test catalog management",
+        "Lab test ordering from clinics",
+        "Sample collection tracking",
+        "Barcode/QR label printing for samples",
+        "Result entry (numeric, text, dropdown)",
+        "Normal ranges and flagging abnormal results",
+        "Result approval workflow",
+        "Result printing and digital sharing",
+        "Lab billing integration",
+        "Test panel/profile management",
+        "External lab referrals",
+        "Result SMS notification to patients"
+      ],
+      "database_entities": [
+        "lab_tests_catalog",
+        "lab_orders",
+        "lab_results",
+        "lab_samples",
+        "test_templates"
+      ],
+      "api_endpoints": [
+        "POST /api/lab/orders - Create lab order",
+        "GET /api/lab/orders/:id - Get order details",
+        "POST /api/lab/results - Enter test results",
+        "PUT /api/lab/results/:id/approve - Approve results",
+        "GET /api/patients/:id/lab-results - Get patient lab history",
+        "GET /api/lab/pending - Get pending tests"
+      ]
+    },
+
+    "module_7_billing_payments": {
+      "priority": "Critical",
+      "features": [
+        "Service pricing management",
+        "Invoice generation (itemized)",
+        "Payment recording (cash, card, mobile money, insurance)",
+        "Mobile money integration (MTN, Vodafone, AirtelTigo)",
+        "Payment reconciliation",
+        "Receipt printing",
+        "Outstanding bills tracking",
+        "Payment reminders (SMS)",
+        "Deposit management",
+        "Refund processing",
+        "Credit limit for corporate clients",
+        "Daily cash collection report",
+        "Revenue reports by service type"
+      ],
+      "database_entities": [
+        "invoices",
+        "invoice_items",
+        "payments",
+        "payment_methods",
+        "service_prices",
+        "mobile_money_transactions"
+      ],
+      "api_endpoints": [
+        "POST /api/billing/invoices - Create invoice",
+        "GET /api/billing/invoices/:id - Get invoice",
+        "POST /api/billing/payments - Record payment",
+        "POST /api/billing/mobile-money - Process MoMo payment",
+        "GET /api/billing/outstanding - Get outstanding bills",
+        "GET /api/billing/reports/daily-collection - Daily collection report"
+      ],
+      "mobile_money_integration": {
+        "providers": ["MTN Mobile Money", "Vodafone Cash", "AirtelTigo Money"],
+        "flow": "Request payment -> Customer approves on phone -> Callback confirmation -> Receipt generation",
+        "reconciliation": "Automatic matching of transaction IDs"
+      }
+    },
+
+    "module_8_nhis_claims": {
+      "priority": "Critical - Ghana Specific",
+      "features": [
+        "NHIS membership verification",
+        "Claims creation from patient visits",
+        "Service coding (tariff codes)",
+        "Claims validation before submission",
+        "Electronic claims submission",
+        "Claims tracking (submitted, approved, rejected, paid)",
+        "Rejection reason management",
+        "Claims resubmission workflow",
+        "Payment reconciliation",
+        "NHIS reporting (monthly, quarterly)",
+        "Claims aging report",
+        "Approval rate analytics"
+      ],
+      "database_entities": [
+        "nhis_claims",
+        "nhis_claim_items",
+        "nhis_tariffs",
+        "nhis_members",
+        "claim_rejections"
+      ],
+      "api_endpoints": [
+        "POST /api/nhis/verify-membership - Verify NHIS card",
+        "POST /api/nhis/claims - Create claim",
+        "POST /api/nhis/claims/:id/submit - Submit claim to NHIS",
+        "GET /api/nhis/claims/:id/status - Check claim status",
+        "PUT /api/nhis/claims/:id/resubmit - Resubmit rejected claim",
+        "GET /api/nhis/reports/approval-rate - Claims approval analytics"
+      ],
+      "validation_rules": [
+        "Verify active NHIS membership",
+        "Check service is on NHIS tariff list",
+        "Validate diagnosis codes (ICD-10)",
+        "Check claim within visit date limits",
+        "Verify prescriptions match NHIS drug list"
+      ]
+    },
+
+    "module_9_hr_payroll": {
+      "priority": "High",
+      "features": [
+        "Employee database (personal and professional info)",
+        "Department and designation management",
+        "Attendance tracking (manual or biometric integration)",
+        "Leave management (application, approval, balance)",
+        "Shift scheduling and roster",
+        "Salary structure (basic + allowances)",
+        "Payroll processing (monthly)",
+        "Deductions (SSNIT, income tax, loans)",
+        "Payslip generation",
+        "Bank transfer file generation",
+        "Tax computation (Ghana Revenue Authority rates)",
+        "Statutory reports (SSNIT, GRA)"
+      ],
+      "database_entities": [
+        "employees",
+        "departments",
+        "designations",
+        "attendance_records",
+        "leave_applications",
+        "salary_structures",
+        "payroll_runs",
+        "payslips",
+        "deductions"
+      ],
+      "api_endpoints": [
+        "POST /api/hr/employees - Add employee",
+        "PUT /api/hr/employees/:id - Update employee",
+        "POST /api/hr/attendance - Record attendance",
+        "POST /api/hr/leave - Apply for leave",
+        "POST /api/hr/payroll/process - Process monthly payroll",
+        "GET /api/hr/payroll/:month/payslips - Get payslips",
+        "GET /api/hr/reports/ssnit - SSNIT contribution report"
+      ],
+      "ghana_payroll_specifics": {
+        "ssnit_contribution": "Employee 5.5% + Employer 13%",
+        "income_tax_brackets": "Progressive rates as per GRA",
+        "minimum_wage": "Check current Ghana minimum wage",
+        "statutory_deductions": ["SSNIT", "Income Tax", "NHIS (if applicable)"]
+      }
+    },
+
+    "module_10_user_management": {
+      "priority": "Critical",
+      "features": [
+        "User registration and authentication",
+        "Role-based access control (RBAC)",
+        "Permission management (granular)",
+        "Multi-factor authentication (SMS-based)",
+        "Password policies",
+        "User activity logging",
+        "Session management",
+        "Single sign-on across branches",
+        "User deactivation/reactivation",
+        "Audit trail for all actions"
+      ],
+      "predefined_roles": [
+        "Super Admin (platform owner)",
+        "Hospital Admin",
+        "Doctor",
+        "Nurse",
+        "Pharmacist",
+        "Lab Technician",
+        "Receptionist",
+        "Billing Officer",
+        "HR Manager",
+        "Accountant",
+        "Patient (portal access)"
+      ],
+      "database_entities": [
+        "users",
+        "roles",
+        "permissions",
+        "user_roles",
+        "role_permissions",
+        "user_sessions",
+        "audit_logs"
+      ],
+      "api_endpoints": [
+        "POST /api/auth/register - Register user",
+        "POST /api/auth/login - Login",
+        "POST /api/auth/logout - Logout",
+        "POST /api/auth/mfa/send - Send MFA code",
+        "POST /api/auth/mfa/verify - Verify MFA code",
+        "GET /api/users - List users",
+        "POST /api/roles - Create role",
+        "PUT /api/roles/:id/permissions - Assign permissions"
+      ]
+    },
+
+    "module_11_reporting_analytics": {
+      "priority": "High",
+      "features": [
+        "Patient registration reports",
+        "Appointment reports (by doctor, date, status)",
+        "Revenue reports (daily, monthly, by service)",
+        "NHIS claims reports",
+        "Lab test volume reports",
+        "Pharmacy sales reports",
+        "Staff attendance reports",
+        "Ministry of Health mandatory reports",
+        "Custom report builder (basic)",
+        "Data export (Excel, PDF)",
+        "Dashboard for key metrics"
+      ],
+      "key_dashboards": [
+        "Executive Dashboard (revenue, patients, claims)",
+        "Clinical Dashboard (appointments, consultations, lab tests)",
+        "Financial Dashboard (collections, outstanding, NHIS claims)",
+        "HR Dashboard (attendance, leave balance)"
+      ],
+      "api_endpoints": [
+        "GET /api/reports/patients - Patient reports",
+        "GET /api/reports/revenue - Revenue analysis",
+        "GET /api/reports/nhis-claims - NHIS claims reports",
+        "GET /api/reports/dashboard/executive - Executive dashboard data",
+        "POST /api/reports/custom - Generate custom report"
+      ],
+      "ghana_compliance_reports": [
+        "Monthly Returns to Ghana Health Service",
+        "Notifiable Diseases Report",
+        "Birth and Death Statistics",
+        "NHIS Claims Summary"
+      ]
+    },
+
+    "module_12_multi_branch_tenant": {
+      "priority": "Critical",
+      "features": [
+        "Tenant (hospital) registration",
+        "Branch management for hospital chains",
+        "Tenant configuration (branding, settings)",
+        "Data isolation between tenants",
+        "Cross-branch patient records (with consent)",
+        "Centralized reporting for chains",
+        "Tenant billing and subscription",
+        "Resource sharing (doctor works at multiple branches)",
+        "Branch-specific pricing",
+        "Inter-branch transfers"
+      ],
+      "database_entities": [
+        "tenants",
+        "branches",
+        "tenant_settings",
+        "subscriptions",
+        "cross_branch_access"
+      ],
+      "api_endpoints": [
+        "POST /api/tenants - Create tenant",
+        "GET /api/tenants/:id - Get tenant details",
+        "POST /api/branches - Add branch",
+        "PUT /api/tenants/:id/settings - Update settings",
+        "GET /api/tenants/:id/branches - List branches"
+      ]
+    }
+  },
+
+  "mobile_applications": {
+    "patient_app": {
+      "priority": "High",
+      "platform": "Android (iOS Phase 2)",
+      "features": [
+        "User registration and login",
+        "Book appointments",
+        "View appointment history",
+        "View lab results",
+        "View prescriptions",
+        "View and pay bills (mobile money)",
+        "Health records access",
+        "Push notifications",
+        "Find nearby hospitals (using the platform)",
+        "Emergency contact",
+        "Offline viewing of records"
+      ]
+    },
+    "staff_app": {
+      "priority": "Medium",
+      "platform": "Android",
+      "features": [
+        "Clock in/out (attendance)",
+        "View schedule/roster",
+        "View assigned patients (doctors/nurses)",
+        "Quick access to patient records",
+        "Internal messaging",
+        "Leave application",
+        "Payslip viewing",
+        "Task notifications"
+      ]
+    }
+  },
+
+  "database_schema_overview": {
+    "tenancy_approach": "Each tenant gets a separate schema in PostgreSQL",
+    "core_tables": [
+      "tenants (shared)",
+      "users (shared with tenant_id)",
+      "patients",
+      "appointments",
+      "clinical_encounters",
+      "prescriptions",
+      "pharmacy_stock",
+      "lab_orders",
+      "invoices",
+      "payments",
+      "nhis_claims",
+      "employees",
+      "payroll_runs"
+    ],
+    "indexing_strategy": [
+      "Primary keys on all tables",
+      "Foreign key indexes",
+      "Composite indexes on frequently queried fields (tenant_id + date ranges)",
+      "Full-text search indexes on patient names, drugs",
+      "Partial indexes for active records"
+    ],
+    "data_retention": {
+      "patient_records": "Permanent",
+      "audit_logs": "7 years",
+      "session_logs": "90 days",
+      "notifications": "6 months"
+    }
+  },
+
+  "api_design_principles": {
+    "versioning": "URL versioning (e.g., /api/v1/patients)",
+    "authentication": "Bearer token (JWT) in Authorization header",
+    "rate_limiting": "100 requests per minute per user",
+    "pagination": "Cursor-based pagination for large datasets",
+    "filtering": "Query parameters (e.g., ?status=active&date_from=2024-01-01)",
+    "error_handling": "Consistent error response format with error codes",
+    "response_format": {
+      "success": {
+        "status": "success",
+        "data": {},
+        "meta": {}
+      },
+      "error": {
+        "status": "error",
+        "message": "Error description",
+        "errors": [],
+        "code": "ERROR_CODE"
+      }
+    }
+  },
+
+  "offline_first_strategy": {
+    "approach": "Service Workers + IndexedDB on web, WatermelonDB on mobile",
+    "sync_mechanism": {
+      "frequency": "Background sync every 5 minutes when online",
+      "conflict_resolution": "Last-write-wins with timestamp comparison",
+      "critical_operations": "Queue offline and sync when online (payments, prescriptions)",
+      "read_operations": "Serve from cache, update in background"
+    },
+    "cached_data": [
+      "Patient demographics",
+      "Appointment schedules (1 week ahead)",
+      "Drug database",
+      "Service prices",
+      "User sessions"
+    ]
+  },
+
+  "security_implementation": {
+    "authentication": {
+      "method": "JWT with refresh tokens",
+      "token_expiry": "Access token: 15 minutes, Refresh token: 7 days",
+      "mfa": "SMS-based OTP for sensitive operations"
+    },
+    "authorization": {
+      "method": "Role-based access control (RBAC)",
+      "permission_levels": ["create", "read", "update", "delete", "approve"],
+      "data_access": "Users can only access data for their tenant/branch"
+    },
+    "data_protection": {
+      "encryption_at_rest": "AES-256 for sensitive fields (Ghana Card, phone numbers)",
+      "encryption_in_transit": "TLS 1.3",
+      "password_hashing": "bcrypt with salt",
+      "pii_masking": "Mask sensitive data in logs"
+    },
+    "audit_trail": {
+      "logged_actions": ["create", "update", "delete", "login", "export"],
+      "stored_info": ["user_id", "action", "timestamp", "ip_address", "changes"]
+    },
+    "compliance": {
+      "ghana_data_protection_act": "Obtain consent for data processing",
+      "gdpr_considerations": "Right to access, right to be forgotten",
+      "hipaa_alignment": "Data minimization, access controls"
+    }
+  },
+
+  "performance_requirements": {
+    "response_time": {
+      "api_endpoints": "< 200ms (95th percentile)",
+      "page_load": "< 2 seconds on 3G connection",
+      "database_queries": "< 100ms for simple queries"
+    },
+    "scalability": {
+      "concurrent_users": "500+ per tenant",
+      "database": "10M+ patient records",
+      "file_storage": "1TB+ for documents/images"
+    },
+    "availability": {
+      "uptime": "99.9% (excluding planned maintenance)",
+      "backup": "Daily automated backups, 30-day retention",
+      "disaster_recovery": "RTO: 4 hours, RPO: 1 hour"
+    }
+  },
+
+  "testing_strategy": {
+    "unit_tests": "Jest for backend, React Testing Library for frontend",
+    "integration_tests": "Supertest for API endpoints",
+    "e2e_tests": "Playwright or Cypress for critical user flows",
+    "test_coverage": "Minimum 70% code coverage",
+    "performance_tests": "Artillery or k6 for load testing",
+    "security_tests": "OWASP ZAP for vulnerability scanning"
+  },
+
+  "deployment_strategy": {
+    "environments": ["Development", "Staging", "Production"],
+    "ci_cd": {
+      "tool": "GitHub Actions",
+      "workflow": "Commit -> Build -> Test -> Deploy to staging -> Manual approval -> Deploy to production"
+    },
+    "containerization": "Docker for all services",
+    "orchestration": "Kubernetes or AWS ECS",
+    "monitoring": {
+      "application": "Sentry for error tracking",
+      "infrastructure": "Prometheus + Grafana",
+      "logging": "Winston/Bunyan -> CloudWatch or ELK stack",
+      "uptime": "Pingdom or UptimeRobot"
+    }
+  },
+
+  "initial_ai_features": {
+    "no_show_prediction": {
+      "description": "Predict likelihood of patient not showing up for appointment",
+      "input_features": ["appointment_history", "day_of_week", "time_of_day", "advance_booking_days", "patient_age", "appointment_type"],
+      "model": "Random Forest or XGBoost",
+      "accuracy_target": "80%",
+      "use_case": "Enable overbooking, send targeted reminders"
+    },
+    "nhis_approval_prediction": {
+      "description": "Predict if NHIS claim will be approved before submission",
+      "input_features": ["diagnosis_code", "service_codes", "claim_amount", "hospital_history", "documentation_completeness"],
+      "model": "Logistic Regression or Neural Network",
+      "accuracy_target": "85%",
+      "use_case": "Fix documentation issues before submission"
+    },
+    "appointment_duration": {
+      "description": "Estimate appointment duration for better scheduling",
+      "input_features": ["doctor_specialty", "appointment_type", "patient_age", "chief_complaint", "historical_duration"],
+      "model": "Linear Regression",
+      "use_case": "Optimize appointment spacing"
+    }
+  },
+
+  "ghana_specific_requirements": {
+    "language_support": ["English (primary)", "Twi", "Ga", "Ewe (Phase 2)"],
+    "currency": "Ghana Cedis (GHS)",
+    "date_format": "DD/MM/YYYY",
+    "phone_format": "+233 XX XXX XXXX",
+    "business_hours": "Typically 8am - 5pm, but configurable per hospital",
+    "public_holidays": "Ghana public holidays calendar",
+    "tax_rates": {
+      "vat": "12.5% (check current rate)",
+      "nhil": "2.5%",
+      "getfund": "2.5%"
+    },
+    "regulations": [
+      "Ghana Data Protection Act, 2012",
+      "Ghana Health Service regulations",
+      "Pharmacy Council guidelines",
+      "Medical and Dental Council requirements"
+    ]
+  },
+
+  "development_milestones": {
+    "month_1": {
+      "deliverables": [
+        "Project setup and architecture",
+        "Database schema design and implementation",
+        "Authentication and user management",
+        "Multi-tenancy foundation",
+        "Patient registration module"
+      ]
+    },
+    "month_2": {
+      "deliverables": [
+        "Appointment scheduling module",
+        "SMS/WhatsApp integration",
+        "EMR and clinical notes",
+        "Basic reporting"
+      ]
+    },
+    "month_3": {
+      "deliverables": [
+        "Prescription management",
+        "Pharmacy module",
+        "Laboratory module",
+        "Integration between modules"
+      ]
+    },
+    "month_4": {
+      "deliverables": [
+        "Billing and payments",
+        "Mobile money integration",
+        "NHIS claims module",
+        "Receipt and invoice generation"
+      ]
+    },
+    "month_5": {
+      "deliverables": [
+        "HR and payroll module",
+        "Offline-first implementation",
+        "Mobile app (patient)",
+        "Advanced reporting"
+      ]
+    },
+    "month_6": {
+      "deliverables": [
+        "Testing and bug fixes",
+        "Performance optimization",
+        "Security audit",
+        "Documentation and training materials",
+        "Beta deployment with pilot hospital"
+      ]
+    }
+  },
+
+  "documentation_requirements": {
+    "technical_documentation": [
+      "API documentation (Swagger/OpenAPI)",
+      "Database schema documentation",
+      "Architecture diagrams",
+      "Deployment guide",
+      "Development setup guide"
+    ],
+    "user_documentation": [
+      "User manual (per role)",
+      "Video tutorials",
+      "FAQ",
+      "Troubleshooting guide"
+    ],
+    "training_materials": [
+      "Admin training guide",
+      "Doctor/clinical staff guide",
+      "Billing staff guide",
+      "Patient portal guide"
+    ]
+  },
+
+  "success_metrics": {
+    "technical_kpis": [
+      "99.9% uptime",
+      "< 200ms API response time",
+      "< 2s page load time",
+      "Zero critical security vulnerabilities",
+      "> 70% test coverage"
+    ],
+    "business_kpis": [
+      "10 hospitals onboarded in first 6 months",
+      "80% NHIS claim approval rate (vs 60% industry average)",
+      "30% reduction in appointment no-shows",
+      "50% reduction in billing errors",
+      "90% user satisfaction score"
+    ]
+  },
+
+  "go_to_market_strategy": {
+    "pricing_model": "Subscription-based (monthly/annual)",
+    "pricing_tiers": [
+      {
+        "name": "Starter",
+        "beds": "1-20",
+        "price_monthly": "GHS 500-800",
+        "features": "Core modules only"
+      },
+      {
+        "name": "Professional",
+        "beds": "21-50",
+        "price_monthly": "GHS 1200-2000",
+        "features": "All modules + basic AI"
+      },
+      {
+        "name": "Enterprise",
+        "beds": "50+",
+        "price_monthly": "Custom pricing",
+        "features": "All features + dedicated support"
+      }
+    ],
+    "target_customers": [
+      "Private hospitals (5-50 beds)",
+      "Polyclinics",
+      "Maternity homes",
+      "Diagnostic centers",
+      "Hospital chains"
+    ],
+    "pilot_program": {
+      "duration": "3 months free",
+      "hospitals": "3-5 pilot hospitals",
+      "support": "Dedicated onboarding and training"
+    }
+  },
+
+  "risk_mitigation": {
+    "technical_risks": [
+      {
+        "risk": "Poor internet connectivity",
+        "mitigation": "Offline-first architecture, data sync when online"
+      },
+      {
+        "risk": "Data loss during power outages",
+        "mitigation": "Auto-save every 30 seconds, UPS recommendation for hospitals"
+      },
+      {
+        "risk": "NHIS API unavailability",
+        "mitigation": "Queue claims for submission, manual upload option"
+      }
+    ],
+    "business_risks": [
+      {
+        "risk": "Slow hospital adoption",
+        "mitigation": "Free pilot program, extensive training, ROI demonstrations"
+      },
+      {
+        "risk": "Competition from existing systems",
+        "mitigation": "Focus on mobile-first, NHIS optimization, Ghana-specific features"
+      },
+      {
+        "risk": "Regulatory changes",
+        "mitigation": "Modular architecture for easy updates, dedicated compliance monitoring"
+      }
+    ]
+  },
+
+  "next_steps": {
+    "immediate_actions": [
+      "Set up development environment in Windsurf IDE",
+      "Initialize project repository (monorepo recommended)",
+      "Set up PostgreSQL database",
+      "Create project folder structure",
+      "Install core dependencies",
+      "Configure ESLint, Prettier, TypeScript",
+      "Set up Docker containers for local development",
+      "Create initial database migrations",
+      "Implement authentication scaffolding",
+      "Build tenant management foundation"
+    ],
+    "week_1_goals": [
+      "Complete project setup",
+      "Database schema for users, tenants, patients",
+      "Basic CRUD APIs for patient management",
+      "Login/registration frontend",
+      "Patient registration form"
+    ]
+  }
+}
