@@ -12,11 +12,16 @@ export interface JwtPayload {
   roleId?: string;
   email: string;
   permissions?: string[];
+  primaryBranchId?: string;
+  currentBranchId?: string;
+  accessibleBranches?: string[];
+  branchAccessScope?: string;
 }
 
 export interface AuthRequest extends Request {
   user?: JwtPayload;
   tenantId?: string;
+  currentBranchId?: string;
   userPermissions?: string[];
 }
 
@@ -244,4 +249,182 @@ export const tenantGuard = (req: AuthRequest, res: Response, next: NextFunction)
     return;
   }
   next();
+};
+
+export async function checkBranchAccess(
+  userId: string,
+  targetBranchId: string
+): Promise<{ hasAccess: boolean; reason?: string }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      branchId: true,
+      branchAccessScope: true,
+      accessibleBranches: true,
+      departmentId: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    return { hasAccess: false, reason: 'User not found' };
+  }
+
+  // SUPER_ADMIN and HOSPITAL_ADMIN have all-branch access
+  if (user.role === 'SUPER_ADMIN' || user.role === 'HOSPITAL_ADMIN') {
+    return { hasAccess: true };
+  }
+
+  switch (user.branchAccessScope) {
+    case 'PRIMARY_ONLY':
+      if (user.branchId !== targetBranchId) {
+        return { hasAccess: false, reason: 'Cannot access resources from different branch' };
+      }
+      break;
+
+    case 'SPECIFIC_BRANCHES':
+      if (!user.accessibleBranches.includes(targetBranchId)) {
+        return { hasAccess: false, reason: 'No access to this branch' };
+      }
+      break;
+
+    case 'ALL_BRANCHES':
+      // User can access all branches
+      break;
+
+    case 'DEPARTMENT_ONLY':
+      if (user.branchId !== targetBranchId) {
+        return { hasAccess: false, reason: 'Can only access resources in your department' };
+      }
+      break;
+
+    default:
+      // Default to primary only
+      if (user.branchId !== targetBranchId) {
+        return { hasAccess: false, reason: 'Cannot access resources from different branch' };
+      }
+  }
+
+  return { hasAccess: true };
+}
+
+export const requireBranchAccess = (getBranchId: (req: AuthRequest) => string | undefined) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      sendError(res, 'Not authenticated', 401, undefined, 'NOT_AUTHENTICATED');
+      return;
+    }
+
+    try {
+      const targetBranchId = getBranchId(req);
+      
+      if (!targetBranchId) {
+        // No branch context required for this request
+        next();
+        return;
+      }
+
+      const { hasAccess, reason } = await checkBranchAccess(req.user.userId, targetBranchId);
+
+      if (!hasAccess) {
+        sendError(res, reason || 'No access to this branch', 403, undefined, 'BRANCH_ACCESS_DENIED');
+        return;
+      }
+
+      req.currentBranchId = targetBranchId;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+export async function getUserBranchPermissions(
+  userId: string,
+  branchId: string
+): Promise<string[]> {
+  // Get base permissions
+  const basePermissions = await getUserPermissions(userId);
+  const permissions = new Set(basePermissions);
+
+  // Get branch-specific permission overrides
+  const branchPermissions = await prisma.branchPermission.findMany({
+    where: {
+      userId,
+      branchId,
+    },
+    select: {
+      grantType: true,
+      expiresAt: true,
+      permission: {
+        select: { name: true },
+      },
+    },
+  });
+
+  const now = new Date();
+  for (const bp of branchPermissions) {
+    // Skip expired permissions
+    if (bp.expiresAt && bp.expiresAt < now) continue;
+
+    if (bp.grantType === 'grant') {
+      permissions.add(bp.permission.name);
+    } else if (bp.grantType === 'revoke') {
+      permissions.delete(bp.permission.name);
+    }
+  }
+
+  return Array.from(permissions);
+}
+
+export const requireBranchPermission = (
+  requiredPermission: string,
+  getBranchId: (req: AuthRequest) => string | undefined
+) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      sendError(res, 'Not authenticated', 401, undefined, 'NOT_AUTHENTICATED');
+      return;
+    }
+
+    try {
+      // SUPER_ADMIN has all permissions
+      if (req.user.role === 'SUPER_ADMIN') {
+        next();
+        return;
+      }
+
+      const targetBranchId = getBranchId(req);
+
+      // First check branch access
+      if (targetBranchId) {
+        const { hasAccess, reason } = await checkBranchAccess(req.user.userId, targetBranchId);
+        if (!hasAccess) {
+          sendError(res, reason || 'No access to this branch', 403, undefined, 'BRANCH_ACCESS_DENIED');
+          return;
+        }
+
+        // Get branch-specific permissions
+        const permissions = await getUserBranchPermissions(req.user.userId, targetBranchId);
+        
+        if (!permissions.includes(requiredPermission)) {
+          sendError(res, `Missing permission: ${requiredPermission} for this branch`, 403, undefined, 'BRANCH_PERMISSION_DENIED');
+          return;
+        }
+
+        req.currentBranchId = targetBranchId;
+      } else {
+        // No branch context, check regular permissions
+        const permissions = await getUserPermissions(req.user.userId);
+        if (!permissions.includes(requiredPermission)) {
+          sendError(res, `Missing permission: ${requiredPermission}`, 403, undefined, 'PERMISSION_DENIED');
+          return;
+        }
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
 };

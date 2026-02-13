@@ -32,6 +32,7 @@ model Tenant {
   subscriptionPlan SubscriptionPlan @default(STARTER)
   tenantStatus     TenantStatus     @default(ACTIVE)
   maxUsers         Int              @default(10)
+  maxBranches      Int              @default(5)
   logo             String?
   phone            String
   email            String
@@ -45,6 +46,12 @@ model Tenant {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
+  // Data sharing settings for multi-branch
+  sharedEmr        Boolean          @default(true)
+  sharedBilling    Boolean          @default(true)
+  sharedInventory  Boolean          @default(false)
+  sharedLab        Boolean          @default(true)
+
   branches    Branch[]
   users       User[]
   patients    Patient[]
@@ -55,26 +62,50 @@ model Tenant {
   @@map("tenants")
 }
 
-model Branch {
-  id          String   @id @default(uuid())
-  tenantId    String
-  name        String
-  phone       String
-  email       String
-  address     String
-  city        String?
-  region      String?
-  isActive    Boolean  @default(true)
-  isMainBranch Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum BranchType {
+  MAIN
+  SATELLITE_CLINIC
+  DIAGNOSTIC_CENTER
+  MATERNITY_WARD
+  PHARMACY
+  LAB
+}
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-  encounters   Encounter[]
-  users        User[]
+model Branch {
+  id             String      @id @default(uuid())
+  tenantId       String
+  name           String
+  code           String?
+  branchType     BranchType  @default(MAIN)
+  parentBranchId String?
+  phone          String
+  email          String
+  address        String
+  city           String?
+  region         String?
+  gpsCoordinates Json?
+  isActive       Boolean     @default(true)
+  isMainBranch   Boolean     @default(false)
+  operatingHours Json?
+  hasEmergency   Boolean     @default(false)
+  hasInpatient   Boolean     @default(false)
+  hasLab         Boolean     @default(true)
+  hasPharmacy    Boolean     @default(true)
+  settings       Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parentBranch      Branch?             @relation("BranchHierarchy", fields: [parentBranchId], references: [id])
+  childBranches     Branch[]            @relation("BranchHierarchy")
+  appointments      Appointment[]
+  encounters        Encounter[]
+  users             User[]
+  branchPermissions BranchPermission[]
+  patientsRegisteredAt Patient[]        @relation("PatientRegisteredBranch")
 
   @@index([tenantId])
+  @@index([parentBranchId])
   @@map("branches")
 }
 
@@ -101,6 +132,13 @@ enum UserStatus {
   PENDING_VERIFICATION
 }
 
+enum BranchAccessScope {
+  PRIMARY_ONLY
+  SPECIFIC_BRANCHES
+  ALL_BRANCHES
+  DEPARTMENT_ONLY
+}
+
 model User {
   id            String     @id @default(uuid())
   tenantId      String
@@ -123,6 +161,11 @@ model User {
   // Professional info
   specialization  String?
   licenseNumber   String?
+  
+  // Branch access control
+  branchAccessScope   BranchAccessScope @default(PRIMARY_ONLY)
+  accessibleBranches  String[]          @default([])
+  currentBranchId     String?
   
   // Status
   status          UserStatus @default(ACTIVE)
@@ -169,11 +212,12 @@ model User {
   queueEntries          QueueEntry[]
   aiSlotPredictions     AISlotPrediction[]
 
-  auditLogs        AuditLog[]
-  triageRecords    TriageRecord[] @relation("NurseTriageRecords")
-  userPermissions  UserPermission[]
-  sessions         Session[]
-  passwordHistory  PasswordHistory[]
+  auditLogs         AuditLog[]
+  triageRecords     TriageRecord[] @relation("NurseTriageRecords")
+  userPermissions   UserPermission[]
+  branchPermissions BranchPermission[]
+  sessions          Session[]
+  passwordHistory   PasswordHistory[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -243,6 +287,7 @@ model Permission {
 
   rolePermissions   RolePermission[]
   userPermissions   UserPermission[]
+  branchPermissions BranchPermission[]
 
   @@index([module])
   @@map("permissions")
@@ -261,6 +306,27 @@ model RolePermission {
   @@index([roleId])
   @@index([permissionId])
   @@map("role_permissions")
+}
+
+model BranchPermission {
+  id           String    @id @default(uuid())
+  userId       String
+  branchId     String
+  permissionId String
+  grantType    String    @default("grant")
+  grantedBy    String?
+  reason       String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch       Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId, permissionId])
+  @@index([userId])
+  @@index([branchId])
+  @@map("branch_permissions")
 }
 
 model UserPermission {
@@ -390,11 +456,13 @@ model Patient {
   
   // Registration info
   registrationSource String? @default("walk-in")
+  registeredAtBranchId String?
   createdBy     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  registeredAtBranch Branch?   @relation("PatientRegisteredBranch", fields: [registeredAtBranchId], references: [id])
 
   // Related records
   contacts      PatientContact[]
