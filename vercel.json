@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm --filter backend exec prisma generate && pnpm --filter api exec prisma generate && pnpm --filter frontend build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --prod=false",
   "framework": "vite",
   "functions": {
     "api/index.ts": {
