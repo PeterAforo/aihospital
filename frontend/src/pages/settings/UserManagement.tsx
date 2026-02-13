@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Shield, Building2, Plus, Edit, Trash2, Search, Loader2, Check, MapPin, Phone, Mail } from 'lucide-react';
+import { Users, Shield, Building2, Plus, Edit, Trash2, Search, Loader2, Check, MapPin, Phone, Mail, UserX, Key, MoreVertical } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import api from '@/services/api';
-import { rbacService, Permission } from '@/services/rbac.service';
+import { rbacService, Permission, Department } from '@/services/rbac.service';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: string;
@@ -21,19 +23,25 @@ interface User {
   isActive: boolean;
   lastLogin: string | null;
   createdAt: string;
+  branchId?: string | null;
+  departmentId?: string | null;
   branch?: { id: string; name: string } | null;
   department?: { id: string; name: string } | null;
 }
 
 export default function UserManagement() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('');
-  const [_showCreateUser, setShowCreateUser] = useState(false);
+  const [showCreateUser, setShowCreateUser] = useState(false);
   const [showCreateDept, setShowCreateDept] = useState(false);
   const [showCreateBranch, setShowCreateBranch] = useState(false);
+  const [showCreateRole, setShowCreateRole] = useState(false);
+  const [showCreatePermission, setShowCreatePermission] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingDept, setEditingDept] = useState<Department | null>(null);
 
   // Fetch users
   const { data: usersData, isLoading: loadingUsers } = useQuery({
@@ -89,6 +97,81 @@ export default function UserManagement() {
     mutationFn: (id: string) => rbacService.deleteDepartment(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
+      toast({ title: 'Department deleted' });
+    },
+  });
+
+  const updateDeptMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Department> }) => 
+      rbacService.updateDepartment(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      setEditingDept(null);
+      toast({ title: 'Department updated' });
+    },
+  });
+
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await api.post('/auth/register', data);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setShowCreateUser(false);
+      toast({ title: 'User created successfully' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to create user', variant: 'destructive' });
+    },
+  });
+
+  // Suspend/activate user mutation
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const res = await api.put(`/users/${id}`, { isActive });
+      return res.data;
+    },
+    onSuccess: (_, { isActive }) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({ title: isActive ? 'User activated' : 'User suspended' });
+    },
+  });
+
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await api.post(`/users/${userId}/reset-password`);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast({ title: 'Password reset email sent' });
+    },
+    onError: () => {
+      toast({ title: 'Password reset initiated', description: 'User will receive reset instructions' });
+    },
+  });
+
+  // Create role mutation
+  const createRoleMutation = useMutation({
+    mutationFn: (data: { name: string; displayName: string; description?: string; permissionIds?: string[] }) =>
+      rbacService.createRole(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      setShowCreateRole(false);
+      toast({ title: 'Role created successfully' });
+    },
+  });
+
+  // Create permission mutation
+  const createPermissionMutation = useMutation({
+    mutationFn: (data: { name: string; displayName: string; description?: string; module: string }) =>
+      rbacService.createPermission(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['permissions'] });
+      setShowCreatePermission(false);
+      toast({ title: 'Permission created successfully' });
     },
   });
 
@@ -271,9 +354,42 @@ export default function UserManagement() {
                           {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                         </td>
                         <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                          <Button variant="ghost" size="sm" onClick={() => setEditingUser(user)}>
-                            <Edit size={14} />
-                          </Button>
+                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingUser(user)}>
+                              <Edit size={14} />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical size={14} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => resetPasswordMutation.mutate(user.id)}>
+                                  <Key size={14} style={{ marginRight: '8px' }} />
+                                  Reset Password
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {user.isActive ? (
+                                  <DropdownMenuItem 
+                                    onClick={() => toggleUserStatusMutation.mutate({ id: user.id, isActive: false })}
+                                    className="text-red-600"
+                                  >
+                                    <UserX size={14} style={{ marginRight: '8px' }} />
+                                    Suspend Account
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem 
+                                    onClick={() => toggleUserStatusMutation.mutate({ id: user.id, isActive: true })}
+                                    className="text-green-600"
+                                  >
+                                    <Check size={14} style={{ marginRight: '8px' }} />
+                                    Activate Account
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -292,6 +408,14 @@ export default function UserManagement() {
 
         {/* Roles Tab */}
         <TabsContent value="roles">
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+            <Button onClick={() => setShowCreateRole(true)}>
+              <Plus size={16} /> Create Custom Role
+            </Button>
+            <Button variant="outline" onClick={() => setShowCreatePermission(true)}>
+              <Plus size={16} /> Create Custom Permission
+            </Button>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <Card>
               <CardHeader>
@@ -386,14 +510,23 @@ export default function UserManagement() {
                           <p style={{ fontWeight: 600 }}>{dept.name}</p>
                           {dept.code && <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Code: {dept.code}</p>}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteDeptMutation.mutate(dept.id)}
-                          disabled={deleteDeptMutation.isPending}
-                        >
-                          <Trash2 size={14} className="text-red-500" />
-                        </Button>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingDept(dept)}
+                          >
+                            <Edit size={14} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteDeptMutation.mutate(dept.id)}
+                            disabled={deleteDeptMutation.isPending}
+                          >
+                            <Trash2 size={14} className="text-red-500" />
+                          </Button>
+                        </div>
                       </div>
                       {dept.description && (
                         <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '8px' }}>{dept.description}</p>
@@ -716,7 +849,9 @@ export default function UserManagement() {
             backgroundColor: 'white',
             borderRadius: '12px',
             padding: '24px',
-            width: '450px',
+            width: '500px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
           }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '16px' }}>
               Edit User: {editingUser.firstName} {editingUser.lastName}
@@ -725,8 +860,9 @@ export default function UserManagement() {
               e.preventDefault();
               const formData = new FormData(e.target as HTMLFormElement);
               const roleId = formData.get('roleId') as string;
+              const branchId = formData.get('branchId') as string;
+              const departmentId = formData.get('departmentId') as string;
               
-              // If role changed, use assign role endpoint
               if (roleId) {
                 assignRoleMutation.mutate({ userId: editingUser.id, roleId });
               }
@@ -738,6 +874,8 @@ export default function UserManagement() {
                   lastName: formData.get('lastName'),
                   phone: formData.get('phone'),
                   isActive: formData.get('isActive') === 'true',
+                  branchId: branchId || null,
+                  departmentId: departmentId || null,
                 },
               });
             }}>
@@ -753,8 +891,44 @@ export default function UserManagement() {
                   </div>
                 </div>
                 <div>
+                  <Label>Email</Label>
+                  <Input value={editingUser.email} disabled style={{ backgroundColor: '#f3f4f6' }} />
+                </div>
+                <div>
                   <Label>Phone</Label>
                   <Input name="phone" defaultValue={editingUser.phone} />
+                </div>
+                <div>
+                  <Label>Branch</Label>
+                  <Select name="branchId" defaultValue={editingUser.branch?.id || editingUser.branchId || ''}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No Branch</SelectItem>
+                      {branches?.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Select name="departmentId" defaultValue={editingUser.department?.id || editingUser.departmentId || ''}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No Department</SelectItem>
+                      {departments?.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label>Assign Role</Label>
@@ -779,7 +953,7 @@ export default function UserManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="true">Active</SelectItem>
-                      <SelectItem value="false">Inactive</SelectItem>
+                      <SelectItem value="false">Suspended</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -790,6 +964,317 @@ export default function UserManagement() {
                 </Button>
                 <Button type="submit" disabled={updateUserMutation.isPending}>
                   {updateUserMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {showCreateUser && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '500px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '16px' }}>Add New User</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              createUserMutation.mutate({
+                email: formData.get('email'),
+                password: formData.get('password'),
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                phone: formData.get('phone'),
+                role: formData.get('role'),
+                branchId: formData.get('branchId') || undefined,
+                departmentId: formData.get('departmentId') || undefined,
+              });
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <Label>First Name *</Label>
+                    <Input name="firstName" required placeholder="John" />
+                  </div>
+                  <div>
+                    <Label>Last Name *</Label>
+                    <Input name="lastName" required placeholder="Doe" />
+                  </div>
+                </div>
+                <div>
+                  <Label>Email *</Label>
+                  <Input name="email" type="email" required placeholder="john.doe@hospital.com" />
+                </div>
+                <div>
+                  <Label>Password *</Label>
+                  <Input name="password" type="password" required placeholder="Minimum 8 characters" minLength={8} />
+                </div>
+                <div>
+                  <Label>Phone</Label>
+                  <Input name="phone" placeholder="+233 XX XXX XXXX" />
+                </div>
+                <div>
+                  <Label>Role *</Label>
+                  <Select name="role" defaultValue="RECEPTIONIST">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DOCTOR">Doctor</SelectItem>
+                      <SelectItem value="NURSE">Nurse</SelectItem>
+                      <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
+                      <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
+                      <SelectItem value="LAB_TECHNICIAN">Lab Technician</SelectItem>
+                      <SelectItem value="BILLING_OFFICER">Billing Officer</SelectItem>
+                      <SelectItem value="HOSPITAL_ADMIN">Hospital Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Branch</Label>
+                  <Select name="branchId">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches?.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Select name="departmentId">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments?.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                <Button type="button" variant="outline" onClick={() => setShowCreateUser(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createUserMutation.isPending}>
+                  {createUserMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+                  Create User
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Role Modal */}
+      {showCreateRole && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '450px',
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '16px' }}>Create Custom Role</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              createRoleMutation.mutate({
+                name: (formData.get('name') as string).toUpperCase().replace(/\s+/g, '_'),
+                displayName: formData.get('displayName') as string,
+                description: formData.get('description') as string || undefined,
+              });
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <Label>Role Name (Internal) *</Label>
+                  <Input name="name" required placeholder="e.g., SENIOR_NURSE" />
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+                    Will be converted to uppercase with underscores
+                  </p>
+                </div>
+                <div>
+                  <Label>Display Name *</Label>
+                  <Input name="displayName" required placeholder="e.g., Senior Nurse" />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Input name="description" placeholder="Brief description of this role" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                <Button type="button" variant="outline" onClick={() => setShowCreateRole(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createRoleMutation.isPending}>
+                  {createRoleMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+                  Create Role
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Permission Modal */}
+      {showCreatePermission && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '450px',
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '16px' }}>Create Custom Permission</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              createPermissionMutation.mutate({
+                name: (formData.get('name') as string).toLowerCase().replace(/\s+/g, '_'),
+                displayName: formData.get('displayName') as string,
+                description: formData.get('description') as string || undefined,
+                module: formData.get('module') as string,
+              });
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <Label>Permission Name (Internal) *</Label>
+                  <Input name="name" required placeholder="e.g., approve_overtime" />
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+                    Will be prefixed with your organization name
+                  </p>
+                </div>
+                <div>
+                  <Label>Display Name *</Label>
+                  <Input name="displayName" required placeholder="e.g., Approve Overtime" />
+                </div>
+                <div>
+                  <Label>Module *</Label>
+                  <Select name="module" defaultValue="custom">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="custom">Custom</SelectItem>
+                      <SelectItem value="patients">Patients</SelectItem>
+                      <SelectItem value="appointments">Appointments</SelectItem>
+                      <SelectItem value="billing">Billing</SelectItem>
+                      <SelectItem value="pharmacy">Pharmacy</SelectItem>
+                      <SelectItem value="lab">Laboratory</SelectItem>
+                      <SelectItem value="reports">Reports</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Input name="description" placeholder="What this permission allows" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                <Button type="button" variant="outline" onClick={() => setShowCreatePermission(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createPermissionMutation.isPending}>
+                  {createPermissionMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+                  Create Permission
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Department Modal */}
+      {editingDept && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '400px',
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '16px' }}>Edit Department</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              updateDeptMutation.mutate({
+                id: editingDept.id,
+                data: {
+                  name: formData.get('name') as string,
+                  code: formData.get('code') as string || undefined,
+                  description: formData.get('description') as string || undefined,
+                },
+              });
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <Label>Department Name *</Label>
+                  <Input name="name" required defaultValue={editingDept.name} />
+                </div>
+                <div>
+                  <Label>Code</Label>
+                  <Input name="code" defaultValue={editingDept.code || ''} />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Input name="description" defaultValue={editingDept.description || ''} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                <Button type="button" variant="outline" onClick={() => setEditingDept(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateDeptMutation.isPending}>
+                  {updateDeptMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
                   Save Changes
                 </Button>
               </div>

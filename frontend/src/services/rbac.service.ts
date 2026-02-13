@@ -115,6 +115,11 @@ export const rbacService = {
     return response.data.data;
   },
 
+  createPermission: async (data: { name: string; displayName: string; description?: string; module: string }): Promise<Permission> => {
+    const response = await api.post('/rbac/permissions', data);
+    return response.data.data;
+  },
+
   // User Permissions
   getUserPermissions: async (userId: string): Promise<string[]> => {
     const response = await api.get(`/rbac/users/${userId}/permissions`);
