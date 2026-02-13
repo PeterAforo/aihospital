@@ -30,6 +30,9 @@ import TriageStation from './pages/triage/TriageStation';
 // Walk-in
 import WalkInRegistration from './pages/walkin/WalkInRegistration';
 
+// Settings
+import UserManagement from './pages/settings/UserManagement';
+
 // Registration
 import RegistrationWizard from './pages/registration/RegistrationWizard';
 
@@ -83,6 +86,9 @@ function App() {
         
         {/* OPD */}
         <Route path="/opd" element={<WalkInRegistration />} />
+        
+        {/* Settings */}
+        <Route path="/settings/users" element={<UserManagement />} />
       </Route>
 
       {/* 404 */}

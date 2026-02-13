@@ -31,6 +31,7 @@ const menuItems = [
   { path: "/laboratory", icon: FlaskConical, label: "Laboratory" },
   { path: "/billing", icon: CreditCard, label: "Billing" },
   { path: "/hr", icon: UserCog, label: "HR & Payroll" },
+  { path: "/settings/users", icon: Users, label: "User Management" },
   { path: "/settings", icon: Settings, label: "Settings" },
 ];
 
