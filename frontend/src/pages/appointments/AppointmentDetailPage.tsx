@@ -6,7 +6,7 @@ import {
   Phone, FileText, CheckCircle, XCircle, UserCheck, Loader2,
   AlertTriangle
 } from "lucide-react";
-import { appointmentService, Appointment, AppointmentStatus } from "@/services/appointment.service";
+import { appointmentService, AppointmentStatus } from "@/services/appointment.service";
 import { useToast } from "@/hooks/use-toast";
 
 const statusConfig: Record<AppointmentStatus, { bg: string; color: string; label: string }> = {
@@ -179,7 +179,7 @@ export default function AppointmentDetailPage() {
                   <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>MRN: {appointment.patient?.mrn}</p>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.25rem" }}>
                     <Phone style={{ width: "14px", height: "14px", color: "#6b7280" }} />
-                    <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>{appointment.patient?.phone}</span>
+                    <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>{appointment.patient?.phonePrimary}</span>
                   </div>
                 </div>
               </div>
@@ -212,23 +212,23 @@ export default function AppointmentDetailPage() {
           </motion.div>
 
           {/* Notes Card */}
-          {(appointment.reason || appointment.notes) && (
+          {(appointment.chiefComplaint || appointment.specialInstructions) && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={cardStyle}>
               <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <FileText style={{ width: "20px", height: "20px", color: "#6b7280" }} />
                 <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "#1f2937" }}>Notes</h2>
               </div>
               <div style={{ padding: "1.5rem" }}>
-                {appointment.reason && (
+                {appointment.chiefComplaint && (
                   <div style={{ marginBottom: "1rem" }}>
                     <p style={{ fontSize: "0.75rem", color: "#6b7280", textTransform: "uppercase", marginBottom: "0.25rem" }}>Reason for Visit</p>
-                    <p style={{ color: "#1f2937" }}>{appointment.reason}</p>
+                    <p style={{ color: "#1f2937" }}>{appointment.chiefComplaint}</p>
                   </div>
                 )}
-                {appointment.notes && (
+                {appointment.specialInstructions && (
                   <div>
                     <p style={{ fontSize: "0.75rem", color: "#6b7280", textTransform: "uppercase", marginBottom: "0.25rem" }}>Additional Notes</p>
-                    <p style={{ color: "#1f2937" }}>{appointment.notes}</p>
+                    <p style={{ color: "#1f2937" }}>{appointment.specialInstructions}</p>
                   </div>
                 )}
               </div>
@@ -264,7 +264,7 @@ export default function AppointmentDetailPage() {
               </div>
               <div>
                 <p style={{ fontSize: "0.75rem", color: "#6b7280" }}>Type</p>
-                <p style={{ fontWeight: 500 }}>{appointment.type.replace('_', ' ')}</p>
+                <p style={{ fontWeight: 500 }}>{appointment.type?.replace('_', ' ') || 'N/A'}</p>
               </div>
               <div>
                 <p style={{ fontSize: "0.75rem", color: "#6b7280" }}>Duration</p>

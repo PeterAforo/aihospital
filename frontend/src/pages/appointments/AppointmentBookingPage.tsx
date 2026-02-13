@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowLeft, Calendar, Clock, User, Stethoscope, Check, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Calendar, User, Stethoscope, Check, Loader2, AlertCircle } from "lucide-react";
 import { appointmentService, Doctor, TimeSlot, AppointmentType } from "@/services/appointment.service";
 import { patientService } from "@/services/patient.service";
 import { useToast } from "@/hooks/use-toast";

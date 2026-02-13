@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import api from '@/services/api';
-import { rbacService, Permission, Branch } from '@/services/rbac.service';
+import { rbacService, Permission } from '@/services/rbac.service';
 
 interface User {
   id: string;
@@ -30,7 +30,7 @@ export default function UserManagement() {
   const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('');
-  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [_showCreateUser, setShowCreateUser] = useState(false);
   const [showCreateDept, setShowCreateDept] = useState(false);
   const [showCreateBranch, setShowCreateBranch] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);

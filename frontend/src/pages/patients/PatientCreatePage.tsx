@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle, User, Phone, MapPin, CreditCard, Heart, Shield } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle, User, Phone, MapPin, Heart, Shield } from "lucide-react";
 import { patientService, CreatePatientRequest, DuplicateCheckResult } from "@/services/patient.service";
 import { useToast } from "@/hooks/use-toast";
 
