@@ -21,6 +21,8 @@ interface User {
   isActive: boolean;
   lastLogin: string | null;
   createdAt: string;
+  branch?: { id: string; name: string } | null;
+  department?: { id: string; name: string } | null;
 }
 
 export default function UserManagement() {
@@ -228,6 +230,8 @@ export default function UserManagement() {
                     <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
                       <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: 600, color: '#374151' }}>Name</th>
                       <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: 600, color: '#374151' }}>Email</th>
+                      <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: 600, color: '#374151' }}>Branch</th>
+                      <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: 600, color: '#374151' }}>Department</th>
                       <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: 600, color: '#374151' }}>Role</th>
                       <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: 600, color: '#374151' }}>Status</th>
                       <th style={{ textAlign: 'left', padding: '12px 8px', fontWeight: 600, color: '#374151' }}>Last Login</th>
@@ -241,6 +245,16 @@ export default function UserManagement() {
                           <div style={{ fontWeight: 500 }}>{user.firstName} {user.lastName}</div>
                         </td>
                         <td style={{ padding: '12px 8px', color: '#6b7280' }}>{user.email}</td>
+                        <td style={{ padding: '12px 8px' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                            {user.branch?.name || <span style={{ color: '#9ca3af' }}>—</span>}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 8px' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                            {user.department?.name || <span style={{ color: '#9ca3af' }}>—</span>}
+                          </span>
+                        </td>
                         <td style={{ padding: '12px 8px' }}>
                           <Badge className={roleColors[user.role] || 'bg-gray-100 text-gray-800'}>
                             {user.role.replace('_', ' ')}

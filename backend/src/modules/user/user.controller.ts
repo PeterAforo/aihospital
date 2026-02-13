@@ -28,6 +28,8 @@ export class UserController {
             isActive: true,
             lastLogin: true,
             createdAt: true,
+            branch: { select: { id: true, name: true } },
+            department: { select: { id: true, name: true } },
           },
         }),
         prisma.user.count({ where }),
@@ -54,6 +56,7 @@ export class UserController {
           lastLogin: true,
           createdAt: true,
           branch: { select: { id: true, name: true } },
+          department: { select: { id: true, name: true } },
         },
       });
 
