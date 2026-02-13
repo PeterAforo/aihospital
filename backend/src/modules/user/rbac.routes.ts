@@ -17,6 +17,7 @@ router.delete('/roles/:id', requirePermission('MANAGE_ROLES'), rbacController.de
 
 // ==================== PERMISSIONS ====================
 router.get('/permissions', requirePermission('VIEW_USERS', 'MANAGE_PERMISSIONS'), rbacController.listPermissions);
+router.post('/permissions', requirePermission('MANAGE_PERMISSIONS'), rbacController.createPermission);
 
 // ==================== USER PERMISSIONS ====================
 router.get('/users/:userId/permissions', requirePermission('VIEW_USERS', 'MANAGE_PERMISSIONS'), rbacController.getUserPermissions);

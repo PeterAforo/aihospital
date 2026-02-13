@@ -214,6 +214,43 @@ export class RBACController {
     }
   }
 
+  async createPermission(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { name, displayName, description, module } = req.body;
+
+      // Custom permissions are prefixed with tenant subdomain to avoid conflicts
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: req.tenantId },
+        select: { subdomain: true },
+      });
+
+      const permissionName = `${tenant?.subdomain?.toUpperCase()}_${name.toUpperCase()}`;
+
+      // Check if permission already exists
+      const existing = await prisma.permission.findFirst({
+        where: { name: permissionName },
+      });
+
+      if (existing) {
+        throw new AppError('Permission with this name already exists', 409);
+      }
+
+      const permission = await prisma.permission.create({
+        data: {
+          name: permissionName,
+          displayName,
+          description,
+          module: module || 'custom',
+          isSystemPermission: false,
+        },
+      });
+
+      sendSuccess(res, permission, 'Permission created successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // ==================== USER PERMISSIONS ====================
 
   async getUserPermissions(req: AuthRequest, res: Response, next: NextFunction) {

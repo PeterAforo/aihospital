@@ -117,7 +117,7 @@ importers:
         specifier: ^29.1.2
         version: 29.4.6(@babel/core@7.29.0)(jest@29.7.0)(typescript@5.9.3)
       tsx:
-        specifier: ^4.7.0
+        specifier: ^4.21.0
         version: 4.21.0
       typescript:
         specifier: ^5.3.3
