@@ -161,12 +161,12 @@ export default function UserManagement() {
                     style={{ paddingLeft: '36px' }}
                   />
                 </div>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <Select value={selectedRole} onValueChange={(val) => setSelectedRole(val === 'ALL' ? '' : val)}>
                   <SelectTrigger style={{ width: '200px' }}>
                     <SelectValue placeholder="Filter by role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Roles</SelectItem>
+                    <SelectItem value="ALL">All Roles</SelectItem>
                     <SelectItem value="DOCTOR">Doctor</SelectItem>
                     <SelectItem value="NURSE">Nurse</SelectItem>
                     <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
