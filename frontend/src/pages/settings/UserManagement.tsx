@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import api from '@/services/api';
-import { rbacService, Permission, Department } from '@/services/rbac.service';
+import { rbacService, Permission, Department, Branch } from '@/services/rbac.service';
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
@@ -42,6 +42,7 @@ export default function UserManagement() {
   const [showCreatePermission, setShowCreatePermission] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
 
   // Fetch users
   const { data: usersData, isLoading: loadingUsers } = useQuery({
@@ -207,6 +208,23 @@ export default function UserManagement() {
     mutationFn: (id: string) => rbacService.deleteBranch(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      toast({ title: 'Branch deleted' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.response?.data?.message || 'Cannot delete branch', variant: 'destructive' });
+    },
+  });
+
+  const updateBranchMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Branch> }) =>
+      rbacService.updateBranch(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
+      setEditingBranch(null);
+      toast({ title: 'Branch updated' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to update branch', variant: 'destructive' });
     },
   });
 
@@ -587,13 +605,17 @@ export default function UserManagement() {
                           )}
                         </div>
                         <div style={{ display: 'flex', gap: '4px' }}>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => setEditingBranch(branch)}>
                             <Edit size={14} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteBranchMutation.mutate(branch.id)}
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this branch?')) {
+                                deleteBranchMutation.mutate(branch.id);
+                              }
+                            }}
                             disabled={deleteBranchMutation.isPending || branch.isMainBranch}
                           >
                             <Trash2 size={14} className="text-red-500" />
@@ -1275,6 +1297,117 @@ export default function UserManagement() {
                 </Button>
                 <Button type="submit" disabled={updateDeptMutation.isPending}>
                   {updateDeptMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Branch Modal */}
+      {editingBranch && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '500px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '16px' }}>Edit Branch</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              updateBranchMutation.mutate({
+                id: editingBranch.id,
+                data: {
+                  name: formData.get('name') as string,
+                  code: formData.get('code') as string || undefined,
+                  phone: formData.get('phone') as string,
+                  email: formData.get('email') as string,
+                  address: formData.get('address') as string,
+                  city: formData.get('city') as string || undefined,
+                  region: formData.get('region') as string || undefined,
+                  hasEmergency: formData.get('hasEmergency') === 'on',
+                  hasInpatient: formData.get('hasInpatient') === 'on',
+                  hasLab: formData.get('hasLab') === 'on',
+                  hasPharmacy: formData.get('hasPharmacy') === 'on',
+                },
+              });
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <Label>Branch Name *</Label>
+                    <Input name="name" required defaultValue={editingBranch.name} />
+                  </div>
+                  <div>
+                    <Label>Code</Label>
+                    <Input name="code" defaultValue={editingBranch.code || ''} />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <Label>Phone *</Label>
+                    <Input name="phone" required defaultValue={editingBranch.phone} />
+                  </div>
+                  <div>
+                    <Label>Email *</Label>
+                    <Input name="email" type="email" required defaultValue={editingBranch.email} />
+                  </div>
+                </div>
+                <div>
+                  <Label>Address *</Label>
+                  <Input name="address" required defaultValue={editingBranch.address} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <Label>City</Label>
+                    <Input name="city" defaultValue={editingBranch.city || ''} />
+                  </div>
+                  <div>
+                    <Label>Region</Label>
+                    <Input name="region" defaultValue={editingBranch.region || ''} />
+                  </div>
+                </div>
+                <div style={{ marginTop: '8px' }}>
+                  <Label style={{ marginBottom: '8px', display: 'block' }}>Capabilities</Label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" name="hasEmergency" defaultChecked={editingBranch.hasEmergency} />
+                      <span style={{ fontSize: '0.875rem' }}>Emergency Services</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" name="hasInpatient" defaultChecked={editingBranch.hasInpatient} />
+                      <span style={{ fontSize: '0.875rem' }}>Inpatient Ward</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" name="hasLab" defaultChecked={editingBranch.hasLab} />
+                      <span style={{ fontSize: '0.875rem' }}>Laboratory</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="checkbox" name="hasPharmacy" defaultChecked={editingBranch.hasPharmacy} />
+                      <span style={{ fontSize: '0.875rem' }}>Pharmacy</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                <Button type="button" variant="outline" onClick={() => setEditingBranch(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateBranchMutation.isPending}>
+                  {updateBranchMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
                   Save Changes
                 </Button>
               </div>
