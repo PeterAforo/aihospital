@@ -11,6 +11,9 @@ export interface TokenPayload {
   tenantId: string;
   role: string;
   email: string;
+  branchId?: string;
+  departmentId?: string;
+  branchAccessScope?: string;
 }
 
 export interface AuthTokens {
@@ -113,6 +116,9 @@ export class AuthService {
       tenantId: user.tenantId,
       role: user.role,
       email: user.email,
+      branchId: user.branchId || undefined,
+      departmentId: user.departmentId || undefined,
+      branchAccessScope: user.branchAccessScope || undefined,
     });
 
     // Update refresh token and last login

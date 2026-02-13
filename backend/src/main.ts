@@ -19,6 +19,7 @@ import userRoutes from './modules/user/user.routes.js';
 import rbacRoutes from './modules/user/rbac.routes.js';
 import tenantRoutes from './modules/tenant/tenant.routes.js';
 import triageRoutes from './modules/triage/triage.routes.js';
+import reportsRoutes from './modules/reports/reports.routes.js';
 
 // Import services
 import { queueWebSocketService } from './common/services/queue-websocket.service.js';
@@ -60,6 +61,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/rbac', rbacRoutes);
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/triage', triageRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // Error handling
 app.use(notFoundHandler);

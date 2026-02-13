@@ -58,6 +58,7 @@ model Tenant {
   employees   Employee[]
   roles       Role[]
   departments Department[]
+  auditLogs   AuditLog[]
 
   @@map("tenants")
 }
@@ -103,6 +104,7 @@ model Branch {
   users             User[]
   branchPermissions BranchPermission[]
   patientsRegisteredAt Patient[]        @relation("PatientRegisteredBranch")
+  auditLogs         AuditLog[]
 
   @@index([tenantId])
   @@index([parentBranchId])
@@ -231,10 +233,12 @@ model User {
 model AuditLog {
   id             String   @id @default(uuid())
   tenantId       String?
+  branchId       String?
+  departmentId   String?
   userId         String?
   action         String
-  entity         String?
-  entityId       String?
+  resourceType   String?
+  resourceId     String?
   oldData        Json?
   newData        Json?
   ipAddress      String?
@@ -245,11 +249,16 @@ model AuditLog {
   metadata       Json?
   createdAt      DateTime @default(now())
 
-  user           User?    @relation(fields: [userId], references: [id])
+  tenant         Tenant?     @relation(fields: [tenantId], references: [id])
+  branch         Branch?     @relation(fields: [branchId], references: [id])
+  department     Department? @relation(fields: [departmentId], references: [id])
+  user           User?       @relation(fields: [userId], references: [id])
 
   @@index([tenantId, createdAt])
+  @@index([branchId, createdAt])
+  @@index([departmentId])
   @@index([userId])
-  @@index([entity, entityId])
+  @@index([resourceType, resourceId])
   @@index([action])
   @@map("audit_logs")
 }
@@ -362,6 +371,9 @@ model Department {
 
   tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   users            User[]   @relation("UserDepartment")
+  auditLogs        AuditLog[]
+  appointments     Appointment[]
+  encounters       Encounter[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -771,6 +783,7 @@ model Appointment {
   id                    String            @id @default(uuid())
   tenantId              String
   branchId              String
+  departmentId          String?
   patientId             String
   doctorId              String
   appointmentTypeId     String?
@@ -803,6 +816,7 @@ model Appointment {
   updatedAt             DateTime          @updatedAt
 
   branch                Branch            @relation(fields: [branchId], references: [id])
+  department            Department?       @relation(fields: [departmentId], references: [id])
   patient               Patient           @relation(fields: [patientId], references: [id])
   doctor                User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
   appointmentType       AppointmentTypeConfig? @relation(fields: [appointmentTypeId], references: [id])
@@ -812,6 +826,7 @@ model Appointment {
   triageRecord          TriageRecord?
 
   @@index([tenantId, appointmentDate])
+  @@index([departmentId])
   @@index([doctorId, appointmentDate])
   @@index([patientId])
   @@index([status])
@@ -914,6 +929,7 @@ model Encounter {
   id              String   @id @default(uuid())
   tenantId        String
   branchId        String
+  departmentId    String?
   patientId       String
   doctorId        String
   appointmentId   String?  @unique
@@ -931,6 +947,7 @@ model Encounter {
   updatedAt       DateTime @updatedAt
 
   branch          Branch   @relation(fields: [branchId], references: [id])
+  department      Department? @relation(fields: [departmentId], references: [id])
   patient         Patient  @relation(fields: [patientId], references: [id])
   doctor          User     @relation("DoctorEncounters", fields: [doctorId], references: [id])
   appointment     Appointment? @relation(fields: [appointmentId], references: [id])
@@ -943,6 +960,7 @@ model Encounter {
   @@index([tenantId, visitDate])
   @@index([patientId])
   @@index([doctorId])
+  @@index([departmentId])
   @@map("encounters")
 }
 

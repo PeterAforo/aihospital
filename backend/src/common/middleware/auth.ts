@@ -12,6 +12,8 @@ export interface JwtPayload {
   roleId?: string;
   email: string;
   permissions?: string[];
+  branchId?: string;
+  departmentId?: string;
   primaryBranchId?: string;
   currentBranchId?: string;
   accessibleBranches?: string[];
