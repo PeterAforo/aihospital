@@ -29,6 +29,7 @@ import TriageStation from './pages/triage/TriageStation';
 
 // EMR Pages
 import EncounterWorkspace from './pages/emr/EncounterWorkspace';
+import EMRDashboard from './pages/emr/EMRDashboard';
 
 // Walk-in
 import WalkInRegistration from './pages/walkin/WalkInRegistration';
@@ -88,6 +89,7 @@ function App() {
         <Route path="/triage" element={<TriageStation />} />
         
         {/* EMR / Encounters */}
+        <Route path="/emr" element={<EMRDashboard />} />
         <Route path="/encounters/:encounterId" element={<EncounterWorkspace />} />
         
         {/* OPD */}

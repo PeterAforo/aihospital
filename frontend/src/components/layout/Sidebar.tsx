@@ -14,6 +14,7 @@ import {
   Stethoscope,
   HeartPulse,
   UserPlus,
+  ClipboardList,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -27,6 +28,7 @@ const menuItems = [
   { path: "/appointments", icon: Calendar, label: "Appointments" },
   { path: "/opd", icon: UserPlus, label: "OPD" },
   { path: "/triage", icon: HeartPulse, label: "Triage Station" },
+  { path: "/emr", icon: ClipboardList, label: "EMR / Consultation" },
   { path: "/pharmacy", icon: Pill, label: "Pharmacy" },
   { path: "/laboratory", icon: FlaskConical, label: "Laboratory" },
   { path: "/billing", icon: CreditCard, label: "Billing" },
