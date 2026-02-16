@@ -111,9 +111,18 @@ export const requirePermission = (...requiredPermissions: string[]) => {
       }
 
       // Check if user has any of the required permissions
-      const hasPermission = requiredPermissions.some(perm => userPermissions.includes(perm));
+      let hasPermission = requiredPermissions.some(perm => userPermissions.includes(perm));
+
+      // JWT permissions can become stale after RBAC updates; retry from DB before denying.
+      if (!hasPermission) {
+        const freshPermissions = await getUserPermissions(req.user.userId);
+        req.userPermissions = freshPermissions;
+        userPermissions = freshPermissions;
+        hasPermission = requiredPermissions.some(perm => userPermissions.includes(perm));
+      }
 
       if (!hasPermission) {
+        console.warn(`[PERMISSION_DENIED] User ${req.user.userId} (role: ${req.user.role}) missing: ${requiredPermissions.join(' or ')}. Has: ${userPermissions.slice(0, 10).join(', ')}${userPermissions.length > 10 ? '...' : ''}`);
         sendError(res, `Missing required permission: ${requiredPermissions.join(' or ')}`, 403, undefined, 'PERMISSION_DENIED');
         return;
       }
@@ -147,7 +156,15 @@ export const requireAllPermissions = (...requiredPermissions: string[]) => {
       }
 
       // Check if user has ALL required permissions
-      const missingPermissions = requiredPermissions.filter(perm => !userPermissions.includes(perm));
+      let missingPermissions = requiredPermissions.filter(perm => !userPermissions.includes(perm));
+
+      // JWT permissions can become stale after RBAC updates; retry from DB before denying.
+      if (missingPermissions.length > 0) {
+        const freshPermissions = await getUserPermissions(req.user.userId);
+        req.userPermissions = freshPermissions;
+        userPermissions = freshPermissions;
+        missingPermissions = requiredPermissions.filter(perm => !userPermissions.includes(perm));
+      }
 
       if (missingPermissions.length > 0) {
         sendError(res, `Missing required permissions: ${missingPermissions.join(', ')}`, 403, undefined, 'PERMISSION_DENIED');

@@ -171,7 +171,7 @@ export class RegistrationService {
     }
 
     // Create everything in a transaction
-    const result = await prisma.$transaction(async (tx: typeof prisma) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Create Tenant
       const tenant = await tx.tenant.create({
         data: {
@@ -393,9 +393,8 @@ export class RegistrationService {
         data: {
           tenantId: user.tenantId,
           type: data.method === 'phone' ? 'SMS' : 'EMAIL',
-          recipient: identifier,
+          title: `Verification to ${identifier}`,
           message: `Verification code: ${code}`,
-          status: 'SENT',
         },
       });
     }

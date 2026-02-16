@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
-import { LogOut, User, Settings, Bell, Moon, Sun } from "lucide-react";
+import { LogOut, User, Settings, Moon, Sun } from "lucide-react";
 import { RootState } from "@/store";
 import { logout } from "@/store/slices/authSlice";
 import { useState } from "react";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+import { BranchSelector } from "@/components/layout/BranchSelector";
 
 interface HeaderProps {
   sidebarCollapsed: boolean;
@@ -67,27 +69,12 @@ export function Header({ sidebarCollapsed }: HeaderProps) {
         <h1 style={{ fontSize: "1.125rem", fontWeight: 600, color: "#1f2937" }}>
           Welcome back, {user?.firstName || "User"}
         </h1>
+        <BranchSelector />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         {/* Notifications */}
-        <button style={iconButtonStyle}>
-          <Bell style={{ width: "20px", height: "20px", color: "#6b7280" }} />
-          <span style={{
-            position: "absolute",
-            top: "4px",
-            right: "4px",
-            width: "16px",
-            height: "16px",
-            borderRadius: "50%",
-            backgroundColor: "#ef4444",
-            color: "white",
-            fontSize: "10px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>3</span>
-        </button>
+        <NotificationBell />
 
         {/* Theme Toggle */}
         <button style={iconButtonStyle} onClick={toggleTheme}>

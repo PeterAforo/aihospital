@@ -10,7 +10,6 @@ import {
   FileText,
   Pill,
   FlaskConical,
-  Clock,
   ChevronLeft,
   Plus,
   Trash2
@@ -25,8 +24,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { ICD10Search } from '@/components/emr/ICD10Search';
-import { emrService, Encounter, Diagnosis, ICD10Code, PatientContext } from '@/services/emr.service';
+import { LabOrderPanel } from '@/components/emr/LabOrderPanel';
+import { PrescriptionPanel } from '@/components/emr/PrescriptionPanel';
+import LabResultsPanel from '@/components/emr/LabResultsPanel';
+import { emrService, Encounter, ICD10Code, PatientContext } from '@/services/emr.service';
 import { useToast } from '@/hooks/use-toast';
+import { PermissionGate } from '@/components/auth/PermissionGate';
 
 const EncounterWorkspace: React.FC = () => {
   const { encounterId } = useParams<{ encounterId: string }>();
@@ -87,7 +90,7 @@ const EncounterWorkspace: React.FC = () => {
             currentMedications: data.encounter.patient.currentMedications?.map(m => ({ ...m, isActive: true })) || [],
             chronicConditions: [],
             problemList: data.problemList || [],
-            recentVitals: undefined,
+            recentVitals: (data.encounter as any).vitalSigns?.[0] || undefined,
           });
         }
       } catch (error: any) {
@@ -110,7 +113,7 @@ const EncounterWorkspace: React.FC = () => {
 
     try {
       setIsSaving(true);
-      const updated = await emrService.updateEncounter(encounterId, formData);
+      const updated = await emrService.updateEncounter(encounterId, formData as any);
       setEncounter(updated);
       toast({
         title: 'Saved',
@@ -206,12 +209,13 @@ const EncounterWorkspace: React.FC = () => {
     if (!encounterId) return;
 
     try {
-      const signed = await emrService.signEncounter(encounterId);
-      setEncounter(signed);
+      await emrService.signEncounter(encounterId);
       toast({
         title: 'Encounter Signed',
         description: 'The encounter has been signed and locked',
       });
+      // Navigate back to EMR dashboard after signing
+      navigate('/emr');
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -313,9 +317,21 @@ const EncounterWorkspace: React.FC = () => {
                   <FileText className="w-4 h-4 mr-1" />
                   Assessment
                 </TabsTrigger>
-                <TabsTrigger value="plan">
-                  <Pill className="w-4 h-4 mr-1" />
-                  Plan
+                <PermissionGate permission={['PRESCRIBE', 'CREATE_ENCOUNTER']} fallback={null}>
+                  <TabsTrigger value="plan">
+                    <Pill className="w-4 h-4 mr-1" />
+                    Plan
+                  </TabsTrigger>
+                </PermissionGate>
+                <PermissionGate permission={['ORDER_LAB', 'CREATE_ENCOUNTER']} fallback={null}>
+                  <TabsTrigger value="orders">
+                    <FlaskConical className="w-4 h-4 mr-1" />
+                    Orders
+                  </TabsTrigger>
+                </PermissionGate>
+                <TabsTrigger value="results">
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Results
                 </TabsTrigger>
               </TabsList>
 
@@ -589,6 +605,30 @@ const EncounterWorkspace: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* Orders (Lab & Prescriptions) */}
+              <TabsContent value="orders">
+                <div className="space-y-6">
+                  <LabOrderPanel
+                    encounterId={encounter.id}
+                    patientId={encounter.patientId}
+                    isEditable={isEditable}
+                  />
+                  <PrescriptionPanel
+                    encounterId={encounter.id}
+                    patientId={encounter.patientId}
+                    isEditable={isEditable}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Results */}
+              <TabsContent value="results">
+                <LabResultsPanel
+                  encounterId={encounter.id}
+                  patientId={encounter.patientId}
+                />
               </TabsContent>
             </Tabs>
           </div>

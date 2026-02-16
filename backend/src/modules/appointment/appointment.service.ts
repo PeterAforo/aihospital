@@ -418,7 +418,7 @@ export class AppointmentService {
     if (result.success) {
       await prisma.appointment.update({
         where: { id: appointment.id },
-        data: { reminderSent: true },
+        data: { reminder24hSent: true },
       });
       logger.info(`Appointment confirmation SMS sent to ${appointment.patient.phone}`);
     }
@@ -436,7 +436,7 @@ export class AppointmentService {
       where: {
         appointmentDate: { gte: tomorrow, lte: tomorrowEnd },
         status: { in: ['SCHEDULED', 'CONFIRMED'] },
-        reminderSent: false,
+        reminder24hSent: false,
       },
       include: {
         patient: { select: { firstName: true, lastName: true, phonePrimary: true } },
@@ -449,14 +449,17 @@ export class AppointmentService {
     let failed = 0;
 
     for (const apt of appointments) {
-      const phone = apt.patient?.phone || (apt.patient as any)?.phonePrimary;
+      const patientData = apt.patient as any;
+      const doctorData = apt.doctor as any;
+      const branchData = apt.branch as any;
+      const phone = patientData?.phonePrimary;
       if (!phone) {
         failed++;
         continue;
       }
 
-      const patientName = `${apt.patient?.firstName} ${apt.patient?.lastName}`;
-      const doctorName = `${apt.doctor?.firstName || ''} ${apt.doctor?.lastName || ''}`.trim();
+      const patientName = `${patientData?.firstName} ${patientData?.lastName}`;
+      const doctorName = `${doctorData?.firstName || ''} ${doctorData?.lastName || ''}`.trim();
 
       const result = await smsService.sendAppointmentReminder(
         phone,
@@ -464,13 +467,13 @@ export class AppointmentService {
         doctorName,
         apt.appointmentDate,
         apt.appointmentTime,
-        apt.branch?.name || 'MediCare Ghana'
+        branchData?.name || 'MediCare Ghana'
       );
 
       if (result.success) {
         await prisma.appointment.update({
           where: { id: apt.id },
-          data: { reminderSent: true },
+          data: { reminder24hSent: true },
         });
         sent++;
       } else {

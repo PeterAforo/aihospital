@@ -6,6 +6,7 @@ import path from 'path';
 import { config } from './config/index.js';
 import { errorHandler } from './common/middleware/error-handler.js';
 import { notFoundHandler } from './common/middleware/not-found.js';
+import { auditLogger } from './common/middleware/audit.middleware.js';
 import { logger } from './common/utils/logger.js';
 import { prisma } from './common/utils/prisma.js';
 
@@ -21,6 +22,22 @@ import tenantRoutes from './modules/tenant/tenant.routes.js';
 import triageRoutes from './modules/triage/triage.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
 import emrRoutes from './modules/emr/emr.routes.js';
+import pharmacyRoutes from './modules/pharmacy/pharmacy.routes.js';
+import laboratoryRoutes from './modules/laboratory/laboratory.routes.js';
+import billingRoutes from './modules/billing/billing.routes';
+import notificationRoutes from './modules/notifications/notification.routes.js';
+import financeRoutes from './modules/finance/finance.routes.js';
+import inpatientRoutes from './modules/inpatient/inpatient.routes.js';
+import integrationsRoutes from './modules/integrations/integrations.routes.js';
+import radiologyRoutes from './modules/radiology/radiology.routes.js';
+import theatreRoutes from './modules/theatre/theatre.routes.js';
+import maternityRoutes from './modules/maternity/maternity.routes.js';
+import emergencyRoutes from './modules/emergency/emergency.routes.js';
+import inventoryRoutes from './modules/inventory/inventory.routes.js';
+import equipmentRoutes from './modules/equipment/equipment.routes.js';
+import hrRoutes from './modules/hr/hr.routes.js';
+import portalRoutes from './modules/portal/portal.routes.js';
+import mobileRoutes from './modules/mobile/mobile.routes.js';
 
 // Import services
 import { queueWebSocketService } from './common/services/queue-websocket.service.js';
@@ -52,6 +69,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Audit logging middleware (logs all POST/PUT/DELETE/PATCH requests)
+app.use(auditLogger);
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/registration', registrationRoutes);
@@ -64,6 +84,22 @@ app.use('/api/tenants', tenantRoutes);
 app.use('/api/triage', triageRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/emr', emrRoutes);
+app.use('/api/pharmacy', pharmacyRoutes);
+app.use('/api/lab', laboratoryRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/finance', financeRoutes);
+app.use('/api/inpatient', inpatientRoutes);
+app.use('/api/integrations', integrationsRoutes);
+app.use('/api/radiology', radiologyRoutes);
+app.use('/api/theatre', theatreRoutes);
+app.use('/api/maternity', maternityRoutes);
+app.use('/api/emergency', emergencyRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/equipment', equipmentRoutes);
+app.use('/api/hr', hrRoutes);
+app.use('/api/portal', portalRoutes);
+app.use('/api/mobile', mobileRoutes);
 
 // Error handling
 app.use(notFoundHandler);

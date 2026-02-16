@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { ZodError } from 'zod';
 import { triageService } from './triage.service.js';
 import {
   CreateTriageSchema,
@@ -9,7 +10,7 @@ import {
   TriageAnalyticsQuerySchema,
 } from './triage.schema.js';
 import { AppError } from '../../common/middleware/error-handler.js';
-import { sendSuccess } from '../../common/utils/api-response.js';
+import { sendSuccess, sendError } from '../../common/utils/api-response.js';
 
 // ==================== CONTROLLER CLASS ====================
 
@@ -32,6 +33,9 @@ export class TriageController {
 
       return sendSuccess(res, result, 'Triage queue retrieved successfully');
     } catch (error) {
+      if (error instanceof ZodError) {
+        return sendError(res, `Validation error: ${error.errors.map(e => e.message).join(', ')}`, 400, undefined, 'VALIDATION_ERROR');
+      }
       next(error);
     }
   }
@@ -51,10 +55,13 @@ export class TriageController {
 
       const data = CreateTriageSchema.parse(req.body);
 
-      const result = await triageService.createTriage(tenantId, nurseId, data);
+      const result = await triageService.createTriage(tenantId, nurseId, data as any);
 
       return sendSuccess(res, result, 'Triage record created successfully', 201);
     } catch (error) {
+      if (error instanceof ZodError) {
+        return sendError(res, `Validation error: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`, 400, undefined, 'VALIDATION_ERROR');
+      }
       next(error);
     }
   }
@@ -96,7 +103,7 @@ export class TriageController {
       const { id } = req.params;
       const data = UpdateTriageSchema.parse(req.body);
 
-      const result = await triageService.updateTriage(tenantId, id, nurseId, data);
+      const result = await triageService.updateTriage(tenantId, id, nurseId, data as any);
 
       return sendSuccess(res, { triage: result }, 'Triage record updated successfully');
     } catch (error) {

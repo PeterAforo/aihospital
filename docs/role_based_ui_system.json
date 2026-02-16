@@ -1,0 +1,975 @@
+{
+  "system_name": "Role-Based UI System - Tailored Dashboards & Navigation",
+  "problem_statement": {
+    "current_issue": "Currently, ALL users see the same sidebar links and dashboard, regardless of role. A NURSE sees 'Create Prescription' button, clicks it, gets 403 error. This is BAD UX.",
+    "impact": [
+      "Frustrating user experience (clicking links that return 403 errors)",
+      "Security through obscurity missing (showing features users can't access)",
+      "Confusion (users don't know what they CAN do)",
+      "Training difficulty (need to teach staff to ignore certain menu items)"
+    ],
+    "solution": "Each role gets a TAILORED dashboard and sidebar showing only features they have permission to access. No more 403 errors from the UI."
+  },
+
+  "design_principles": {
+    "principle_1": "If user doesn't have permission, they DON'T SEE IT",
+    "principle_2": "Each role gets a purpose-built dashboard showing metrics relevant to THEIR job",
+    "principle_3": "Sidebar navigation reflects user's actual capabilities",
+    "principle_4": "Components conditionally render based on permissions",
+    "principle_5": "Users should never encounter 403 errors from UI actions"
+  },
+
+  "role_specific_dashboards": {
+    "SUPER_ADMIN": {
+      "dashboard_name": "Platform Overview Dashboard",
+      "primary_metrics": [
+        {
+          "metric": "Total Organizations",
+          "value": "24 hospitals",
+          "trend": "+3 this month"
+        },
+        {
+          "metric": "Active Users",
+          "value": "1,247 users",
+          "trend": "+15% from last month"
+        },
+        {
+          "metric": "System Health",
+          "value": "98.5%",
+          "status": "Excellent"
+        },
+        {
+          "metric": "Revenue (MRR)",
+          "value": "₵125,000",
+          "trend": "+8% MoM"
+        }
+      ],
+      "widgets": [
+        "Organization map (Ghana hospitals)",
+        "Subscription status (trial, active, expired)",
+        "Support tickets",
+        "System performance metrics",
+        "Recent activities across all hospitals",
+        "Billing overview"
+      ],
+      "quick_actions": [
+        "Create new organization",
+        "Manage subscriptions",
+        "View system logs",
+        "Support dashboard"
+      ]
+    },
+
+    "HOSPITAL_ADMIN": {
+      "dashboard_name": "Hospital Management Dashboard",
+      "primary_metrics": [
+        {
+          "metric": "Today's Appointments",
+          "value": "45 appointments",
+          "breakdown": "32 completed, 13 pending"
+        },
+        {
+          "metric": "Active Patients",
+          "value": "8,234 patients",
+          "trend": "+127 this month"
+        },
+        {
+          "metric": "Staff Performance",
+          "value": "87%",
+          "status": "Good"
+        },
+        {
+          "metric": "Revenue (Today)",
+          "value": "₵12,450",
+          "trend": "+12% vs yesterday"
+        }
+      ],
+      "widgets": [
+        "Daily revenue chart (last 30 days)",
+        "Department performance",
+        "Staff attendance",
+        "Patient satisfaction scores",
+        "Inventory alerts (low stock drugs)",
+        "NHIS claims status",
+        "Branch comparison (if multi-branch)"
+      ],
+      "quick_actions": [
+        "Add staff member",
+        "View financial reports",
+        "Manage departments",
+        "Review NHIS claims",
+        "Generate reports"
+      ],
+      "alerts": [
+        "5 drug items low stock",
+        "NHIS claim #1234 rejected - needs review",
+        "Staff leave requests pending (3)"
+      ]
+    },
+
+    "MEDICAL_DIRECTOR": {
+      "dashboard_name": "Clinical Oversight Dashboard",
+      "primary_metrics": [
+        {
+          "metric": "Today's Encounters",
+          "value": "87 encounters",
+          "breakdown": "45 completed, 42 in progress"
+        },
+        {
+          "metric": "Inpatient Occupancy",
+          "value": "78%",
+          "status": "32/41 beds occupied"
+        },
+        {
+          "metric": "Average Wait Time",
+          "value": "23 minutes",
+          "trend": "-5 min from yesterday"
+        },
+        {
+          "metric": "Quality Score",
+          "value": "92%",
+          "status": "Excellent"
+        }
+      ],
+      "widgets": [
+        "Top 10 diagnoses this month (ICD-10)",
+        "Doctor productivity (encounters per day)",
+        "Patient outcomes dashboard",
+        "Clinical quality indicators",
+        "Antibiotic stewardship metrics",
+        "Emergency department metrics",
+        "Referral patterns"
+      ],
+      "quick_actions": [
+        "View all encounters",
+        "Clinical reports",
+        "Quality metrics",
+        "Doctor schedules",
+        "Review critical cases"
+      ]
+    },
+
+    "DOCTOR": {
+      "dashboard_name": "My Clinical Workspace",
+      "primary_metrics": [
+        {
+          "metric": "Today's Appointments",
+          "value": "12 patients",
+          "breakdown": "8 completed, 4 pending"
+        },
+        {
+          "metric": "Pending Tasks",
+          "value": "5 tasks",
+          "items": "3 lab results to review, 2 prescriptions to sign"
+        },
+        {
+          "metric": "Patients in Queue",
+          "value": "3 waiting",
+          "next_patient": "Kwame Mensah - 10:30 AM"
+        }
+      ],
+      "widgets": [
+        "Today's schedule (timeline view)",
+        "Patient queue (with priority)",
+        "Pending lab results",
+        "Pending prescriptions to sign",
+        "My recent patients (quick access)",
+        "Consultation notes drafts",
+        "Referrals sent/received"
+      ],
+      "quick_actions": [
+        "Start new consultation",
+        "View my schedule",
+        "Search patient",
+        "Review lab results",
+        "Common diagnoses (quick buttons: Malaria, Hypertension, UTI, etc.)"
+      ],
+      "patient_queue": [
+        {
+          "patient": "Kwame Mensah",
+          "time": "10:30 AM",
+          "type": "Follow-up",
+          "priority": "Yellow",
+          "chief_complaint": "Hypertension review"
+        },
+        {
+          "patient": "Ama Osei",
+          "time": "11:00 AM",
+          "type": "New",
+          "priority": "Green",
+          "chief_complaint": "General check-up"
+        }
+      ]
+    },
+
+    "NURSE": {
+      "dashboard_name": "Nursing Station Dashboard",
+      "primary_metrics": [
+        {
+          "metric": "Patients to Triage",
+          "value": "7 waiting",
+          "urgent": "2 urgent (red/orange)"
+        },
+        {
+          "metric": "Vitals Due",
+          "value": "12 patients",
+          "overdue": "3 overdue"
+        },
+        {
+          "metric": "Medications to Administer",
+          "value": "18 doses",
+          "next_round": "11:00 AM"
+        }
+      ],
+      "widgets": [
+        "Triage queue (Manchester Triage priority)",
+        "Ward patients (if inpatient nurse)",
+        "Vital signs schedule",
+        "Medication administration record (MAR)",
+        "Pending nursing notes",
+        "Handover notes from previous shift"
+      ],
+      "quick_actions": [
+        "Triage patient",
+        "Record vital signs",
+        "Document nursing notes",
+        "Mark medication administered",
+        "View ward census"
+      ],
+      "triage_queue": [
+        {
+          "patient": "Emergency arrival",
+          "priority": "Red",
+          "chief_complaint": "Chest pain",
+          "wait_time": "2 minutes",
+          "action": "TRIAGE NOW"
+        },
+        {
+          "patient": "Walk-in",
+          "priority": "Yellow",
+          "chief_complaint": "Fever 3 days",
+          "wait_time": "15 minutes"
+        }
+      ]
+    },
+
+    "PHARMACIST": {
+      "dashboard_name": "Pharmacy Workspace",
+      "primary_metrics": [
+        {
+          "metric": "Prescriptions Queue",
+          "value": "23 pending",
+          "urgent": "5 urgent (STAT orders)"
+        },
+        {
+          "metric": "Low Stock Items",
+          "value": "12 drugs",
+          "critical": "3 below reorder level"
+        },
+        {
+          "metric": "Dispensing Today",
+          "value": "145 prescriptions",
+          "value_dispensed": "₵8,450"
+        }
+      ],
+      "widgets": [
+        "Prescription queue (sorted by urgency)",
+        "Inventory alerts",
+        "Drug expiry calendar (next 90 days)",
+        "Top dispensed drugs today",
+        "Stock valuation",
+        "Pending drug orders from suppliers"
+      ],
+      "quick_actions": [
+        "Dispense prescription",
+        "Receive stock",
+        "Check drug inventory",
+        "Order from supplier",
+        "Print stock report"
+      ],
+      "prescription_queue": [
+        {
+          "patient": "Kwame Mensah",
+          "doctor": "Dr. Ama",
+          "items": "3 drugs",
+          "status": "STAT",
+          "priority": "🔴 Urgent",
+          "time": "5 min ago"
+        },
+        {
+          "patient": "Ama Osei",
+          "doctor": "Dr. Kofi",
+          "items": "2 drugs",
+          "status": "Routine",
+          "priority": "Normal",
+          "time": "15 min ago"
+        }
+      ]
+    },
+
+    "LAB_TECHNICIAN": {
+      "dashboard_name": "Laboratory Workspace",
+      "primary_metrics": [
+        {
+          "metric": "Tests Pending",
+          "value": "34 tests",
+          "urgent": "8 STAT orders"
+        },
+        {
+          "metric": "Samples to Process",
+          "value": "27 samples",
+          "status": "18 collected, 9 pending collection"
+        },
+        {
+          "metric": "Results Pending Approval",
+          "value": "12 results",
+          "action": "Awaiting pathologist review"
+        }
+      ],
+      "widgets": [
+        "Lab order queue (by urgency)",
+        "Sample tracking",
+        "Quality control log",
+        "Equipment status",
+        "Reagent inventory",
+        "Test turnaround times"
+      ],
+      "quick_actions": [
+        "Process sample",
+        "Enter results",
+        "Print labels",
+        "QC logging",
+        "Check reagent stock"
+      ],
+      "lab_queue": [
+        {
+          "test": "Malaria RDT",
+          "patient": "Kwame Mensah",
+          "sample": "Blood (collected)",
+          "priority": "STAT",
+          "time_ordered": "20 min ago"
+        },
+        {
+          "test": "CBC",
+          "patient": "Ama Osei",
+          "sample": "Blood (pending collection)",
+          "priority": "Routine",
+          "time_ordered": "2 hours ago"
+        }
+      ]
+    },
+
+    "RECEPTIONIST": {
+      "dashboard_name": "Front Desk Dashboard",
+      "primary_metrics": [
+        {
+          "metric": "Today's Appointments",
+          "value": "65 appointments",
+          "breakdown": "45 checked in, 20 pending"
+        },
+        {
+          "metric": "Walk-ins",
+          "value": "12 patients",
+          "status": "Waiting for triage"
+        },
+        {
+          "metric": "Patients to Register",
+          "value": "5 new patients"
+        }
+      ],
+      "widgets": [
+        "Today's appointment schedule (all doctors)",
+        "Check-in status",
+        "Patient search (quick access)",
+        "Waiting room status",
+        "Appointment reminders sent",
+        "No-shows today"
+      ],
+      "quick_actions": [
+        "Register new patient",
+        "Book appointment",
+        "Check-in patient",
+        "Search patient",
+        "Print appointment list"
+      ],
+      "upcoming_appointments": [
+        {
+          "time": "10:30 AM",
+          "patient": "Kwame Mensah",
+          "doctor": "Dr. Ama",
+          "status": "Checked in",
+          "color": "green"
+        },
+        {
+          "time": "11:00 AM",
+          "patient": "Ama Osei",
+          "doctor": "Dr. Kofi",
+          "status": "Pending",
+          "color": "orange"
+        }
+      ]
+    },
+
+    "BILLING_OFFICER": {
+      "dashboard_name": "Billing & Revenue Dashboard",
+      "primary_metrics": [
+        {
+          "metric": "Today's Revenue",
+          "value": "₵12,450",
+          "trend": "+15% vs yesterday"
+        },
+        {
+          "metric": "Outstanding Invoices",
+          "value": "₵45,230",
+          "overdue": "₵12,000 overdue"
+        },
+        {
+          "metric": "NHIS Claims",
+          "value": "34 pending",
+          "status": "12 approved, 3 rejected"
+        }
+      ],
+      "widgets": [
+        "Revenue by service type (pie chart)",
+        "Payment methods breakdown",
+        "Outstanding invoices (aging report)",
+        "NHIS claims status",
+        "Daily cash reconciliation",
+        "Top revenue sources"
+      ],
+      "quick_actions": [
+        "Create invoice",
+        "Process payment",
+        "Submit NHIS claim",
+        "Generate receipt",
+        "View financial reports"
+      ],
+      "pending_invoices": [
+        {
+          "patient": "Kwame Mensah",
+          "amount": "₵450",
+          "services": "Consultation + Lab",
+          "status": "Unpaid",
+          "age": "2 days"
+        }
+      ]
+    },
+
+    "PATIENT": {
+      "dashboard_name": "My Health Dashboard",
+      "primary_metrics": [
+        {
+          "metric": "Upcoming Appointments",
+          "value": "1 appointment",
+          "next": "March 20, 10:30 AM with Dr. Ama"
+        },
+        {
+          "metric": "Pending Prescriptions",
+          "value": "2 refills available"
+        },
+        {
+          "metric": "Last Visit",
+          "value": "March 1, 2024",
+          "diagnosis": "Hypertension follow-up"
+        }
+      ],
+      "widgets": [
+        "My appointments",
+        "My prescriptions (active)",
+        "My lab results",
+        "My health records",
+        "Outstanding bills",
+        "Health tips"
+      ],
+      "quick_actions": [
+        "Book appointment",
+        "View prescriptions",
+        "Download medical records",
+        "Pay bill",
+        "Message doctor"
+      ]
+    }
+  },
+
+  "role_based_sidebar_navigation": {
+    "SUPER_ADMIN": {
+      "sections": [
+        {
+          "section": "Platform Management",
+          "icon": "🏢",
+          "items": [
+            { "label": "Organizations", "route": "/admin/organizations", "permission": "MANAGE_TENANTS" },
+            { "label": "Users", "route": "/admin/users", "permission": "MANAGE_USERS" },
+            { "label": "Subscriptions", "route": "/admin/subscriptions", "permission": "MANAGE_TENANTS" },
+            { "label": "System Settings", "route": "/admin/settings", "permission": "MANAGE_SETTINGS" }
+          ]
+        },
+        {
+          "section": "Monitoring",
+          "icon": "📊",
+          "items": [
+            { "label": "System Health", "route": "/admin/health", "permission": "VIEW_SYSTEM_REPORTS" },
+            { "label": "Audit Logs", "route": "/admin/audit", "permission": "VIEW_AUDIT_LOG" },
+            { "label": "Analytics", "route": "/admin/analytics", "permission": "VIEW_SYSTEM_REPORTS" }
+          ]
+        },
+        {
+          "section": "Support",
+          "icon": "🎫",
+          "items": [
+            { "label": "Support Tickets", "route": "/admin/support", "permission": "MANAGE_SUPPORT" },
+            { "label": "Documentation", "route": "/admin/docs", "permission": "VIEW_DOCS" }
+          ]
+        }
+      ]
+    },
+
+    "HOSPITAL_ADMIN": {
+      "sections": [
+        {
+          "section": "Dashboard",
+          "icon": "📊",
+          "items": [
+            { "label": "Overview", "route": "/dashboard", "permission": null }
+          ]
+        },
+        {
+          "section": "Patients",
+          "icon": "👥",
+          "items": [
+            { "label": "All Patients", "route": "/patients", "permission": "VIEW_PATIENT" },
+            { "label": "Appointments", "route": "/appointments", "permission": "VIEW_APPOINTMENT" }
+          ]
+        },
+        {
+          "section": "Staff Management",
+          "icon": "👨‍⚕️",
+          "items": [
+            { "label": "Users", "route": "/admin/users", "permission": "VIEW_USERS" },
+            { "label": "Roles & Permissions", "route": "/admin/roles", "permission": "MANAGE_ROLES" },
+            { "label": "Departments", "route": "/admin/departments", "permission": "MANAGE_DEPARTMENTS" },
+            { "label": "Schedules", "route": "/admin/schedules", "permission": "MANAGE_SCHEDULES" }
+          ]
+        },
+        {
+          "section": "Financial",
+          "icon": "💰",
+          "items": [
+            { "label": "Billing", "route": "/billing", "permission": "VIEW_INVOICE" },
+            { "label": "NHIS Claims", "route": "/billing/nhis", "permission": "VIEW_NHIS_CLAIM" },
+            { "label": "Reports", "route": "/reports/financial", "permission": "VIEW_FINANCIAL_REPORTS" }
+          ]
+        },
+        {
+          "section": "Inventory",
+          "icon": "📦",
+          "items": [
+            { "label": "Pharmacy Stock", "route": "/pharmacy/inventory", "permission": "VIEW_STOCK_LEVELS" },
+            { "label": "Procurement", "route": "/procurement", "permission": "VIEW_PROCUREMENT" }
+          ]
+        },
+        {
+          "section": "Reports",
+          "icon": "📈",
+          "items": [
+            { "label": "Analytics", "route": "/reports", "permission": "VIEW_REPORTS" },
+            { "label": "Audit Logs", "route": "/admin/audit", "permission": "VIEW_AUDIT_LOG" }
+          ]
+        },
+        {
+          "section": "Settings",
+          "icon": "⚙️",
+          "items": [
+            { "label": "Hospital Settings", "route": "/settings", "permission": "MANAGE_SETTINGS" },
+            { "label": "Branches", "route": "/settings/branches", "permission": "MANAGE_BRANCHES" }
+          ]
+        }
+      ]
+    },
+
+    "DOCTOR": {
+      "sections": [
+        {
+          "section": "My Workspace",
+          "icon": "🏥",
+          "items": [
+            { "label": "Dashboard", "route": "/dashboard", "permission": null },
+            { "label": "My Schedule", "route": "/my-schedule", "permission": null },
+            { "label": "My Patients", "route": "/my-patients", "permission": "VIEW_PATIENT" }
+          ]
+        },
+        {
+          "section": "Clinical",
+          "icon": "📋",
+          "items": [
+            { "label": "Patient Search", "route": "/patients", "permission": "VIEW_PATIENT" },
+            { "label": "Consultations", "route": "/encounters", "permission": "VIEW_ENCOUNTER" },
+            { "label": "Prescriptions", "route": "/prescriptions", "permission": "VIEW_PRESCRIPTION" }
+          ]
+        },
+        {
+          "section": "Diagnostics",
+          "icon": "🔬",
+          "items": [
+            { "label": "Lab Results", "route": "/lab/results", "permission": "VIEW_LAB_RESULTS" },
+            { "label": "Radiology", "route": "/radiology/results", "permission": "VIEW_RADIOLOGY_RESULTS" }
+          ]
+        },
+        {
+          "section": "Resources",
+          "icon": "📚",
+          "items": [
+            { "label": "Drug Formulary", "route": "/resources/drugs", "permission": "VIEW_DRUG_FORMULARY" },
+            { "label": "ICD-10 Codes", "route": "/resources/icd10", "permission": null }
+          ]
+        }
+      ],
+      "note": "Doctors should NOT see: Staff management, Billing, Inventory, Pharmacy dispensing, Triage"
+    },
+
+    "NURSE": {
+      "sections": [
+        {
+          "section": "Nursing Station",
+          "icon": "🏥",
+          "items": [
+            { "label": "Dashboard", "route": "/dashboard", "permission": null },
+            { "label": "Triage Queue", "route": "/triage", "permission": "TRIAGE" },
+            { "label": "Ward Patients", "route": "/ward", "permission": "VIEW_PATIENT" }
+          ]
+        },
+        {
+          "section": "Patient Care",
+          "icon": "💉",
+          "items": [
+            { "label": "Patient Search", "route": "/patients", "permission": "VIEW_PATIENT" },
+            { "label": "Vital Signs", "route": "/vitals", "permission": "RECORD_VITALS" },
+            { "label": "Medication Admin", "route": "/medications", "permission": "ADMINISTER_MEDICATION" }
+          ]
+        },
+        {
+          "section": "Documentation",
+          "icon": "📝",
+          "items": [
+            { "label": "Nursing Notes", "route": "/nursing-notes", "permission": "UPDATE_PATIENT_NOTES" },
+            { "label": "Handover", "route": "/handover", "permission": "VIEW_HANDOVER" }
+          ]
+        }
+      ],
+      "note": "Nurses should NOT see: Prescribing, Billing, Staff management, Lab processing, Pharmacy dispensing"
+    },
+
+    "PHARMACIST": {
+      "sections": [
+        {
+          "section": "Pharmacy",
+          "icon": "💊",
+          "items": [
+            { "label": "Dashboard", "route": "/dashboard", "permission": null },
+            { "label": "Prescription Queue", "route": "/pharmacy/queue", "permission": "VIEW_PRESCRIPTION" },
+            { "label": "Dispense", "route": "/pharmacy/dispense", "permission": "DISPENSE_MEDICATION" }
+          ]
+        },
+        {
+          "section": "Inventory",
+          "icon": "📦",
+          "items": [
+            { "label": "Drug Inventory", "route": "/pharmacy/inventory", "permission": "VIEW_STOCK_LEVELS" },
+            { "label": "Receive Stock", "route": "/pharmacy/receive", "permission": "RECEIVE_DRUG_STOCK" },
+            { "label": "Stock Reports", "route": "/pharmacy/reports", "permission": "VIEW_STOCK_LEVELS" }
+          ]
+        },
+        {
+          "section": "Resources",
+          "icon": "📚",
+          "items": [
+            { "label": "Drug Formulary", "route": "/pharmacy/formulary", "permission": "VIEW_DRUG_FORMULARY" }
+          ]
+        }
+      ],
+      "note": "Pharmacists should NOT see: Clinical consultations, Staff management, Triage, Lab"
+    },
+
+    "RECEPTIONIST": {
+      "sections": [
+        {
+          "section": "Front Desk",
+          "icon": "🏥",
+          "items": [
+            { "label": "Dashboard", "route": "/dashboard", "permission": null },
+            { "label": "Check-in", "route": "/check-in", "permission": "CHECK_IN_PATIENT" }
+          ]
+        },
+        {
+          "section": "Patients",
+          "icon": "👥",
+          "items": [
+            { "label": "Register Patient", "route": "/patients/register", "permission": "REGISTER_PATIENT" },
+            { "label": "Patient Search", "route": "/patients", "permission": "VIEW_PATIENT_BASIC" }
+          ]
+        },
+        {
+          "section": "Appointments",
+          "icon": "📅",
+          "items": [
+            { "label": "Book Appointment", "route": "/appointments/book", "permission": "CREATE_APPOINTMENT" },
+            { "label": "Appointment Schedule", "route": "/appointments", "permission": "VIEW_APPOINTMENT" }
+          ]
+        }
+      ],
+      "note": "Receptionists should NOT see: Clinical data, Prescriptions, Lab results, Staff management, Billing details"
+    },
+
+    "LAB_TECHNICIAN": {
+      "sections": [
+        {
+          "section": "Laboratory",
+          "icon": "🔬",
+          "items": [
+            { "label": "Dashboard", "route": "/dashboard", "permission": null },
+            { "label": "Lab Queue", "route": "/lab/queue", "permission": "VIEW_LAB_ORDER" },
+            { "label": "Process Sample", "route": "/lab/process", "permission": "PROCESS_LAB_TEST" },
+            { "label": "Enter Results", "route": "/lab/results", "permission": "UPLOAD_LAB_RESULT" }
+          ]
+        },
+        {
+          "section": "Quality Control",
+          "icon": "✅",
+          "items": [
+            { "label": "QC Log", "route": "/lab/qc", "permission": "VIEW_LAB_QC" },
+            { "label": "Reagent Stock", "route": "/lab/reagents", "permission": "VIEW_LAB_INVENTORY" }
+          ]
+        }
+      ],
+      "note": "Lab techs should NOT see: Prescriptions, Billing, Staff management, Patient consultations"
+    },
+
+    "BILLING_OFFICER": {
+      "sections": [
+        {
+          "section": "Billing",
+          "icon": "💰",
+          "items": [
+            { "label": "Dashboard", "route": "/dashboard", "permission": null },
+            { "label": "Create Invoice", "route": "/billing/invoice", "permission": "CREATE_INVOICE" },
+            { "label": "Process Payment", "route": "/billing/payment", "permission": "PROCESS_PAYMENT" },
+            { "label": "Outstanding Invoices", "route": "/billing/outstanding", "permission": "VIEW_INVOICE" }
+          ]
+        },
+        {
+          "section": "NHIS",
+          "icon": "🏥",
+          "items": [
+            { "label": "Submit Claims", "route": "/billing/nhis/submit", "permission": "SUBMIT_NHIS_CLAIM" },
+            { "label": "Claims Status", "route": "/billing/nhis/status", "permission": "VIEW_NHIS_CLAIM" }
+          ]
+        },
+        {
+          "section": "Reports",
+          "icon": "📊",
+          "items": [
+            { "label": "Financial Reports", "route": "/reports/financial", "permission": "VIEW_FINANCIAL_REPORTS" }
+          ]
+        }
+      ],
+      "note": "Billing officers should NOT see: Clinical consultations, Prescriptions, Lab results, Staff management"
+    }
+  },
+
+  "component_visibility_rules": {
+    "description": "How to conditionally render components based on permissions",
+    "implementation": {
+      "react_pattern": "Use hasPermission() helper function and user.permissions from auth context",
+      "examples": [
+        {
+          "component": "Encounter Workspace - Prescription Tab",
+          "rule": "Only show if user has PRESCRIBE permission",
+          "code": "```jsx\n{user.permissions.includes('PRESCRIBE') && (\n  <Tab label=\"Prescriptions\" value=\"prescriptions\">\n    <PrescriptionForm />\n  </Tab>\n)}\n```"
+        },
+        {
+          "component": "Patient Profile - Edit Button",
+          "rule": "Only show if user has EDIT_PATIENT permission",
+          "code": "```jsx\n{hasPermission('EDIT_PATIENT') && (\n  <Button onClick={handleEdit}>Edit Patient</Button>\n)}\n```"
+        },
+        {
+          "component": "User Management Page",
+          "rule": "Redirect to 403 if user doesn't have VIEW_USERS permission",
+          "code": "```jsx\nif (!hasPermission('VIEW_USERS')) {\n  return <Navigate to=\"/403\" />;\n}\n```"
+        }
+      ]
+    },
+    "granular_rules": [
+      {
+        "feature": "Add Prescription Button (in Encounter)",
+        "show_if": "user.permissions.includes('PRESCRIBE')",
+        "hide_for": "NURSE, RECEPTIONIST, LAB_TECHNICIAN, BILLING_OFFICER"
+      },
+      {
+        "feature": "Order Lab Test Button",
+        "show_if": "user.permissions.includes('ORDER_LAB')",
+        "hide_for": "NURSE, RECEPTIONIST, PHARMACIST, BILLING_OFFICER"
+      },
+      {
+        "feature": "Dispense Medication Button",
+        "show_if": "user.permissions.includes('DISPENSE_MEDICATION')",
+        "hide_for": "DOCTOR, NURSE, RECEPTIONIST, LAB_TECHNICIAN"
+      },
+      {
+        "feature": "Triage Patient Button",
+        "show_if": "user.permissions.includes('TRIAGE')",
+        "hide_for": "DOCTOR, PHARMACIST, RECEPTIONIST, LAB_TECHNICIAN"
+      },
+      {
+        "feature": "Create Invoice Button",
+        "show_if": "user.permissions.includes('CREATE_INVOICE')",
+        "hide_for": "DOCTOR, NURSE, PHARMACIST, RECEPTIONIST, LAB_TECHNICIAN"
+      },
+      {
+        "feature": "User Management Menu",
+        "show_if": "user.permissions.includes('VIEW_USERS')",
+        "hide_for": "DOCTOR, NURSE, PHARMACIST, RECEPTIONIST, LAB_TECHNICIAN"
+      },
+      {
+        "feature": "Financial Reports",
+        "show_if": "user.permissions.includes('VIEW_FINANCIAL_REPORTS')",
+        "hide_for": "DOCTOR, NURSE, PHARMACIST, RECEPTIONIST, LAB_TECHNICIAN"
+      },
+      {
+        "feature": "Audit Logs",
+        "show_if": "user.permissions.includes('VIEW_AUDIT_LOG')",
+        "hide_for": "DOCTOR, NURSE, PHARMACIST, RECEPTIONIST, LAB_TECHNICIAN, BILLING_OFFICER"
+      }
+    ]
+  },
+
+  "implementation_guide": {
+    "step_1_auth_context": {
+      "description": "Extend auth context to include user permissions",
+      "file": "src/context/AuthContext.tsx",
+      "code": "```typescript\ninterface AuthContextType {\n  user: {\n    id: string;\n    email: string;\n    firstName: string;\n    lastName: string;\n    role: string;\n    roleId: string;\n    permissions: string[];  // Array of permission names\n    organizationId: string;\n    primaryBranchId: string;\n    currentBranchId: string;\n  } | null;\n  hasPermission: (permission: string) => boolean;\n  hasAnyPermission: (permissions: string[]) => boolean;\n  hasAllPermissions: (permissions: string[]) => boolean;\n}\n\nconst hasPermission = (permission: string) => {\n  return user?.permissions?.includes(permission) || false;\n};\n\nconst hasAnyPermission = (permissions: string[]) => {\n  return permissions.some(p => user?.permissions?.includes(p));\n};\n\nconst hasAllPermissions = (permissions: string[]) => {\n  return permissions.every(p => user?.permissions?.includes(p));\n};\n```"
+    },
+
+    "step_2_role_based_sidebar": {
+      "description": "Create dynamic sidebar that filters by permissions",
+      "file": "src/components/layout/Sidebar.tsx",
+      "code": "```typescript\nimport { useAuth } from '@/context/AuthContext';\nimport { SIDEBAR_CONFIG } from '@/config/sidebar.config';\n\nexport const Sidebar: React.FC = () => {\n  const { user, hasPermission } = useAuth();\n  \n  // Get sidebar config for user's role\n  const roleConfig = SIDEBAR_CONFIG[user.role] || SIDEBAR_CONFIG.DEFAULT;\n  \n  // Filter items by permission\n  const filterItemsByPermission = (items) => {\n    return items.filter(item => {\n      // If no permission required, always show\n      if (!item.permission) return true;\n      \n      // Check if user has required permission\n      return hasPermission(item.permission);\n    });\n  };\n  \n  return (\n    <div className=\"sidebar\">\n      {roleConfig.sections.map(section => {\n        const visibleItems = filterItemsByPermission(section.items);\n        \n        // Don't render section if no visible items\n        if (visibleItems.length === 0) return null;\n        \n        return (\n          <div key={section.section} className=\"sidebar-section\">\n            <h3>{section.icon} {section.section}</h3>\n            <ul>\n              {visibleItems.map(item => (\n                <li key={item.route}>\n                  <Link to={item.route}>\n                    {item.label}\n                  </Link>\n                </li>\n              ))}\n            </ul>\n          </div>\n        );\n      })}\n    </div>\n  );\n};\n```"
+    },
+
+    "step_3_role_based_dashboard": {
+      "description": "Render different dashboard based on role",
+      "file": "src/pages/Dashboard.tsx",
+      "code": "```typescript\nimport { useAuth } from '@/context/AuthContext';\nimport { DoctorDashboard } from './dashboards/DoctorDashboard';\nimport { NurseDashboard } from './dashboards/NurseDashboard';\nimport { PharmacistDashboard } from './dashboards/PharmacistDashboard';\nimport { ReceptionistDashboard } from './dashboards/ReceptionistDashboard';\nimport { AdminDashboard } from './dashboards/AdminDashboard';\n\nexport const Dashboard: React.FC = () => {\n  const { user } = useAuth();\n  \n  // Route to role-specific dashboard\n  switch (user.role) {\n    case 'SUPER_ADMIN':\n    case 'HOSPITAL_ADMIN':\n      return <AdminDashboard />;\n    \n    case 'MEDICAL_DIRECTOR':\n      return <MedicalDirectorDashboard />;\n    \n    case 'DOCTOR':\n      return <DoctorDashboard />;\n    \n    case 'NURSE':\n    case 'HEAD_NURSE':\n      return <NurseDashboard />;\n    \n    case 'PHARMACIST':\n      return <PharmacistDashboard />;\n    \n    case 'LAB_TECHNICIAN':\n      return <LabTechnicianDashboard />;\n    \n    case 'RECEPTIONIST':\n      return <ReceptionistDashboard />;\n    \n    case 'BILLING_OFFICER':\n      return <BillingDashboard />;\n    \n    default:\n      return <DefaultDashboard />;\n  }\n};\n```"
+    },
+
+    "step_4_permission_based_components": {
+      "description": "Create PermissionGate component for conditional rendering",
+      "file": "src/components/auth/PermissionGate.tsx",
+      "code": "```typescript\nimport { useAuth } from '@/context/AuthContext';\nimport { Navigate } from 'react-router-dom';\n\ninterface PermissionGateProps {\n  permission: string | string[];\n  children: React.ReactNode;\n  fallback?: React.ReactNode;\n  redirect?: string;\n  requireAll?: boolean; // If true, requires all permissions. If false, requires any.\n}\n\nexport const PermissionGate: React.FC<PermissionGateProps> = ({\n  permission,\n  children,\n  fallback = null,\n  redirect,\n  requireAll = false\n}) => {\n  const { hasPermission, hasAnyPermission, hasAllPermissions } = useAuth();\n  \n  let hasAccess = false;\n  \n  if (typeof permission === 'string') {\n    hasAccess = hasPermission(permission);\n  } else if (Array.isArray(permission)) {\n    hasAccess = requireAll \n      ? hasAllPermissions(permission)\n      : hasAnyPermission(permission);\n  }\n  \n  if (!hasAccess) {\n    if (redirect) {\n      return <Navigate to={redirect} />;\n    }\n    return <>{fallback}</>;\n  }\n  \n  return <>{children}</>;\n};\n\n// Usage examples:\n// 1. Hide component\n<PermissionGate permission=\"PRESCRIBE\">\n  <Button>Add Prescription</Button>\n</PermissionGate>\n\n// 2. Show fallback\n<PermissionGate \n  permission=\"VIEW_FINANCIAL_REPORTS\"\n  fallback={<Alert>No access to financial data</Alert>}\n>\n  <FinancialChart />\n</PermissionGate>\n\n// 3. Redirect if no access\n<PermissionGate permission=\"MANAGE_USERS\" redirect=\"/403\">\n  <UserManagementPage />\n</PermissionGate>\n\n// 4. Require multiple permissions (any)\n<PermissionGate permission={['PRESCRIBE', 'VIEW_PRESCRIPTION']}>\n  <PrescriptionPanel />\n</PermissionGate>\n\n// 5. Require multiple permissions (all)\n<PermissionGate \n  permission={['CREATE_INVOICE', 'PROCESS_PAYMENT']} \n  requireAll={true}\n>\n  <BillingActions />\n</PermissionGate>\n```"
+    },
+
+    "step_5_route_protection": {
+      "description": "Protect routes with permission requirements",
+      "file": "src/routes/index.tsx",
+      "code": "```typescript\nimport { ProtectedRoute } from '@/components/auth/ProtectedRoute';\n\nconst routes = [\n  // Public routes\n  { path: '/login', element: <LoginPage /> },\n  \n  // Protected routes\n  {\n    path: '/',\n    element: <ProtectedRoute><Layout /></ProtectedRoute>,\n    children: [\n      { path: 'dashboard', element: <Dashboard /> },\n      \n      // Patient routes\n      {\n        path: 'patients',\n        element: (\n          <PermissionGate permission=\"VIEW_PATIENT\" redirect=\"/403\">\n            <PatientList />\n          </PermissionGate>\n        )\n      },\n      {\n        path: 'patients/register',\n        element: (\n          <PermissionGate permission=\"REGISTER_PATIENT\" redirect=\"/403\">\n            <PatientRegistration />\n          </PermissionGate>\n        )\n      },\n      \n      // Clinical routes\n      {\n        path: 'encounters/:id',\n        element: (\n          <PermissionGate permission=\"CREATE_ENCOUNTER\" redirect=\"/403\">\n            <EncounterWorkspace />\n          </PermissionGate>\n        )\n      },\n      \n      // Pharmacy routes\n      {\n        path: 'pharmacy/queue',\n        element: (\n          <PermissionGate permission=\"VIEW_PRESCRIPTION\" redirect=\"/403\">\n            <PharmacyQueue />\n          </PermissionGate>\n        )\n      },\n      {\n        path: 'pharmacy/dispense',\n        element: (\n          <PermissionGate permission=\"DISPENSE_MEDICATION\" redirect=\"/403\">\n            <DispensingInterface />\n          </PermissionGate>\n        )\n      },\n      \n      // Admin routes\n      {\n        path: 'admin/users',\n        element: (\n          <PermissionGate permission=\"VIEW_USERS\" redirect=\"/403\">\n            <UserManagement />\n          </PermissionGate>\n        )\n      },\n      \n      // Error pages\n      { path: '403', element: <Forbidden /> },\n      { path: '*', element: <NotFound /> }\n    ]\n  }\n];\n```"
+    },
+
+    "step_6_example_dashboards": {
+      "description": "Example implementation of role-specific dashboards",
+      "doctor_dashboard": "```tsx\nexport const DoctorDashboard: React.FC = () => {\n  const { data: todayAppointments } = useQuery(['my-appointments'], fetchMyAppointments);\n  const { data: patientQueue } = useQuery(['patient-queue'], fetchPatientQueue);\n  const { data: pendingLabs } = useQuery(['pending-labs'], fetchPendingLabResults);\n  \n  return (\n    <div className=\"doctor-dashboard\">\n      <h1>My Clinical Workspace</h1>\n      \n      <MetricsRow>\n        <MetricCard \n          title=\"Today's Appointments\" \n          value={todayAppointments?.length || 0}\n          icon=\"📅\"\n        />\n        <MetricCard \n          title=\"Patients in Queue\" \n          value={patientQueue?.length || 0}\n          icon=\"⏳\"\n          alert={patientQueue?.length > 5}\n        />\n        <MetricCard \n          title=\"Pending Lab Results\" \n          value={pendingLabs?.length || 0}\n          icon=\"🔬\"\n        />\n      </MetricsRow>\n      \n      <Grid>\n        <PatientQueueWidget queue={patientQueue} />\n        <TodayScheduleWidget appointments={todayAppointments} />\n        <PendingLabResultsWidget results={pendingLabs} />\n        <RecentPatientsWidget />\n      </Grid>\n      \n      <QuickActions>\n        <Button icon=\"➕\">New Consultation</Button>\n        <Button icon=\"🔍\">Search Patient</Button>\n        <Button icon=\"📋\">My Schedule</Button>\n      </QuickActions>\n    </div>\n  );\n};\n```",
+      "nurse_dashboard": "```tsx\nexport const NurseDashboard: React.FC = () => {\n  const { data: triageQueue } = useQuery(['triage-queue'], fetchTriageQueue);\n  const { data: vitalsD ue} = useQuery(['vitals-due'], fetchVitalsDue);\n  \n  return (\n    <div className=\"nurse-dashboard\">\n      <h1>Nursing Station</h1>\n      \n      <MetricsRow>\n        <MetricCard \n          title=\"Patients to Triage\" \n          value={triageQueue?.length || 0}\n          icon=\"🚨\"\n          alert={triageQueue?.some(p => p.priority === 'RED')}\n        />\n        <MetricCard \n          title=\"Vitals Due\" \n          value={vitalsDue?.length || 0}\n          icon=\"💓\"\n        />\n      </MetricsRow>\n      \n      <Grid>\n        <TriageQueueWidget queue={triageQueue} />\n        <VitalsDueWidget patients={vitalsDue} />\n        <MedicationAdministrationWidget />\n      </Grid>\n      \n      <QuickActions>\n        <Button icon=\"🚨\">Triage Patient</Button>\n        <Button icon=\"💓\">Record Vitals</Button>\n        <Button icon=\"📝\">Nursing Notes</Button>\n      </QuickActions>\n    </div>\n  );\n};\n```"
+    }
+  },
+
+  "benefits": {
+    "user_experience": [
+      "✅ No more 403 errors - Users only see what they can access",
+      "✅ Clear, focused interface - No clutter from irrelevant features",
+      "✅ Faster navigation - Fewer menu items to search through",
+      "✅ Role-appropriate dashboards - Metrics that matter to THEIR job",
+      "✅ Reduced confusion - Clear what they CAN and CANNOT do"
+    ],
+    "security": [
+      "✅ Defense in depth - UI hiding + backend enforcement",
+      "✅ Reduced attack surface - Hidden features less likely to be probed",
+      "✅ Clear authorization - Obvious who can do what",
+      "✅ Audit trail - Logs show intentional actions, not failed attempts"
+    ],
+    "development": [
+      "✅ Easier testing - Test each role's interface separately",
+      "✅ Modular design - Each dashboard is independent",
+      "✅ Maintainable - Clear separation of concerns",
+      "✅ Scalable - Easy to add new roles"
+    ],
+    "training": [
+      "✅ Simpler onboarding - Staff only learn features they need",
+      "✅ Role-specific training - Train nurses on nursing features only",
+      "✅ Fewer errors - Can't accidentally click wrong features",
+      "✅ Faster adoption - Less overwhelming interface"
+    ]
+  },
+
+  "implementation_checklist": [
+    "☐ Extend AuthContext to include user.permissions array",
+    "☐ Create hasPermission() helper function",
+    "☐ Create PermissionGate component",
+    "☐ Define sidebar configuration for each role (JSON)",
+    "☐ Create role-specific dashboard components (DoctorDashboard, NurseDashboard, etc.)",
+    "☐ Update Sidebar component to filter by permissions",
+    "☐ Update Dashboard to route based on role",
+    "☐ Wrap all protected components in PermissionGate",
+    "☐ Update all routes with permission requirements",
+    "☐ Create 403 Forbidden page",
+    "☐ Test each role's interface separately",
+    "☐ Update user documentation with role-specific guides"
+  ],
+
+  "testing_scenarios": [
+    {
+      "role": "DOCTOR",
+      "test": "Login as doctor",
+      "expectations": [
+        "See: Dashboard, Patients, Encounters, Prescriptions, Lab Results",
+        "Don't see: User Management, Billing, Pharmacy Dispensing, Triage",
+        "Can create prescriptions",
+        "Cannot dispense medications",
+        "Cannot manage users"
+      ]
+    },
+    {
+      "role": "NURSE",
+      "test": "Login as nurse",
+      "expectations": [
+        "See: Dashboard, Triage, Patients, Vitals, Nursing Notes",
+        "Don't see: Prescriptions tab, Billing, User Management, Pharmacy",
+        "Can triage patients",
+        "Can record vitals",
+        "Cannot create prescriptions",
+        "Cannot view financial data"
+      ]
+    },
+    {
+      "role": "PHARMACIST",
+      "test": "Login as pharmacist",
+      "expectations": [
+        "See: Dashboard, Prescription Queue, Inventory, Drug Formulary",
+        "Don't see: Clinical Encounters, Triage, User Management, Billing",
+        "Can dispense medications",
+        "Can manage drug inventory",
+        "Cannot create clinical notes",
+        "Cannot view encounter details"
+      ]
+    },
+    {
+      "role": "RECEPTIONIST",
+      "test": "Login as receptionist",
+      "expectations": [
+        "See: Dashboard, Patient Registration, Appointments, Check-in",
+        "Don't see: Clinical Encounters, Prescriptions, Lab Results, Billing, User Management",
+        "Can register patients",
+        "Can book appointments",
+        "Cannot view clinical data",
+        "Cannot view lab results"
+      ]
+    }
+  ]
+}

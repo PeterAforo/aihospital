@@ -1,0 +1,99 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { notificationService, Notification, NotificationCount } from '@/services/notification.service';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+
+interface NotificationContextType {
+  notifications: Notification[];
+  notificationCount: NotificationCount;
+  isLoading: boolean;
+  refreshNotifications: () => Promise<void>;
+  markAsRead: (notificationId: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+}
+
+const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+
+export const useNotifications = () => {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within NotificationProvider');
+  }
+  return context;
+};
+
+interface NotificationProviderProps {
+  children: ReactNode;
+}
+
+export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationCount, setNotificationCount] = useState<NotificationCount>({ total: 0, unread: 0 });
+  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const refreshNotifications = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setIsLoading(true);
+      const [notificationsData, countData] = await Promise.all([
+        notificationService.getNotifications(user.id),
+        notificationService.getNotificationCount(user.id),
+      ]);
+      
+      setNotifications(notificationsData);
+      setNotificationCount(countData);
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await notificationService.markAsRead(notificationId);
+      await refreshNotifications();
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    if (!user?.id) return;
+    
+    try {
+      await notificationService.markAllAsRead(user.id);
+      await refreshNotifications();
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      refreshNotifications();
+      
+      // Set up polling for new notifications
+      const interval = setInterval(refreshNotifications, 30000); // Check every 30 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [user?.id]);
+
+  const value: NotificationContextType = {
+    notifications,
+    notificationCount,
+    isLoading,
+    refreshNotifications,
+    markAsRead,
+    markAllAsRead,
+  };
+
+  return (
+    <NotificationContext.Provider value={value}>
+      {children}
+    </NotificationContext.Provider>
+  );
+};

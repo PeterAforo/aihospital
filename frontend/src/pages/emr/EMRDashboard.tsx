@@ -8,19 +8,23 @@ import {
   FileSignature,
   User,
   Calendar,
-  Filter
+  Filter,
+  AlertTriangle
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Encounter } from '@/services/emr.service';
+import { Button } from '@/components/ui/button';
+import { emrService, Encounter } from '@/services/emr.service';
+import { appointmentService, Appointment } from '@/services/appointment.service';
 import { useToast } from '@/hooks/use-toast';
 
 const EMRDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [encounters, setEncounters] = useState<Encounter[]>([]);
+  const [consultationQueue, setConsultationQueue] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,13 +36,17 @@ const EMRDashboard: React.FC = () => {
   const loadEncounters = async () => {
     try {
       setIsLoading(true);
-      // For now, we'll show a placeholder since we need patient context
-      // In production, this would fetch the doctor's current encounters
-      setEncounters([]);
+      const [triagedAppointments, inProgressAppointments] = await Promise.all([
+        appointmentService.list({ status: 'TRIAGED', limit: 100 }),
+        appointmentService.list({ status: 'IN_PROGRESS', limit: 100 }),
+      ]);
+
+      setConsultationQueue(triagedAppointments.appointments || []);
+      setEncounters((inProgressAppointments.appointments as unknown as Encounter[]) || []);
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to load encounters',
+        description: error?.response?.data?.message || error.message || 'Failed to load consultation queue',
         variant: 'destructive',
       });
     } finally {
@@ -46,25 +54,36 @@ const EMRDashboard: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'IN_PROGRESS':
-        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />In Progress</Badge>;
-      case 'COMPLETED':
-        return <Badge className="bg-blue-100 text-blue-800"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>;
-      case 'SIGNED':
-        return <Badge className="bg-green-100 text-green-800"><FileSignature className="w-3 h-3 mr-1" />Signed</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+  const handleStartConsultation = async (appointment: Appointment) => {
+    try {
+      const result = await emrService.createEncounter({
+        patientId: appointment.patientId,
+        appointmentId: appointment.id,
+        encounterType: 'OUTPATIENT',
+      });
+
+      toast({
+        title: 'Consultation started',
+        description: `${appointment.patient?.firstName || 'Patient'} moved to consultation workspace`,
+      });
+
+      await loadEncounters();
+      navigate(`/encounters/${result.encounter.id}`);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.error || error?.response?.data?.message || error.message || 'Failed to start consultation',
+        variant: 'destructive',
+      });
     }
   };
 
-  const filteredEncounters = encounters.filter(enc => {
-    if (statusFilter !== 'all' && enc.status !== statusFilter) return false;
+  const filteredQueue = consultationQueue.filter((apt) => {
+    if (statusFilter !== 'all' && apt.status !== statusFilter) return false;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const patientName = `${enc.patient?.firstName} ${enc.patient?.lastName}`.toLowerCase();
-      const mrn = enc.patient?.mrn?.toLowerCase() || '';
+      const patientName = `${apt.patient?.firstName || ''} ${apt.patient?.lastName || ''}`.toLowerCase();
+      const mrn = apt.patient?.mrn?.toLowerCase() || '';
       return patientName.includes(query) || mrn.includes(query);
     }
     return true;
@@ -81,6 +100,12 @@ const EMRDashboard: React.FC = () => {
           </h1>
           <p className="text-gray-500 mt-1">Manage patient encounters and clinical documentation</p>
         </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/emr/lab-results')}>
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            Lab Results
+          </Button>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -91,7 +116,7 @@ const EMRDashboard: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">In Progress</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {encounters.filter(e => e.status === 'IN_PROGRESS').length}
+                  {consultationQueue.length}
                 </p>
               </div>
               <Clock className="w-8 h-8 text-yellow-200" />
@@ -104,7 +129,7 @@ const EMRDashboard: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">Completed Today</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {encounters.filter(e => e.status === 'COMPLETED').length}
+                  {encounters.length}
                 </p>
               </div>
               <CheckCircle className="w-8 h-8 text-blue-200" />
@@ -117,7 +142,7 @@ const EMRDashboard: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">Signed Today</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {encounters.filter(e => e.status === 'SIGNED').length}
+                  0
                 </p>
               </div>
               <FileSignature className="w-8 h-8 text-green-200" />
@@ -129,7 +154,7 @@ const EMRDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Encounters</p>
-                <p className="text-2xl font-bold text-gray-600">{encounters.length}</p>
+                <p className="text-2xl font-bold text-gray-600">{consultationQueue.length + encounters.length}</p>
               </div>
               <ClipboardList className="w-8 h-8 text-gray-200" />
             </div>
@@ -157,9 +182,7 @@ const EMRDashboard: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
-                <SelectItem value="SIGNED">Signed</SelectItem>
+                <SelectItem value="TRIAGED">Awaiting Consultation</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -169,20 +192,19 @@ const EMRDashboard: React.FC = () => {
       {/* Encounters List */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Encounters</CardTitle>
+          <CardTitle>Consultation Queue</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
-          ) : filteredEncounters.length > 0 ? (
+          ) : filteredQueue.length > 0 ? (
             <div className="space-y-3">
-              {filteredEncounters.map((encounter) => (
+              {filteredQueue.map((appointment) => (
                 <div
-                  key={encounter.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/encounters/${encounter.id}`)}
+                  key={appointment.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
@@ -190,10 +212,10 @@ const EMRDashboard: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium">
-                        {encounter.patient?.firstName} {encounter.patient?.lastName}
+                        {appointment.patient?.firstName} {appointment.patient?.lastName}
                       </p>
                       <p className="text-sm text-gray-500">
-                        MRN: {encounter.patient?.mrn} • {encounter.encounterType}
+                        MRN: {appointment.patient?.mrn || 'N/A'} • {appointment.chiefComplaint || 'No chief complaint'}
                       </p>
                     </div>
                   </div>
@@ -201,10 +223,13 @@ const EMRDashboard: React.FC = () => {
                     <div className="text-right">
                       <p className="text-sm text-gray-500 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        {new Date(encounter.encounterDate).toLocaleDateString()}
+                        {new Date(appointment.appointmentDate).toLocaleDateString()} {appointment.appointmentTime}
                       </p>
                     </div>
-                    {getStatusBadge(encounter.status)}
+                    <Badge className="bg-orange-100 text-orange-800">TRIAGED</Badge>
+                    <Button onClick={() => handleStartConsultation(appointment)}>
+                      Start Consultation
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -212,9 +237,9 @@ const EMRDashboard: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <ClipboardList className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No encounters found</p>
+              <p className="text-gray-500">No triaged patients waiting for consultation</p>
               <p className="text-sm text-gray-400 mt-1">
-                Start a new encounter from the patient's profile or the triage queue
+                Complete triage first, then refresh this page to start consultation
               </p>
             </div>
           )}

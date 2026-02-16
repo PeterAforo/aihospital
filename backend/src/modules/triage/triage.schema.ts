@@ -37,11 +37,11 @@ export const VitalSignsSchema = z.object({
 // ==================== ASSESSMENT SCHEMA ====================
 
 export const AssessmentSchema = z.object({
-  chiefComplaint: z.string().min(1).max(500),
-  symptomDuration: z.string().max(100).optional(),
-  symptomSeverity: z.enum(['mild', 'moderate', 'severe']).optional(),
-  associatedSymptoms: z.array(z.string()).optional(),
-  clinicalNotes: z.string().max(2000).optional(),
+  chiefComplaint: z.string().min(1, 'Chief complaint is required').max(500),
+  symptomDuration: z.string().max(100).optional().nullable(),
+  symptomSeverity: z.enum(['mild', 'moderate', 'severe']).optional().nullable(),
+  associatedSymptoms: z.array(z.string()).optional().nullable(),
+  clinicalNotes: z.string().max(2000).optional().nullable(),
 });
 
 // ==================== CREATE TRIAGE SCHEMA ====================

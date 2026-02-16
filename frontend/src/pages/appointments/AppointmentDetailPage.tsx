@@ -13,6 +13,7 @@ const statusConfig: Record<AppointmentStatus, { bg: string; color: string; label
   SCHEDULED: { bg: "#dbeafe", color: "#1e40af", label: "Scheduled" },
   CONFIRMED: { bg: "#e0e7ff", color: "#3730a3", label: "Confirmed" },
   CHECKED_IN: { bg: "#dcfce7", color: "#166534", label: "Checked In" },
+  TRIAGED: { bg: "#fef9c3", color: "#854d0e", label: "Triaged" },
   IN_PROGRESS: { bg: "#fef3c7", color: "#92400e", label: "In Progress" },
   COMPLETED: { bg: "#f3f4f6", color: "#374151", label: "Completed" },
   CANCELLED: { bg: "#fee2e2", color: "#991b1b", label: "Cancelled" },
@@ -53,6 +54,10 @@ export default function AppointmentDetailPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const getErrorMessage = (err: any, fallback: string) => {
+    return err?.response?.data?.message || err?.message || fallback;
+  };
+
   const { data: appointment, isLoading, error } = useQuery({
     queryKey: ['appointment', id],
     queryFn: () => appointmentService.getById(id!),
@@ -65,8 +70,12 @@ export default function AppointmentDetailPage() {
       toast({ title: "Success", description: "Patient checked in successfully" });
       queryClient.invalidateQueries({ queryKey: ['appointment', id] });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to check in patient", variant: "destructive" });
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: getErrorMessage(err, 'Failed to check in patient'),
+        variant: "destructive",
+      });
     },
   });
 

@@ -1,4 +1,5 @@
 import { prisma } from '../../common/utils/prisma';
+import { invoiceService } from '../billing/invoice.service';
 
 export interface CreateEncounterDto {
   patientId: string;
@@ -68,11 +69,13 @@ export class EncounterService {
 
     // Get recent vitals from triage if appointment provided
     let recentVitals = null;
+    let triageRecordId = null;
     if (data.appointmentId) {
       const triageRecord = await prisma.triageRecord.findUnique({
         where: { appointmentId: data.appointmentId },
       });
       if (triageRecord) {
+        triageRecordId = triageRecord.id;
         recentVitals = {
           bpSystolic: triageRecord.bpSystolic,
           bpDiastolic: triageRecord.bpDiastolic,
@@ -117,6 +120,7 @@ export class EncounterService {
         patientId: data.patientId,
         doctorId,
         appointmentId: data.appointmentId,
+        triageRecordId,
         encounterType: data.encounterType || 'OUTPATIENT',
         encounterDate: new Date(),
         status: 'IN_PROGRESS',
@@ -241,10 +245,16 @@ export class EncounterService {
       }
     }
 
+    // Sanitize: convert empty strings to null/undefined for enum and optional fields
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      sanitized[key] = value === '' ? null : value;
+    }
+
     const updated = await prisma.encounter.update({
       where: { id: encounterId },
       data: {
-        ...data,
+        ...sanitized,
         updatedAt: new Date(),
       },
     });
@@ -351,7 +361,7 @@ export class EncounterService {
   /**
    * Complete encounter
    */
-  async completeEncounter(encounterId: string, tenantId: string) {
+  async completeEncounter(encounterId: string, tenantId: string, branchId?: string, userId?: string) {
     const encounter = await prisma.encounter.findFirst({
       where: { id: encounterId, tenantId },
       include: { diagnoses: true },
@@ -361,23 +371,14 @@ export class EncounterService {
       throw new Error('Encounter not found');
     }
 
-    if (encounter.status !== 'IN_PROGRESS') {
-      throw new Error('Encounter is not in progress');
-    }
-
-    // Validation
-    if (encounter.diagnoses.length === 0) {
-      throw new Error('At least one diagnosis is required');
-    }
-
-    if (!encounter.disposition) {
-      throw new Error('Disposition is required');
+    if (encounter.status === 'COMPLETED') {
+      throw new Error('Encounter is already completed');
     }
 
     // Calculate duration
-    const durationMinutes = Math.round(
-      (new Date().getTime() - encounter.startedAt.getTime()) / 60000
-    );
+    const durationMinutes = encounter.encounterDate
+      ? Math.floor((new Date().getTime() - encounter.encounterDate.getTime()) / (1000 * 60))
+      : 0;
 
     // Update encounter
     const completed = await prisma.encounter.update({
@@ -389,7 +390,7 @@ export class EncounterService {
       },
     });
 
-    // Update appointment if linked
+    // Update appointment if exists
     if (encounter.appointmentId) {
       await prisma.appointment.update({
         where: { id: encounter.appointmentId },
@@ -399,6 +400,23 @@ export class EncounterService {
           actualDurationMinutes: durationMinutes,
         },
       });
+    }
+
+    // Auto-generate invoice if branchId and userId are provided
+    if (branchId && userId) {
+      try {
+        console.log(`[INVOICE_GENERATION] Generating invoice for encounter ${encounterId}`);
+        const invoice = await invoiceService.generateFromEncounter(
+          tenantId,
+          branchId,
+          userId,
+          encounterId
+        );
+        console.log(`[INVOICE_GENERATION] Invoice generated: ${invoice.invoiceNumber}`);
+      } catch (error: any) {
+        console.warn(`[INVOICE_GENERATION] Failed to generate invoice for encounter ${encounterId}:`, error.message);
+        // Don't fail the encounter completion if invoice generation fails
+      }
     }
 
     return completed;

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { ZodError } from 'zod';
 import { logger } from '../utils/logger.js';
 import { sendError } from '../utils/api-response.js';
 
@@ -38,6 +39,13 @@ export const errorHandler = (
     if (prismaError.code === 'P2025') {
       return sendError(res, 'Record not found', 404, undefined, 'NOT_FOUND');
     }
+  }
+
+  // Zod validation errors
+  if (err instanceof ZodError) {
+    const messages = err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+    logger.error(`ZodError details: ${JSON.stringify(err.errors)}`);
+    return sendError(res, `Validation error: ${messages}`, 400, undefined, 'VALIDATION_ERROR');
   }
 
   // Validation errors

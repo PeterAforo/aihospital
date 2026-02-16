@@ -5,6 +5,7 @@ import { config } from '../../config/index.js';
 import { AppError } from '../../common/middleware/error-handler.js';
 import { RegisterInput, LoginInput } from './auth.schema.js';
 import { UserRole } from '@prisma/client';
+import { getUserPermissions } from '../../common/middleware/auth.js';
 
 export interface TokenPayload {
   userId: string;
@@ -14,6 +15,7 @@ export interface TokenPayload {
   branchId?: string;
   departmentId?: string;
   branchAccessScope?: string;
+  permissions?: string[];
 }
 
 export interface AuthTokens {
@@ -74,8 +76,29 @@ export class AuthService {
       },
     });
 
+    // Auto-create HR StaffProfile for the new user
+    try {
+      await prisma.staffProfile.create({
+        data: {
+          tenantId: data.tenantId,
+          userId: user.id,
+          employmentType: 'FULL_TIME',
+          dateOfJoining: new Date(),
+          isActive: true,
+        },
+      });
+    } catch (e: any) {
+      // Ignore if profile already exists (unique constraint on userId)
+      if (!e.code || e.code !== 'P2002') {
+        console.error('Failed to auto-create StaffProfile:', e.message);
+      }
+    }
+
     return user;
   }
+
+  private static readonly MAX_LOGIN_ATTEMPTS = 5;
+  private static readonly LOCKOUT_DURATION_MINUTES = 15;
 
   async login(data: LoginInput) {
     // Find user
@@ -103,14 +126,46 @@ export class AuthService {
       throw new AppError('Account is deactivated', 401, 'ACCOUNT_INACTIVE');
     }
 
+    // Check account lockout
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      throw new AppError(
+        `Account is locked. Try again in ${minutesLeft} minute(s).`,
+        423,
+        'ACCOUNT_LOCKED'
+      );
+    }
+
     // Verify password
     const isValidPassword = await bcrypt.compare(data.password, user.password);
 
     if (!isValidPassword) {
-      throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+      const attempts = (user.failedLoginAttempts || 0) + 1;
+      const updateData: any = { failedLoginAttempts: attempts };
+
+      if (attempts >= AuthService.MAX_LOGIN_ATTEMPTS) {
+        updateData.lockedUntil = new Date(Date.now() + AuthService.LOCKOUT_DURATION_MINUTES * 60 * 1000);
+        updateData.failedLoginAttempts = 0;
+        await prisma.user.update({ where: { id: user.id }, data: updateData });
+        throw new AppError(
+          `Too many failed attempts. Account locked for ${AuthService.LOCKOUT_DURATION_MINUTES} minutes.`,
+          423,
+          'ACCOUNT_LOCKED'
+        );
+      }
+
+      await prisma.user.update({ where: { id: user.id }, data: updateData });
+      throw new AppError(
+        `Invalid email or password. ${AuthService.MAX_LOGIN_ATTEMPTS - attempts} attempt(s) remaining.`,
+        401,
+        'INVALID_CREDENTIALS'
+      );
     }
 
-    // Generate tokens
+    // Successful login — reset failed attempts and lockout
+    // Resolve user permissions from RBAC system
+    const permissions = await getUserPermissions(user.id);
+
     const tokens = this.generateTokens({
       userId: user.id,
       tenantId: user.tenantId,
@@ -119,14 +174,17 @@ export class AuthService {
       branchId: user.branchId || undefined,
       departmentId: user.departmentId || undefined,
       branchAccessScope: user.branchAccessScope || undefined,
+      permissions,
     });
 
-    // Update refresh token and last login
     await prisma.user.update({
       where: { id: user.id },
       data: {
         refreshToken: tokens.refreshToken,
         lastLogin: new Date(),
+        lastLoginAt: new Date(),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
       },
     });
 
@@ -138,6 +196,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        permissions,
         tenant: user.tenant,
       },
       tokens,
@@ -170,12 +229,15 @@ export class AuthService {
         throw new AppError('Account is deactivated', 401, 'ACCOUNT_INACTIVE');
       }
 
-      // Generate new tokens
+      // Generate new tokens with fresh permissions
+      const permissions = await getUserPermissions(user.id);
+
       const tokens = this.generateTokens({
         userId: user.id,
         tenantId: user.tenantId,
         role: user.role,
         email: user.email,
+        permissions,
       });
 
       // Update refresh token
@@ -191,6 +253,7 @@ export class AuthService {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          permissions,
           tenant: user.tenant,
         },
         tokens,
@@ -203,6 +266,34 @@ export class AuthService {
     }
   }
 
+  async getMe(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        tenant: {
+          select: { id: true, name: true, subdomain: true },
+        },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      throw new AppError('User not found or inactive', 401, 'USER_INACTIVE');
+    }
+
+    const permissions = await getUserPermissions(user.id);
+
+    return {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      permissions,
+      tenant: user.tenant,
+    };
+  }
+
   async logout(userId: string) {
     await prisma.user.update({
       where: { id: userId },
@@ -211,12 +302,12 @@ export class AuthService {
   }
 
   private generateTokens(payload: TokenPayload): AuthTokens {
-    const accessToken = jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.expire,
+    const accessToken = jwt.sign(payload as any, config.jwt.secret, {
+      expiresIn: config.jwt.expire as any,
     });
 
-    const refreshToken = jwt.sign(payload, config.jwt.refreshSecret, {
-      expiresIn: config.jwt.refreshExpire,
+    const refreshToken = jwt.sign(payload as any, config.jwt.refreshSecret, {
+      expiresIn: config.jwt.refreshExpire as any,
     });
 
     return {

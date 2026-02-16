@@ -59,6 +59,10 @@ export const createPatientSchema = z.object({
     status: z.string().optional(),
     notes: z.string().optional(),
   })).optional(),
+
+  // Patient Portal access
+  portalAccessEnabled: z.boolean().optional(),
+  portalPassword: z.string().min(6, 'Portal password must be at least 6 characters').optional(),
 });
 
 export const updatePatientSchema = createPatientSchema.partial();

@@ -1,0 +1,1190 @@
+{
+  "verification_prompt": "Revenue Cycle Modules - Completeness Verification",
+  "modules_to_verify": [
+    "Pharmacy Module",
+    "Laboratory Module", 
+    "Billing/NHIS Module"
+  ],
+  "verification_date": "2024-02-15",
+  "purpose": "Verify if these 3 critical revenue modules are fully designed, implemented, and ready for production",
+  
+  "instructions_for_ai": {
+    "task": "For each module, check ALL items in this verification list. Report PASS ✅, INCOMPLETE ⚠️, or MISSING ❌ for each item.",
+    "completion_criteria": {
+      "DESIGNED": "Specification document exists with all required sections",
+      "IMPLEMENTED": "Code written and working in development",
+      "TESTED": "Unit tests, integration tests, and E2E tests passing",
+      "PRODUCTION_READY": "All checks ✅, documentation complete, deployed"
+    },
+    "reporting": "For each module, provide: Overall Status (%), Critical Gaps, Blockers, Recommendation"
+  },
+
+  "verification_checklist": {
+    "MODULE_1_PHARMACY": {
+      "module_name": "Pharmacy & Drug Dispensing Module",
+      "critical_priority": "HIGH - Needed for revenue",
+      
+      "section_1_design_specification": {
+        "name": "Design & Specification Documents",
+        "checks": [
+          {
+            "id": "PHARM-SPEC-001",
+            "check": "Complete module specification document exists",
+            "required_sections": [
+              "Module overview",
+              "Database schema",
+              "API endpoints",
+              "Business logic",
+              "Integration points",
+              "UI components"
+            ],
+            "verification": "Search for: pharmacy_module_implementation.json or similar",
+            "critical": true
+          },
+          {
+            "id": "PHARM-SPEC-002",
+            "check": "Implementation guide exists",
+            "required": "Step-by-step guide with code examples",
+            "verification": "Search for: PHARMACY_IMPLEMENTATION_GUIDE.md",
+            "critical": true
+          },
+          {
+            "id": "PHARM-SPEC-003",
+            "check": "User stories/requirements documented",
+            "items": [
+              "Pharmacist can view prescription queue",
+              "Pharmacist can dispense medications",
+              "System tracks drug inventory by branch",
+              "Alerts for low stock items",
+              "Alerts for expired drugs",
+              "Purchase order management",
+              "Stock transfers between branches"
+            ],
+            "critical": false
+          }
+        ]
+      },
+
+      "section_2_database": {
+        "name": "Database Schema Implementation",
+        "checks": [
+          {
+            "id": "PHARM-DB-001",
+            "check": "drug_inventory table exists",
+            "required_columns": [
+              "id",
+              "organization_id",
+              "branch_id",
+              "drug_id (FK to drug_formulary)",
+              "quantity",
+              "batch_number",
+              "expiry_date",
+              "unit_cost",
+              "selling_price",
+              "reorder_level",
+              "supplier_id",
+              "last_restocked_at"
+            ],
+            "indexes": ["branch_id", "drug_id", "expiry_date"],
+            "verification_query": "SELECT table_name FROM information_schema.tables WHERE table_name = 'drug_inventory'",
+            "critical": true
+          },
+          {
+            "id": "PHARM-DB-002",
+            "check": "prescription_dispensing table exists",
+            "required_columns": [
+              "id",
+              "prescription_id (FK)",
+              "prescription_item_id (FK)",
+              "dispensed_by (FK to users)",
+              "quantity_dispensed",
+              "batch_number_dispensed",
+              "dispensed_at",
+              "patient_counseled (boolean)",
+              "counseling_notes"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-DB-003",
+            "check": "purchase_orders table exists",
+            "required_columns": [
+              "id",
+              "organization_id",
+              "branch_id",
+              "supplier_id",
+              "order_number",
+              "order_date",
+              "expected_delivery_date",
+              "status (pending, received, cancelled)",
+              "total_cost",
+              "created_by"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-DB-004",
+            "check": "purchase_order_items table exists",
+            "required_columns": [
+              "id",
+              "purchase_order_id",
+              "drug_id",
+              "quantity_ordered",
+              "quantity_received",
+              "unit_cost",
+              "batch_number",
+              "expiry_date"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-DB-005",
+            "check": "suppliers table exists",
+            "required_columns": [
+              "id",
+              "organization_id",
+              "name",
+              "contact_person",
+              "phone",
+              "email",
+              "address",
+              "is_active"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-DB-006",
+            "check": "stock_movements table exists (audit trail)",
+            "required_columns": [
+              "id",
+              "drug_id",
+              "branch_id",
+              "movement_type (purchase, dispensing, transfer, adjustment, expiry)",
+              "quantity",
+              "from_branch_id (for transfers)",
+              "to_branch_id (for transfers)",
+              "reference_type (prescription_id, purchase_order_id, etc.)",
+              "reference_id",
+              "performed_by",
+              "created_at"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-DB-007",
+            "check": "All tables have organization_id and branch_id for multi-tenancy",
+            "verification": "Check each pharmacy table has tenant isolation",
+            "critical": true
+          },
+          {
+            "id": "PHARM-DB-008",
+            "check": "Database seed data exists",
+            "required_seeds": [
+              "Sample suppliers",
+              "Initial drug inventory (at least 20 common drugs)",
+              "Sample purchase orders"
+            ],
+            "critical": false
+          }
+        ]
+      },
+
+      "section_3_backend_apis": {
+        "name": "Backend API Endpoints",
+        "checks": [
+          {
+            "id": "PHARM-API-001",
+            "endpoint": "GET /api/pharmacy/prescription-queue",
+            "description": "Get pending prescriptions for dispensing",
+            "required_permission": "VIEW_PRESCRIPTION",
+            "query_params": {
+              "branch_id": "Filter by branch",
+              "status": "SENT_TO_PHARMACY, PARTIALLY_DISPENSED",
+              "priority": "STAT, URGENT, ROUTINE"
+            },
+            "expected_response": {
+              "prescriptions": [
+                {
+                  "prescriptionId": "uuid",
+                  "patientName": "Kwame Mensah",
+                  "patientMRN": "KBU-001234",
+                  "doctorName": "Dr. Ama",
+                  "prescribedAt": "2024-02-15T10:30:00Z",
+                  "priority": "STAT",
+                  "items": [
+                    {
+                      "drugName": "Paracetamol 500mg",
+                      "dosage": "500mg",
+                      "quantity": 21,
+                      "inStock": true,
+                      "stockLevel": 500
+                    }
+                  ]
+                }
+              ]
+            },
+            "verification": "curl -X GET http://localhost:3000/api/pharmacy/prescription-queue",
+            "critical": true
+          },
+          {
+            "id": "PHARM-API-002",
+            "endpoint": "POST /api/pharmacy/dispense",
+            "description": "Dispense prescription items",
+            "required_permission": "DISPENSE_MEDICATION",
+            "request_body": {
+              "prescriptionId": "uuid",
+              "items": [
+                {
+                  "prescriptionItemId": "uuid",
+                  "quantityDispensed": 21,
+                  "batchNumber": "BATCH-2024-001",
+                  "patientCounseled": true,
+                  "counselingNotes": "Take after meals"
+                }
+              ]
+            },
+            "side_effects": [
+              "Update prescription status to DISPENSED",
+              "Deduct quantity from drug_inventory",
+              "Create stock_movements record",
+              "Create prescription_dispensing record",
+              "Log DISPENSE_MEDICATION in audit_logs"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-API-003",
+            "endpoint": "GET /api/pharmacy/inventory",
+            "description": "Get drug inventory for a branch",
+            "required_permission": "VIEW_STOCK_LEVELS",
+            "query_params": {
+              "branch_id": "required",
+              "low_stock_only": "boolean",
+              "expiring_soon": "boolean (within 90 days)"
+            },
+            "critical": true
+          },
+          {
+            "id": "PHARM-API-004",
+            "endpoint": "POST /api/pharmacy/purchase-order",
+            "description": "Create purchase order",
+            "required_permission": "CREATE_PURCHASE_ORDER",
+            "critical": true
+          },
+          {
+            "id": "PHARM-API-005",
+            "endpoint": "POST /api/pharmacy/receive-stock",
+            "description": "Receive stock from purchase order",
+            "required_permission": "RECEIVE_DRUG_STOCK",
+            "side_effects": [
+              "Update drug_inventory quantities",
+              "Update purchase_order status",
+              "Create stock_movements records"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-API-006",
+            "endpoint": "POST /api/pharmacy/stock-adjustment",
+            "description": "Adjust stock (damaged, expired, stock take)",
+            "required_permission": "ADJUST_STOCK",
+            "critical": true
+          },
+          {
+            "id": "PHARM-API-007",
+            "endpoint": "POST /api/pharmacy/transfer-stock",
+            "description": "Transfer stock between branches",
+            "required_permission": "TRANSFER_STOCK",
+            "critical": false
+          },
+          {
+            "id": "PHARM-API-008",
+            "endpoint": "GET /api/pharmacy/reports/stock-valuation",
+            "description": "Stock valuation report",
+            "required_permission": "VIEW_STOCK_REPORTS",
+            "critical": false
+          },
+          {
+            "id": "PHARM-API-009",
+            "check": "All endpoints enforce permissions",
+            "verification": "Test each endpoint without auth → 401, without permission → 403",
+            "critical": true
+          },
+          {
+            "id": "PHARM-API-010",
+            "check": "All endpoints enforce branch isolation",
+            "verification": "User from Branch A cannot access Branch B inventory",
+            "critical": true
+          }
+        ]
+      },
+
+      "section_4_frontend_ui": {
+        "name": "Frontend Components",
+        "checks": [
+          {
+            "id": "PHARM-UI-001",
+            "component": "PharmacyDashboard",
+            "route": "/pharmacy/dashboard",
+            "required_permission": "VIEW_PRESCRIPTION",
+            "features": [
+              "Pending prescriptions count",
+              "Low stock alerts",
+              "Expiring soon alerts",
+              "Today's dispensing statistics"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-UI-002",
+            "component": "PrescriptionQueue",
+            "route": "/pharmacy/queue",
+            "features": [
+              "List of pending prescriptions",
+              "Sort by priority (STAT first)",
+              "Filter by status",
+              "Click prescription to dispense",
+              "Show drug availability"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-UI-003",
+            "component": "DispensingInterface",
+            "route": "/pharmacy/dispense/:prescriptionId",
+            "features": [
+              "Patient details",
+              "Prescription items list",
+              "Check stock availability",
+              "Select batch number",
+              "Enter quantity dispensed",
+              "Patient counseling checkbox + notes",
+              "Print label",
+              "Complete dispensing button"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-UI-004",
+            "component": "DrugInventory",
+            "route": "/pharmacy/inventory",
+            "features": [
+              "List all drugs with stock levels",
+              "Low stock indicators (red)",
+              "Expiring soon indicators (orange)",
+              "Search and filter",
+              "View stock movements history",
+              "Adjust stock button"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-UI-005",
+            "component": "PurchaseOrderManagement",
+            "route": "/pharmacy/purchase-orders",
+            "features": [
+              "List purchase orders",
+              "Create new PO",
+              "Receive stock from PO",
+              "Track PO status"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-UI-006",
+            "check": "Components only visible to users with PHARMACIST role or DISPENSE_MEDICATION permission",
+            "verification": "Login as DOCTOR → Should NOT see pharmacy menu",
+            "critical": true
+          }
+        ]
+      },
+
+      "section_5_integration": {
+        "name": "Integration with Other Modules",
+        "checks": [
+          {
+            "id": "PHARM-INT-001",
+            "integration": "E-Prescribing Module",
+            "check": "When doctor completes prescription, status changes to SENT_TO_PHARMACY",
+            "verification": "Create prescription in EMR → Check appears in pharmacy queue",
+            "critical": true
+          },
+          {
+            "id": "PHARM-INT-002",
+            "integration": "Finance & Pricing Module",
+            "check": "Drug prices fetched from Finance module",
+            "verification": "Dispensing uses correct selling price from service_catalog",
+            "critical": true
+          },
+          {
+            "id": "PHARM-INT-003",
+            "integration": "Billing Module",
+            "check": "Dispensed items create billing line items",
+            "verification": "Dispense drug → Creates invoice line item automatically",
+            "critical": true
+          },
+          {
+            "id": "PHARM-INT-004",
+            "integration": "RBAC Module",
+            "check": "Only pharmacists can dispense",
+            "verification": "NURSE cannot access /pharmacy/dispense",
+            "critical": true
+          }
+        ]
+      },
+
+      "section_6_testing": {
+        "name": "Testing Coverage",
+        "checks": [
+          {
+            "id": "PHARM-TEST-001",
+            "test": "Unit tests for pharmacy service",
+            "tests_required": [
+              "calculateStockLevel()",
+              "checkDrugAvailability()",
+              "dispenseMedication()",
+              "adjustStock()",
+              "transferStock()"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-TEST-002",
+            "test": "Integration tests for APIs",
+            "tests_required": [
+              "POST /api/pharmacy/dispense returns 201",
+              "Dispensing reduces stock",
+              "Dispensing updates prescription status",
+              "Low stock alerts trigger correctly"
+            ],
+            "critical": true
+          },
+          {
+            "id": "PHARM-TEST-003",
+            "test": "E2E test - Complete dispensing workflow",
+            "workflow": [
+              "Doctor prescribes",
+              "Pharmacist sees in queue",
+              "Pharmacist dispenses",
+              "Stock deducted",
+              "Prescription marked dispensed",
+              "Invoice created"
+            ],
+            "critical": true
+          }
+        ]
+      }
+    },
+
+    "MODULE_2_LABORATORY": {
+      "module_name": "Laboratory & Diagnostic Testing Module",
+      "critical_priority": "HIGH - Needed for clinical workflow",
+      
+      "section_1_design_specification": {
+        "name": "Design & Specification Documents",
+        "checks": [
+          {
+            "id": "LAB-SPEC-001",
+            "check": "Complete module specification document exists",
+            "verification": "Search for: laboratory_module_implementation.json",
+            "critical": true
+          },
+          {
+            "id": "LAB-SPEC-002",
+            "check": "Implementation guide exists",
+            "verification": "Search for: LABORATORY_IMPLEMENTATION_GUIDE.md",
+            "critical": true
+          }
+        ]
+      },
+
+      "section_2_database": {
+        "name": "Database Schema Implementation",
+        "checks": [
+          {
+            "id": "LAB-DB-001",
+            "check": "lab_test_catalog table exists",
+            "required_columns": [
+              "id",
+              "test_code (LAB-CBC, LAB-MAL-RDT, etc.)",
+              "test_name",
+              "category (hematology, chemistry, microbiology, parasitology)",
+              "sample_type (blood, urine, stool, etc.)",
+              "normal_range_adult",
+              "normal_range_pediatric",
+              "turnaround_time",
+              "cost_price",
+              "selling_price",
+              "nhis_price"
+            ],
+            "critical": true
+          },
+          {
+            "id": "LAB-DB-002",
+            "check": "lab_orders table exists",
+            "required_columns": [
+              "id",
+              "organization_id",
+              "branch_id",
+              "patient_id",
+              "encounter_id",
+              "test_id (FK to lab_test_catalog)",
+              "ordered_by (FK to users - doctor)",
+              "priority (routine, urgent, stat)",
+              "status (pending_collection, collected, in_progress, completed, cancelled)",
+              "ordered_at",
+              "sample_collected_at",
+              "result_entered_at",
+              "result_approved_at"
+            ],
+            "critical": true
+          },
+          {
+            "id": "LAB-DB-003",
+            "check": "lab_results table exists",
+            "required_columns": [
+              "id",
+              "lab_order_id",
+              "result_value",
+              "result_unit",
+              "normal_range",
+              "is_abnormal (boolean)",
+              "result_notes",
+              "entered_by (FK to users - lab tech)",
+              "approved_by (FK to users - pathologist)",
+              "created_at"
+            ],
+            "critical": true
+          },
+          {
+            "id": "LAB-DB-004",
+            "check": "lab_samples table exists (sample tracking)",
+            "required_columns": [
+              "id",
+              "lab_order_id",
+              "sample_barcode",
+              "sample_type",
+              "collected_by",
+              "collected_at",
+              "received_in_lab_at",
+              "status (pending, received, processing, completed)"
+            ],
+            "critical": true
+          },
+          {
+            "id": "LAB-DB-005",
+            "check": "quality_control_logs table exists",
+            "required_columns": [
+              "id",
+              "test_id",
+              "qc_date",
+              "qc_passed (boolean)",
+              "notes",
+              "performed_by"
+            ],
+            "critical": false
+          }
+        ]
+      },
+
+      "section_3_backend_apis": {
+        "name": "Backend API Endpoints",
+        "checks": [
+          {
+            "id": "LAB-API-001",
+            "endpoint": "GET /api/lab/queue",
+            "description": "Get pending lab orders",
+            "required_permission": "VIEW_LAB_ORDER",
+            "critical": true
+          },
+          {
+            "id": "LAB-API-002",
+            "endpoint": "POST /api/lab/collect-sample",
+            "description": "Mark sample as collected",
+            "required_permission": "COLLECT_LAB_SAMPLE",
+            "critical": true
+          },
+          {
+            "id": "LAB-API-003",
+            "endpoint": "POST /api/lab/enter-result",
+            "description": "Enter lab test result",
+            "required_permission": "UPLOAD_LAB_RESULT",
+            "request_body": {
+              "labOrderId": "uuid",
+              "resultValue": "13.5",
+              "resultUnit": "g/dL",
+              "isAbnormal": false,
+              "notes": "Within normal range"
+            },
+            "critical": true
+          },
+          {
+            "id": "LAB-API-004",
+            "endpoint": "POST /api/lab/approve-result",
+            "description": "Approve lab result (pathologist)",
+            "required_permission": "APPROVE_LAB_RESULT",
+            "critical": true
+          },
+          {
+            "id": "LAB-API-005",
+            "endpoint": "GET /api/lab/results/:orderId/pdf",
+            "description": "Generate PDF report",
+            "critical": true
+          },
+          {
+            "id": "LAB-API-006",
+            "endpoint": "GET /api/lab/patient/:patientId/results",
+            "description": "Get all lab results for a patient",
+            "required_permission": "VIEW_LAB_RESULTS",
+            "critical": true
+          }
+        ]
+      },
+
+      "section_4_frontend_ui": {
+        "name": "Frontend Components",
+        "checks": [
+          {
+            "id": "LAB-UI-001",
+            "component": "LabDashboard",
+            "route": "/lab/dashboard",
+            "features": [
+              "Pending tests count",
+              "STAT orders alert",
+              "Tests processed today",
+              "Average turnaround time"
+            ],
+            "critical": true
+          },
+          {
+            "id": "LAB-UI-002",
+            "component": "LabQueue",
+            "route": "/lab/queue",
+            "features": [
+              "List pending lab orders",
+              "Sort by priority (STAT first)",
+              "Filter by test type",
+              "Sample collection status",
+              "Process sample button"
+            ],
+            "critical": true
+          },
+          {
+            "id": "LAB-UI-003",
+            "component": "ResultEntryForm",
+            "route": "/lab/enter-result/:orderId",
+            "features": [
+              "Patient details",
+              "Test details",
+              "Reference ranges displayed",
+              "Result value input",
+              "Abnormal flag checkbox",
+              "Notes field",
+              "Submit button"
+            ],
+            "critical": true
+          },
+          {
+            "id": "LAB-UI-004",
+            "component": "LabResultsPDF",
+            "features": [
+              "Hospital letterhead",
+              "Patient details",
+              "Test results table",
+              "Reference ranges",
+              "Abnormal results highlighted",
+              "Digital signature",
+              "Print button"
+            ],
+            "critical": true
+          }
+        ]
+      },
+
+      "section_5_integration": {
+        "name": "Integration with Other Modules",
+        "checks": [
+          {
+            "id": "LAB-INT-001",
+            "integration": "EMR Module",
+            "check": "Doctor can order lab tests from encounter",
+            "verification": "Create encounter → Order lab → Appears in lab queue",
+            "critical": true
+          },
+          {
+            "id": "LAB-INT-002",
+            "integration": "EMR Module",
+            "check": "Lab results visible in patient's encounter",
+            "verification": "Complete lab test → Result shows in encounter view",
+            "critical": true
+          },
+          {
+            "id": "LAB-INT-003",
+            "integration": "Billing Module",
+            "check": "Lab orders create billing line items",
+            "critical": true
+          },
+          {
+            "id": "LAB-INT-004",
+            "integration": "Finance Module",
+            "check": "Lab test prices fetched from service catalog",
+            "critical": true
+          }
+        ]
+      }
+    },
+
+    "MODULE_3_BILLING_NHIS": {
+      "module_name": "Billing & NHIS Claims Module",
+      "critical_priority": "CRITICAL - Needed for revenue collection",
+      
+      "section_1_design_specification": {
+        "name": "Design & Specification Documents",
+        "checks": [
+          {
+            "id": "BILL-SPEC-001",
+            "check": "Complete module specification document exists",
+            "verification": "Search for: billing_nhis_module_implementation.json",
+            "critical": true
+          },
+          {
+            "id": "BILL-SPEC-002",
+            "check": "Implementation guide exists",
+            "verification": "Search for: BILLING_IMPLEMENTATION_GUIDE.md",
+            "critical": true
+          },
+          {
+            "id": "BILL-SPEC-003",
+            "check": "NHIS integration specification exists",
+            "required_sections": [
+              "NHIS claims format (XML)",
+              "NHIS codes mapping",
+              "Submission process",
+              "Reconciliation workflow"
+            ],
+            "critical": true
+          }
+        ]
+      },
+
+      "section_2_database": {
+        "name": "Database Schema Implementation",
+        "checks": [
+          {
+            "id": "BILL-DB-001",
+            "check": "invoices table exists",
+            "required_columns": [
+              "id",
+              "organization_id",
+              "branch_id",
+              "patient_id",
+              "encounter_id",
+              "invoice_number",
+              "invoice_date",
+              "due_date",
+              "subtotal",
+              "tax_amount",
+              "discount_amount",
+              "total_amount",
+              "amount_paid",
+              "balance",
+              "status (draft, sent, paid, partially_paid, overdue, cancelled)",
+              "payment_type (cash, nhis, insurance, mixed)",
+              "created_by"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-DB-002",
+            "check": "invoice_items table exists",
+            "required_columns": [
+              "id",
+              "invoice_id",
+              "service_type (consultation, lab, radiology, pharmacy, procedure)",
+              "service_id (reference to service_catalog, drug, etc.)",
+              "description",
+              "quantity",
+              "unit_price",
+              "line_total",
+              "is_nhis_covered",
+              "nhis_price"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-DB-003",
+            "check": "payments table exists",
+            "required_columns": [
+              "id",
+              "invoice_id",
+              "payment_date",
+              "amount",
+              "payment_method (cash, card, mobile_money, bank_transfer, nhis, insurance)",
+              "payment_reference",
+              "received_by",
+              "notes"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-DB-004",
+            "check": "nhis_claims table exists",
+            "required_columns": [
+              "id",
+              "organization_id",
+              "branch_id",
+              "claim_number",
+              "submission_date",
+              "period_from",
+              "period_to",
+              "total_claims",
+              "total_amount",
+              "status (draft, submitted, processing, approved, rejected, paid)",
+              "xml_file_path",
+              "submitted_by",
+              "approved_amount",
+              "rejection_reason"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-DB-005",
+            "check": "nhis_claim_items table exists",
+            "required_columns": [
+              "id",
+              "nhis_claim_id",
+              "invoice_id",
+              "patient_nhis_number",
+              "service_date",
+              "nhis_code",
+              "quantity",
+              "claimed_amount",
+              "approved_amount",
+              "status (pending, approved, rejected)"
+            ],
+            "critical": true
+          }
+        ]
+      },
+
+      "section_3_backend_apis": {
+        "name": "Backend API Endpoints",
+        "checks": [
+          {
+            "id": "BILL-API-001",
+            "endpoint": "POST /api/billing/invoice",
+            "description": "Generate invoice from encounter",
+            "required_permission": "CREATE_INVOICE",
+            "request_body": {
+              "encounterId": "uuid",
+              "patientId": "uuid"
+            },
+            "auto_includes": [
+              "Consultation fee",
+              "Prescriptions dispensed",
+              "Lab tests ordered",
+              "Radiology ordered",
+              "Procedures performed"
+            ],
+            "side_effects": [
+              "Fetch prices from Finance module",
+              "Apply NHIS prices if patient has NHIS",
+              "Calculate totals",
+              "Create invoice record",
+              "Create invoice_items records"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-API-002",
+            "endpoint": "POST /api/billing/payment",
+            "description": "Process payment",
+            "required_permission": "PROCESS_PAYMENT",
+            "request_body": {
+              "invoiceId": "uuid",
+              "amount": 150.00,
+              "paymentMethod": "cash",
+              "reference": "RCPT-001234"
+            },
+            "side_effects": [
+              "Create payment record",
+              "Update invoice amount_paid",
+              "Update invoice status (paid if balance = 0)",
+              "Generate receipt",
+              "Log PROCESS_PAYMENT"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-API-003",
+            "endpoint": "POST /api/billing/nhis/claim",
+            "description": "Create NHIS claim",
+            "required_permission": "CREATE_NHIS_CLAIM",
+            "request_body": {
+              "branchId": "uuid",
+              "periodFrom": "2024-01-01",
+              "periodTo": "2024-01-31",
+              "invoiceIds": ["uuid1", "uuid2", "..."]
+            },
+            "critical": true
+          },
+          {
+            "id": "BILL-API-004",
+            "endpoint": "POST /api/billing/nhis/submit",
+            "description": "Submit NHIS claim (generate XML)",
+            "required_permission": "SUBMIT_NHIS_CLAIM",
+            "outputs": [
+              "Generate XML file per NHIS format",
+              "Update claim status to submitted",
+              "Store XML file path"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-API-005",
+            "endpoint": "GET /api/billing/outstanding",
+            "description": "Get outstanding invoices",
+            "required_permission": "VIEW_INVOICE",
+            "query_params": {
+              "overdue_only": "boolean",
+              "branch_id": "filter"
+            },
+            "critical": true
+          },
+          {
+            "id": "BILL-API-006",
+            "endpoint": "GET /api/billing/reports/revenue",
+            "description": "Revenue report",
+            "required_permission": "VIEW_FINANCIAL_REPORTS",
+            "filters": ["date_range", "branch", "payment_method"],
+            "critical": true
+          }
+        ]
+      },
+
+      "section_4_frontend_ui": {
+        "name": "Frontend Components",
+        "checks": [
+          {
+            "id": "BILL-UI-001",
+            "component": "BillingDashboard",
+            "route": "/billing/dashboard",
+            "features": [
+              "Today's revenue",
+              "Outstanding invoices",
+              "NHIS claims pending",
+              "Payment methods breakdown"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-UI-002",
+            "component": "InvoiceGenerator",
+            "route": "/billing/invoice/new",
+            "features": [
+              "Select patient/encounter",
+              "Auto-populate line items",
+              "Edit quantities/prices",
+              "Apply discounts",
+              "Preview invoice",
+              "Generate PDF",
+              "Print invoice"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-UI-003",
+            "component": "PaymentInterface",
+            "route": "/billing/payment/:invoiceId",
+            "features": [
+              "Invoice details",
+              "Amount due",
+              "Payment method selector",
+              "Amount input",
+              "Change calculator (for cash)",
+              "Process payment button",
+              "Print receipt"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-UI-004",
+            "component": "NHISClaimsManager",
+            "route": "/billing/nhis",
+            "features": [
+              "Create new claim",
+              "List claims",
+              "Submit claim (download XML)",
+              "Track claim status",
+              "Reconcile payments"
+            ],
+            "critical": true
+          },
+          {
+            "id": "BILL-UI-005",
+            "component": "OutstandingInvoices",
+            "route": "/billing/outstanding",
+            "features": [
+              "List unpaid/partially paid invoices",
+              "Filter by overdue",
+              "Send payment reminder",
+              "Write off invoice"
+            ],
+            "critical": true
+          }
+        ]
+      },
+
+      "section_5_integration": {
+        "name": "Integration with Other Modules",
+        "checks": [
+          {
+            "id": "BILL-INT-001",
+            "integration": "Finance & Pricing Module",
+            "check": "Invoice generation uses correct prices from service catalog",
+            "verification": "Generate invoice → Prices match Finance module",
+            "critical": true
+          },
+          {
+            "id": "BILL-INT-002",
+            "integration": "EMR Module",
+            "check": "Can generate invoice from completed encounter",
+            "verification": "Complete encounter → Generate invoice → All services included",
+            "critical": true
+          },
+          {
+            "id": "BILL-INT-003",
+            "integration": "Pharmacy Module",
+            "check": "Dispensed medications appear on invoice",
+            "verification": "Dispense drugs → Invoice shows drug charges",
+            "critical": true
+          },
+          {
+            "id": "BILL-INT-004",
+            "integration": "Laboratory Module",
+            "check": "Lab tests appear on invoice",
+            "verification": "Complete lab test → Invoice shows lab charges",
+            "critical": true
+          },
+          {
+            "id": "BILL-INT-005",
+            "integration": "Patient Module",
+            "check": "Patient NHIS number determines billing type",
+            "verification": "Patient with NHIS → Invoice uses NHIS prices",
+            "critical": true
+          }
+        ]
+      },
+
+      "section_6_nhis_specific": {
+        "name": "NHIS Ghana-Specific Features",
+        "checks": [
+          {
+            "id": "NHIS-001",
+            "check": "NHIS XML format generator exists",
+            "description": "Generate XML file per NHIS specifications",
+            "critical": true
+          },
+          {
+            "id": "NHIS-002",
+            "check": "NHIS codes mapped to services",
+            "verification": "Each service in catalog has nhis_code",
+            "critical": true
+          },
+          {
+            "id": "NHIS-003",
+            "check": "NHIS eligibility check (optional)",
+            "description": "Check if patient NHIS number is valid",
+            "critical": false
+          },
+          {
+            "id": "NHIS-004",
+            "check": "Claims reconciliation workflow exists",
+            "description": "Match NHIS payments to submitted claims",
+            "critical": true
+          }
+        ]
+      }
+    }
+  },
+
+  "overall_verification": {
+    "name": "Cross-Module Integration Verification",
+    "checks": [
+      {
+        "id": "OVERALL-001",
+        "workflow": "Complete Outpatient Visit with Billing",
+        "steps": [
+          "1. Patient registered ✅",
+          "2. Appointment created ✅",
+          "3. Patient triaged ✅",
+          "4. Doctor consultation ✅",
+          "5. Prescription created ✅",
+          "6. Pharmacy dispenses medication",
+          "7. Lab test ordered",
+          "8. Lab test completed",
+          "9. Invoice generated (consultation + drugs + lab)",
+          "10. Payment processed",
+          "11. Receipt printed",
+          "12. NHIS claim created (if NHIS patient)"
+        ],
+        "verification": "Run complete E2E test from registration to payment",
+        "critical": true
+      },
+      {
+        "id": "OVERALL-002",
+        "check": "All 3 modules visible only to authorized users",
+        "verification": "DOCTOR cannot see pharmacy/billing, NURSE cannot see anything",
+        "critical": true
+      },
+      {
+        "id": "OVERALL-003",
+        "check": "Data flows correctly between modules",
+        "flows": [
+          "Prescription (EMR) → Pharmacy Queue",
+          "Dispensing (Pharmacy) → Invoice Items (Billing)",
+          "Lab Order (EMR) → Lab Queue → Lab Results → Invoice Items",
+          "Finance Prices → Invoice Calculations"
+        ],
+        "critical": true
+      }
+    ]
+  },
+
+  "reporting_format": {
+    "instruction": "Generate a comprehensive report with the following structure:",
+    "sections": [
+      {
+        "section": "Executive Summary",
+        "content": "Overall completion percentage for each module. Critical gaps identified."
+      },
+      {
+        "section": "Module-by-Module Status",
+        "format": "For each module (Pharmacy, Lab, Billing):",
+        "items": [
+          "Design: X% complete",
+          "Database: X% complete",
+          "Backend: X% complete",
+          "Frontend: X% complete",
+          "Integration: X% complete",
+          "Testing: X% complete",
+          "Overall: X% complete"
+        ]
+      },
+      {
+        "section": "Critical Issues",
+        "content": "List all items marked as critical: true that are MISSING ❌"
+      },
+      {
+        "section": "Blockers",
+        "content": "What is blocking production deployment?"
+      },
+      {
+        "section": "Recommendation",
+        "content": "Are modules production-ready? If not, what needs to be done?"
+      }
+    ]
+  },
+
+  "usage": "Copy this entire JSON to Windsurf/Cursor/Claude and say: 'Verify if Pharmacy, Laboratory, and Billing/NHIS modules are complete based on this checklist. Check all items and generate a comprehensive report.'"
+}

@@ -54,6 +54,10 @@ export default function WalkInRegistration() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const getErrorMessage = (err: any, fallback: string) => {
+    return err?.response?.data?.message || err?.message || fallback;
+  };
+
   // Fetch branch for appointment
   const { data: branchData } = useQuery({
     queryKey: ['branches'],
@@ -115,7 +119,7 @@ export default function WalkInRegistration() {
       // Step 2: Create walk-in appointment and check-in
       await processWalkIn(newPatient.id, form.chiefComplaint);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to register patient');
+      setError(getErrorMessage(err, 'Failed to register patient'));
       setIsProcessing(false);
     }
   };
@@ -128,7 +132,7 @@ export default function WalkInRegistration() {
     try {
       await processWalkIn(selectedPatient.id, chiefComplaint);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to check in patient');
+      setError(getErrorMessage(err, 'Failed to check in patient'));
       setIsProcessing(false);
     }
   };
@@ -139,15 +143,21 @@ export default function WalkInRegistration() {
       throw new Error('No branch available');
     }
 
-    // Get first available doctor (or use a default walk-in doctor)
+    // Get first available doctor for today
     const doctorsRes = await api.get('/appointments/doctors/available', {
       params: {
         branchId,
         date: new Date().toISOString().split('T')[0],
       },
     });
-    const doctors = doctorsRes.data.data || [];
-    const doctorId = doctors[0]?.id;
+
+    let doctorId = doctorsRes.data.data?.[0]?.id;
+
+    // Fallback to any configured doctor if none are currently available
+    if (!doctorId) {
+      const fallbackDoctorsRes = await api.get('/appointments/schedules/doctors');
+      doctorId = fallbackDoctorsRes.data.data?.[0]?.id;
+    }
 
     if (!doctorId) {
       throw new Error('No doctors available for walk-in');

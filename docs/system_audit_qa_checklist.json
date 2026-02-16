@@ -1,0 +1,1121 @@
+{
+  "prompt_name": "MediCare Ghana Hospital System - Complete Audit & QA Checklist",
+  "version": "1.0",
+  "purpose": "Comprehensive system audit to verify all modules are working correctly with no bugs, proper workflows, correct RBAC, and complete database schema",
+  "usage": "Copy this entire JSON to Windsurf/Cursor/Claude and ask: 'Please perform a complete system audit based on this checklist'",
+  
+  "audit_instructions": {
+    "overview": "This audit checks all 7 completed modules plus the RBAC foundation. For each module, verify database tables exist, APIs work, permissions are enforced, UI components function, and workflows are complete.",
+    "execution_order": [
+      "1. Database Schema Verification",
+      "2. Backend API Endpoint Testing",
+      "3. RBAC & Permissions Validation",
+      "4. Frontend Component Testing",
+      "5. Workflow Integration Testing",
+      "6. Data Integrity Checks",
+      "7. Performance & Security Audit"
+    ],
+    "reporting": "For each check, report: ✅ PASS, ⚠️ WARNING, or ❌ FAIL with detailed findings"
+  },
+
+  "modules_to_audit": [
+    {
+      "module_id": "M0",
+      "module_name": "User Management & RBAC",
+      "status": "FOUNDATION - Must work perfectly",
+      "priority": "CRITICAL"
+    },
+    {
+      "module_id": "M1",
+      "module_name": "Hospital Registration",
+      "status": "COMPLETED",
+      "priority": "HIGH"
+    },
+    {
+      "module_id": "M2",
+      "module_name": "Patient Management",
+      "status": "COMPLETED",
+      "priority": "CRITICAL"
+    },
+    {
+      "module_id": "M3",
+      "module_name": "Appointment Scheduling",
+      "status": "COMPLETED",
+      "priority": "CRITICAL"
+    },
+    {
+      "module_id": "M4",
+      "module_name": "Triage & Vital Signs",
+      "status": "COMPLETED",
+      "priority": "HIGH"
+    },
+    {
+      "module_id": "M5",
+      "module_name": "Clinical Consultation/EMR",
+      "status": "COMPLETED",
+      "priority": "CRITICAL"
+    },
+    {
+      "module_id": "M6",
+      "module_name": "E-Prescribing",
+      "status": "COMPLETED",
+      "priority": "CRITICAL"
+    },
+    {
+      "module_id": "M7",
+      "module_name": "Hospital Branches",
+      "status": "EXTENSION",
+      "priority": "HIGH"
+    }
+  ],
+
+  "audit_checklist": {
+    "section_1_database_schema": {
+      "name": "DATABASE SCHEMA VERIFICATION",
+      "description": "Verify all required tables exist with correct columns, indexes, and constraints",
+      "checks": [
+        {
+          "check_id": "DB-001",
+          "module": "M0 - User Management",
+          "check": "Verify all 10 RBAC tables exist",
+          "tables_required": [
+            "organizations",
+            "branches",
+            "users",
+            "roles",
+            "permissions",
+            "role_permissions",
+            "user_permissions",
+            "departments",
+            "sessions",
+            "audit_logs",
+            "password_history"
+          ],
+          "validation_query": "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('organizations', 'branches', 'users', 'roles', 'permissions', 'role_permissions', 'user_permissions', 'departments', 'sessions', 'audit_logs', 'password_history')",
+          "expected_result": "All 11 tables present",
+          "critical": true
+        },
+        {
+          "check_id": "DB-002",
+          "module": "M0 - User Management",
+          "check": "Verify users table has all required columns",
+          "required_columns": [
+            "id",
+            "organization_id",
+            "primary_branch_id",
+            "accessible_branches",
+            "branch_access_scope",
+            "email",
+            "password_hash",
+            "first_name",
+            "last_name",
+            "role_id",
+            "department_id",
+            "status",
+            "two_factor_enabled",
+            "two_factor_secret",
+            "last_login_at",
+            "failed_login_attempts",
+            "locked_until"
+          ],
+          "validation_query": "SELECT column_name FROM information_schema.columns WHERE table_name = 'users'",
+          "critical": true
+        },
+        {
+          "check_id": "DB-003",
+          "module": "M0 - User Management",
+          "check": "Verify seed data exists (roles and permissions)",
+          "validation_query": "SELECT COUNT(*) FROM roles WHERE is_system_role = TRUE",
+          "expected_result": "At least 13 system roles (SUPER_ADMIN, HOSPITAL_ADMIN, DOCTOR, NURSE, PHARMACIST, etc.)",
+          "critical": true
+        },
+        {
+          "check_id": "DB-004",
+          "module": "M0 - User Management",
+          "check": "Verify permissions seeded (~100 permissions)",
+          "validation_query": "SELECT COUNT(*) FROM permissions",
+          "expected_result": "At least 80-100 permissions across all modules",
+          "critical": true
+        },
+        {
+          "check_id": "DB-005",
+          "module": "M0 - User Management",
+          "check": "Verify role-permission mappings exist",
+          "validation_query": "SELECT COUNT(*) FROM role_permissions",
+          "expected_result": "Hundreds of role-permission mappings",
+          "critical": true
+        },
+        {
+          "check_id": "DB-006",
+          "module": "M2 - Patient Management",
+          "check": "Verify all patient tables exist",
+          "tables_required": [
+            "patients",
+            "patient_contacts",
+            "patient_allergies",
+            "patient_documents",
+            "patient_insurance",
+            "patient_emergency_contacts",
+            "patient_medical_history"
+          ],
+          "validation_query": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'patient%'",
+          "critical": true
+        },
+        {
+          "check_id": "DB-007",
+          "module": "M2 - Patient Management",
+          "check": "Verify patients table has multi-branch support",
+          "required_columns": [
+            "organization_id",
+            "registered_at_branch_id"
+          ],
+          "validation_query": "SELECT column_name FROM information_schema.columns WHERE table_name = 'patients' AND column_name IN ('organization_id', 'registered_at_branch_id')",
+          "critical": true
+        },
+        {
+          "check_id": "DB-008",
+          "module": "M3 - Appointments",
+          "check": "Verify appointment tables exist",
+          "tables_required": [
+            "appointments",
+            "appointment_slots",
+            "appointment_types",
+            "doctor_schedules"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "DB-009",
+          "module": "M3 - Appointments",
+          "check": "Verify appointments table has branch tracking",
+          "required_columns": [
+            "organization_id",
+            "branch_id",
+            "department_id"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "DB-010",
+          "module": "M4 - Triage",
+          "check": "Verify triage tables exist",
+          "tables_required": [
+            "triage_records",
+            "vital_signs"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "DB-011",
+          "module": "M5 - EMR",
+          "check": "Verify EMR tables exist",
+          "tables_required": [
+            "clinical_encounters",
+            "encounter_diagnoses",
+            "problem_list",
+            "icd10_codes",
+            "encounter_notes_history"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "DB-012",
+          "module": "M5 - EMR",
+          "check": "Verify ICD-10 codes are seeded",
+          "validation_query": "SELECT COUNT(*) FROM icd10_codes WHERE is_common_ghana = TRUE",
+          "expected_result": "At least 50+ common Ghana diseases",
+          "critical": true
+        },
+        {
+          "check_id": "DB-013",
+          "module": "M6 - Prescriptions",
+          "check": "Verify prescription tables exist",
+          "tables_required": [
+            "drug_formulary",
+            "prescriptions",
+            "prescription_items",
+            "prescription_refills",
+            "drug_interaction_rules",
+            "prescribing_alerts_log"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "DB-014",
+          "module": "M6 - Prescriptions",
+          "check": "Verify Ghana National Formulary drugs seeded",
+          "validation_query": "SELECT COUNT(*) FROM drug_formulary WHERE is_active = TRUE",
+          "expected_result": "At least 50-100 essential drugs",
+          "critical": true
+        },
+        {
+          "check_id": "DB-015",
+          "module": "ALL",
+          "check": "Verify all tables have organization_id or tenant_id for multi-tenancy",
+          "validation_query": "SELECT table_name FROM information_schema.columns WHERE column_name IN ('organization_id', 'tenant_id') GROUP BY table_name",
+          "expected_result": "All data tables have organization/tenant isolation",
+          "critical": true
+        },
+        {
+          "check_id": "DB-016",
+          "module": "ALL",
+          "check": "Verify indexes exist on foreign keys",
+          "validation_query": "SELECT tablename, indexname FROM pg_indexes WHERE schemaname = 'public'",
+          "expected_result": "Indexes on all FK columns (user_id, patient_id, organization_id, branch_id, etc.)",
+          "critical": false
+        }
+      ]
+    },
+
+    "section_2_api_endpoints": {
+      "name": "BACKEND API ENDPOINT TESTING",
+      "description": "Verify all API endpoints exist, have correct permissions, and return expected responses",
+      "checks": [
+        {
+          "check_id": "API-001",
+          "module": "M0 - Auth",
+          "endpoint": "POST /api/auth/login",
+          "check": "Login endpoint exists and returns JWT tokens",
+          "test_payload": {
+            "email": "test@hospital.com",
+            "password": "TestPassword@123"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "accessToken": "string",
+                "refreshToken": "string",
+                "user": "object"
+              }
+            }
+          },
+          "critical": true
+        },
+        {
+          "check_id": "API-002",
+          "module": "M0 - Auth",
+          "endpoint": "POST /api/auth/refresh",
+          "check": "Token refresh works",
+          "critical": true
+        },
+        {
+          "check_id": "API-003",
+          "module": "M0 - Auth",
+          "endpoint": "POST /api/auth/logout",
+          "check": "Logout invalidates session",
+          "critical": true
+        },
+        {
+          "check_id": "API-004",
+          "module": "M0 - Users",
+          "endpoint": "GET /api/users",
+          "check": "List users endpoint requires authentication",
+          "required_permission": "VIEW_USERS",
+          "test_without_auth": "Should return 401",
+          "test_without_permission": "Should return 403",
+          "critical": true
+        },
+        {
+          "check_id": "API-005",
+          "module": "M0 - Users",
+          "endpoint": "POST /api/users",
+          "check": "Create user endpoint requires MANAGE_USERS permission",
+          "required_permission": "MANAGE_USERS",
+          "critical": true
+        },
+        {
+          "check_id": "API-006",
+          "module": "M2 - Patients",
+          "endpoint": "POST /api/patients",
+          "check": "Register patient endpoint works",
+          "required_permission": "REGISTER_PATIENT",
+          "test_payload": {
+            "firstName": "Kwame",
+            "lastName": "Mensah",
+            "dateOfBirth": "1985-05-15",
+            "gender": "male"
+          },
+          "expected_response": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "patient": "object with MRN"
+              }
+            }
+          },
+          "critical": true
+        },
+        {
+          "check_id": "API-007",
+          "module": "M2 - Patients",
+          "endpoint": "GET /api/patients/:id",
+          "check": "Get patient endpoint requires VIEW_PATIENT permission",
+          "required_permission": "VIEW_PATIENT",
+          "critical": true
+        },
+        {
+          "check_id": "API-008",
+          "module": "M2 - Patients",
+          "endpoint": "GET /api/patients/search",
+          "check": "Search patients by name, MRN, or phone works",
+          "required_permission": "VIEW_PATIENT",
+          "critical": true
+        },
+        {
+          "check_id": "API-009",
+          "module": "M3 - Appointments",
+          "endpoint": "POST /api/appointments",
+          "check": "Create appointment endpoint works",
+          "required_permission": "CREATE_APPOINTMENT",
+          "test_payload": {
+            "patientId": "uuid",
+            "doctorId": "uuid",
+            "appointmentDate": "2024-03-15",
+            "appointmentTime": "10:00",
+            "appointmentType": "consultation"
+          },
+          "expected_response": {
+            "status": 201
+          },
+          "critical": true
+        },
+        {
+          "check_id": "API-010",
+          "module": "M3 - Appointments",
+          "endpoint": "GET /api/appointments/schedule",
+          "check": "Get doctor schedule endpoint works",
+          "critical": true
+        },
+        {
+          "check_id": "API-011",
+          "module": "M4 - Triage",
+          "endpoint": "POST /api/triage",
+          "check": "Create triage record endpoint works",
+          "required_permission": "TRIAGE",
+          "critical": true
+        },
+        {
+          "check_id": "API-012",
+          "module": "M5 - EMR",
+          "endpoint": "POST /api/encounters",
+          "check": "Create encounter endpoint works",
+          "required_permission": "CREATE_ENCOUNTER",
+          "critical": true
+        },
+        {
+          "check_id": "API-013",
+          "module": "M5 - EMR",
+          "endpoint": "POST /api/encounters/:id/diagnoses",
+          "check": "Add diagnosis to encounter works",
+          "required_permission": "CREATE_ENCOUNTER",
+          "critical": true
+        },
+        {
+          "check_id": "API-014",
+          "module": "M5 - EMR",
+          "endpoint": "GET /api/icd10/search",
+          "check": "ICD-10 search endpoint works",
+          "test_query": "?q=malaria",
+          "expected_result": "Returns malaria-related ICD-10 codes",
+          "critical": true
+        },
+        {
+          "check_id": "API-015",
+          "module": "M6 - Prescriptions",
+          "endpoint": "POST /api/prescriptions",
+          "check": "Create prescription endpoint works",
+          "required_permission": "PRESCRIBE",
+          "critical": true
+        },
+        {
+          "check_id": "API-016",
+          "module": "M6 - Prescriptions",
+          "endpoint": "POST /api/prescriptions/validate",
+          "check": "Prescription validation (clinical decision support) works",
+          "test_scenarios": [
+            "Test allergy checking - should block",
+            "Test drug interaction - should warn",
+            "Test pediatric dosing - should calculate"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "API-017",
+          "module": "M6 - Prescriptions",
+          "endpoint": "GET /api/drug-formulary/search",
+          "check": "Drug search endpoint works",
+          "test_query": "?q=paracetamol",
+          "expected_result": "Returns paracetamol drugs",
+          "critical": true
+        },
+        {
+          "check_id": "API-018",
+          "module": "ALL",
+          "check": "All endpoints enforce organization/branch isolation",
+          "test": "User from Organization A cannot access data from Organization B",
+          "critical": true
+        },
+        {
+          "check_id": "API-019",
+          "module": "ALL",
+          "check": "All POST/PUT/DELETE endpoints log to audit_logs",
+          "validation": "Check audit_logs table has entries for each action",
+          "critical": true
+        }
+      ]
+    },
+
+    "section_3_rbac_permissions": {
+      "name": "RBAC & PERMISSIONS VALIDATION",
+      "description": "Verify role-based access control is properly enforced",
+      "checks": [
+        {
+          "check_id": "RBAC-001",
+          "check": "Verify all 13 system roles exist",
+          "roles_required": [
+            "SUPER_ADMIN",
+            "HOSPITAL_ADMIN",
+            "MEDICAL_DIRECTOR",
+            "HEAD_NURSE",
+            "DOCTOR",
+            "NURSE",
+            "PHARMACIST",
+            "LAB_TECHNICIAN",
+            "RADIOLOGIST",
+            "RECEPTIONIST",
+            "BILLING_OFFICER",
+            "RECORDS_OFFICER",
+            "PATIENT"
+          ],
+          "validation_query": "SELECT name FROM roles WHERE is_system_role = TRUE",
+          "critical": true
+        },
+        {
+          "check_id": "RBAC-002",
+          "check": "Verify DOCTOR role has correct permissions",
+          "required_permissions": [
+            "VIEW_PATIENT",
+            "EDIT_PATIENT",
+            "CREATE_ENCOUNTER",
+            "VIEW_ENCOUNTER",
+            "EDIT_ENCOUNTER",
+            "SIGN_ENCOUNTER",
+            "PRESCRIBE",
+            "ORDER_LAB",
+            "ORDER_RADIOLOGY",
+            "VIEW_LAB_RESULTS",
+            "DISCHARGE_PATIENT"
+          ],
+          "validation": "Query role_permissions for DOCTOR role",
+          "critical": true
+        },
+        {
+          "check_id": "RBAC-003",
+          "check": "Verify NURSE role has correct permissions",
+          "required_permissions": [
+            "VIEW_PATIENT",
+            "TRIAGE",
+            "RECORD_VITALS",
+            "ADMINISTER_MEDICATION",
+            "UPDATE_PATIENT_NOTES"
+          ],
+          "should_not_have": [
+            "PRESCRIBE",
+            "ORDER_LAB",
+            "SIGN_ENCOUNTER"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "RBAC-004",
+          "check": "Verify RECEPTIONIST role has limited permissions",
+          "required_permissions": [
+            "REGISTER_PATIENT",
+            "VIEW_PATIENT_BASIC",
+            "CREATE_APPOINTMENT",
+            "CHECK_IN_PATIENT"
+          ],
+          "should_not_have": [
+            "VIEW_ENCOUNTER",
+            "PRESCRIBE",
+            "VIEW_LAB_RESULTS"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "RBAC-005",
+          "check": "Test permission enforcement - Nurse cannot prescribe",
+          "test": "Login as NURSE, attempt POST /api/prescriptions",
+          "expected_result": "403 Forbidden",
+          "critical": true
+        },
+        {
+          "check_id": "RBAC-006",
+          "check": "Test permission enforcement - Receptionist cannot view encounters",
+          "test": "Login as RECEPTIONIST, attempt GET /api/encounters/:id",
+          "expected_result": "403 Forbidden",
+          "critical": true
+        },
+        {
+          "check_id": "RBAC-007",
+          "check": "Test permission enforcement - Doctor CAN prescribe",
+          "test": "Login as DOCTOR, attempt POST /api/prescriptions",
+          "expected_result": "201 Created (with valid data)",
+          "critical": true
+        },
+        {
+          "check_id": "RBAC-008",
+          "check": "Verify JWT contains correct permissions",
+          "test": "Decode access token after login",
+          "expected_fields": [
+            "userId",
+            "organizationId",
+            "primaryBranchId",
+            "currentBranchId",
+            "role",
+            "permissions (array)"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "RBAC-009",
+          "check": "Test branch access control - User can only access their branches",
+          "test": "User with branch_access_scope='primary_only' tries to access data from different branch",
+          "expected_result": "403 or empty results",
+          "critical": true
+        },
+        {
+          "check_id": "RBAC-010",
+          "check": "Test organization isolation - Cross-tenant access blocked",
+          "test": "User from Organization A tries to access patient from Organization B",
+          "expected_result": "404 or 403",
+          "critical": true
+        }
+      ]
+    },
+
+    "section_4_frontend_components": {
+      "name": "FRONTEND COMPONENT TESTING",
+      "description": "Verify all UI components render and function correctly",
+      "checks": [
+        {
+          "check_id": "UI-001",
+          "component": "LoginPage",
+          "route": "/login",
+          "checks": [
+            "Page renders without errors",
+            "Email and password inputs exist",
+            "Login button exists and is clickable",
+            "Forgot password link works",
+            "Form validation works (required fields)",
+            "Login with valid credentials redirects to dashboard",
+            "Login with invalid credentials shows error",
+            "2FA flow works if enabled"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-002",
+          "component": "UserManagement",
+          "route": "/admin/users",
+          "required_permission": "VIEW_USERS",
+          "checks": [
+            "User list table renders",
+            "Search functionality works",
+            "Filter by role works",
+            "Filter by status works",
+            "Add User button visible (if MANAGE_USERS permission)",
+            "Edit user modal works",
+            "Deactivate user works",
+            "Reset password works",
+            "Pagination works"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-003",
+          "component": "PatientRegistration",
+          "route": "/patients/register",
+          "required_permission": "REGISTER_PATIENT",
+          "checks": [
+            "Registration form renders",
+            "All required fields present (name, DOB, gender, etc.)",
+            "MRN auto-generated on submit",
+            "Form validation works",
+            "Submit creates patient in database",
+            "Redirects to patient profile after creation",
+            "Ghana Card integration works (if implemented)",
+            "NHIS number field exists"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-004",
+          "component": "PatientSearch",
+          "route": "/patients",
+          "required_permission": "VIEW_PATIENT",
+          "checks": [
+            "Search input works (name, MRN, phone)",
+            "Search results display correctly",
+            "Click on patient navigates to patient profile",
+            "Advanced filters work",
+            "No results message shows when no matches"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-005",
+          "component": "AppointmentScheduling",
+          "route": "/appointments/new",
+          "required_permission": "CREATE_APPOINTMENT",
+          "checks": [
+            "Patient search/select works",
+            "Doctor selection dropdown populated",
+            "Date picker works",
+            "Time slot selection works (available slots only)",
+            "Appointment type dropdown works",
+            "Branch selection works (if multi-branch)",
+            "Submit creates appointment",
+            "Confirmation shown after creation"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-006",
+          "component": "DoctorSchedule",
+          "route": "/appointments/schedule",
+          "checks": [
+            "Calendar view renders",
+            "Appointments display on correct dates/times",
+            "Color coding by status works",
+            "Click appointment shows details",
+            "Day/week/month views work",
+            "Filter by doctor works"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-007",
+          "component": "TriageForm",
+          "route": "/triage",
+          "required_permission": "TRIAGE",
+          "checks": [
+            "Patient selection works",
+            "Vital signs inputs exist (BP, HR, RR, Temp, SpO2, Weight, Height)",
+            "Age-specific validation works",
+            "Manchester Triage categories display",
+            "Chief complaint field exists",
+            "Submit creates triage record",
+            "Abnormal vital signs highlighted"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-008",
+          "component": "EncounterWorkspace",
+          "route": "/encounters/:id",
+          "required_permission": "CREATE_ENCOUNTER",
+          "checks": [
+            "SOAP tabs (Subjective, Objective, Assessment, Plan) exist",
+            "Patient context panel shows allergies (RED if present)",
+            "Vital signs auto-populated from triage",
+            "Chief complaint field works",
+            "Physical examination builder works",
+            "ICD-10 search widget works",
+            "Add diagnosis works (primary and secondary)",
+            "Prescription form accessible",
+            "Lab order form accessible",
+            "Save encounter works",
+            "Complete encounter works",
+            "Sign encounter works"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-009",
+          "component": "ICD10SearchWidget",
+          "checks": [
+            "Search autocomplete works",
+            "Ghana common diseases tab works",
+            "Favorites tab works",
+            "Recent tab works",
+            "Select primary diagnosis works",
+            "Select secondary diagnosis works",
+            "Visual tags (1° red, 2° blue) display correctly"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-010",
+          "component": "PrescriptionForm",
+          "required_permission": "PRESCRIBE",
+          "checks": [
+            "Drug formulary search works",
+            "Drug details modal opens on selection",
+            "Dosage input works",
+            "Frequency dropdown works",
+            "Duration input works",
+            "Total quantity auto-calculates",
+            "Instructions field exists",
+            "Add to prescription list works",
+            "Prescription templates work",
+            "Clinical decision support alerts show",
+            "Allergy alerts (RED) block prescription",
+            "Drug interaction warnings (ORANGE) show with override option",
+            "Pediatric dosing calculations work"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-011",
+          "component": "ClinicalAlertModals",
+          "checks": [
+            "Critical alert modal (RED) displays correctly",
+            "Cannot override critical alerts",
+            "Warning alert modal (ORANGE) displays",
+            "Can override warnings with reason",
+            "Info alert modal (BLUE) displays",
+            "Alert messages are clear"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-012",
+          "component": "BranchSelector",
+          "checks": [
+            "Branch selector displays in header",
+            "Shows only accessible branches",
+            "Switching branch updates current_branch_id",
+            "Data filters by selected branch"
+          ],
+          "critical": false
+        },
+        {
+          "check_id": "UI-013",
+          "component": "Navigation/Sidebar",
+          "checks": [
+            "All menu items render",
+            "Menu items hidden based on permissions",
+            "Active route highlighted",
+            "Logout button works",
+            "User profile link works"
+          ],
+          "critical": true
+        },
+        {
+          "check_id": "UI-014",
+          "component": "All Forms",
+          "checks": [
+            "All buttons have click handlers",
+            "All links navigate correctly",
+            "Form validation shows error messages",
+            "Loading states show during API calls",
+            "Success messages show after actions",
+            "Error messages show on failures"
+          ],
+          "critical": true
+        }
+      ]
+    },
+
+    "section_5_workflow_integration": {
+      "name": "WORKFLOW INTEGRATION TESTING",
+      "description": "Verify complete end-to-end workflows work correctly",
+      "checks": [
+        {
+          "check_id": "WF-001",
+          "workflow": "Complete Outpatient Visit",
+          "steps": [
+            "1. Receptionist registers new patient → Patient created with MRN",
+            "2. Receptionist creates appointment → Appointment scheduled",
+            "3. Patient arrives, check-in → Appointment status = CHECKED_IN",
+            "4. Nurse performs triage → Triage record created, queue updated",
+            "5. Doctor creates encounter → Encounter linked to appointment",
+            "6. Doctor adds diagnosis (ICD-10) → Diagnosis saved",
+            "7. Doctor prescribes medication → Prescription created",
+            "8. Doctor orders lab test → Lab order created",
+            "9. Doctor completes encounter → Status = COMPLETED, appointment updated",
+            "10. Prescription sent to pharmacy → Visible in pharmacy queue"
+          ],
+          "verification": "Each step must complete successfully and update related tables",
+          "critical": true
+        },
+        {
+          "check_id": "WF-002",
+          "workflow": "Patient with Allergy - Prescription Blocked",
+          "steps": [
+            "1. Register patient with Penicillin allergy",
+            "2. Doctor tries to prescribe Amoxicillin",
+            "3. System shows CRITICAL alert",
+            "4. Prescription blocked, cannot proceed",
+            "5. Alternatives suggested"
+          ],
+          "expected_result": "Prescription blocked, patient safety ensured",
+          "critical": true
+        },
+        {
+          "check_id": "WF-003",
+          "workflow": "Drug Interaction Warning",
+          "steps": [
+            "1. Patient already on Warfarin",
+            "2. Doctor prescribes Aspirin",
+            "3. System shows WARNING (bleeding risk)",
+            "4. Doctor can override with reason",
+            "5. Override logged in prescribing_alerts_log"
+          ],
+          "expected_result": "Warning shown, override possible with justification",
+          "critical": true
+        },
+        {
+          "check_id": "WF-004",
+          "workflow": "Pediatric Dosing Calculation",
+          "steps": [
+            "1. Register child patient (age 5, weight 18kg)",
+            "2. Doctor prescribes Paracetamol",
+            "3. System calculates safe dose (15mg/kg × 18kg = 270mg)",
+            "4. If doctor enters 500mg → BLOCKED (too high)",
+            "5. If doctor enters 250mg → ACCEPTED"
+          ],
+          "expected_result": "Pediatric dosing enforced, overdose prevented",
+          "critical": true
+        },
+        {
+          "check_id": "WF-005",
+          "workflow": "Multi-Branch Patient Visit",
+          "steps": [
+            "1. Patient registered at Tema Clinic",
+            "2. Patient visits Kumasi Clinic (different branch)",
+            "3. Receptionist at Kumasi searches patient → Found (because shared_emr = TRUE)",
+            "4. Patient history from Tema visible at Kumasi",
+            "5. Create appointment at Kumasi",
+            "6. All new activities tagged with Kumasi branch_id"
+          ],
+          "expected_result": "Patient accessible across branches, activities branch-tagged",
+          "critical": true
+        },
+        {
+          "check_id": "WF-006",
+          "workflow": "User Login to Patient Registration",
+          "steps": [
+            "1. User logs in → JWT token generated",
+            "2. Token contains permissions array",
+            "3. Navigate to patient registration",
+            "4. Check permission: REGISTER_PATIENT in JWT",
+            "5. If yes → Allow access",
+            "6. If no → Redirect to 403 page"
+          ],
+          "expected_result": "Permission-based access control works",
+          "critical": true
+        },
+        {
+          "check_id": "WF-007",
+          "workflow": "Encounter to Problem List",
+          "steps": [
+            "1. Doctor diagnoses chronic condition (e.g., Hypertension I10)",
+            "2. Doctor checks 'Add to problem list'",
+            "3. Diagnosis saved to encounter_diagnoses AND problem_list",
+            "4. Problem list visible in future encounters",
+            "5. Problem persists across visits"
+          ],
+          "expected_result": "Chronic conditions tracked in problem list",
+          "critical": true
+        },
+        {
+          "check_id": "WF-008",
+          "workflow": "Audit Trail Logging",
+          "steps": [
+            "1. User performs any action (e.g., CREATE_PATIENT)",
+            "2. Action logged to audit_logs with: user_id, organization_id, branch_id, action, timestamp",
+            "3. Query audit logs → Action visible",
+            "4. Cannot delete audit log entries"
+          ],
+          "expected_result": "All actions audited, immutable logs",
+          "critical": true
+        }
+      ]
+    },
+
+    "section_6_data_integrity": {
+      "name": "DATA INTEGRITY CHECKS",
+      "description": "Verify data relationships and constraints are enforced",
+      "checks": [
+        {
+          "check_id": "DI-001",
+          "check": "Foreign key constraints enforced",
+          "test": "Try to create appointment with non-existent patient_id",
+          "expected_result": "Database constraint error",
+          "critical": true
+        },
+        {
+          "check_id": "DI-002",
+          "check": "Unique constraints enforced",
+          "test": "Try to create user with duplicate email in same organization",
+          "expected_result": "Unique constraint violation error",
+          "critical": true
+        },
+        {
+          "check_id": "DI-003",
+          "check": "Cascading deletes work correctly",
+          "test": "Delete a prescription → prescription_items should also delete",
+          "expected_result": "CASCADE delete works",
+          "critical": true
+        },
+        {
+          "check_id": "DI-004",
+          "check": "Encounter can only have ONE primary diagnosis",
+          "test": "Try to add two primary diagnoses to one encounter",
+          "expected_result": "Validation error or database constraint",
+          "critical": true
+        },
+        {
+          "check_id": "DI-005",
+          "check": "MRN is unique within organization",
+          "test": "Try to create patient with duplicate MRN in same organization",
+          "expected_result": "Unique constraint error",
+          "critical": true
+        },
+        {
+          "check_id": "DI-006",
+          "check": "Patient cannot have appointment in past",
+          "test": "Try to create appointment with date in past",
+          "expected_result": "Validation error",
+          "critical": false
+        },
+        {
+          "check_id": "DI-007",
+          "check": "Vital signs within valid ranges",
+          "test": "Try to save BP of 300/200 (invalid)",
+          "expected_result": "Validation error or warning",
+          "critical": false
+        }
+      ]
+    },
+
+    "section_7_performance_security": {
+      "name": "PERFORMANCE & SECURITY AUDIT",
+      "description": "Check for performance issues and security vulnerabilities",
+      "checks": [
+        {
+          "check_id": "PERF-001",
+          "check": "Database indexes exist on frequently queried columns",
+          "columns_to_check": [
+            "patients.organization_id",
+            "patients.mrn",
+            "appointments.patient_id",
+            "appointments.branch_id",
+            "clinical_encounters.patient_id",
+            "prescriptions.patient_id",
+            "audit_logs.user_id",
+            "audit_logs.created_at"
+          ],
+          "critical": false
+        },
+        {
+          "check_id": "PERF-002",
+          "check": "API response times acceptable",
+          "test": "Measure response time for key endpoints",
+          "endpoints": [
+            "GET /api/patients (should be <500ms)",
+            "GET /api/appointments/schedule (should be <1s)",
+            "POST /api/encounters (should be <1s)"
+          ],
+          "critical": false
+        },
+        {
+          "check_id": "SEC-001",
+          "check": "Passwords are hashed (never plain text)",
+          "test": "Check users table → password_hash column should contain bcrypt hashes",
+          "critical": true
+        },
+        {
+          "check_id": "SEC-002",
+          "check": "JWT secrets are environment variables (not hardcoded)",
+          "test": "Check code for hardcoded JWT_SECRET",
+          "critical": true
+        },
+        {
+          "check_id": "SEC-003",
+          "check": "SQL injection protection (parameterized queries)",
+          "test": "All database queries use parameterized statements or ORM",
+          "critical": true
+        },
+        {
+          "check_id": "SEC-004",
+          "check": "XSS protection in frontend",
+          "test": "User input is sanitized before display",
+          "critical": true
+        },
+        {
+          "check_id": "SEC-005",
+          "check": "CORS configured correctly",
+          "test": "Only allowed origins can access API",
+          "critical": true
+        },
+        {
+          "check_id": "SEC-006",
+          "check": "Sensitive data in audit logs is redacted",
+          "test": "Check audit_logs table → password fields should be [REDACTED]",
+          "critical": true
+        },
+        {
+          "check_id": "SEC-007",
+          "check": "HTTPS enforced in production",
+          "test": "HTTP requests redirect to HTTPS",
+          "critical": true
+        }
+      ]
+    }
+  },
+
+  "reporting_template": {
+    "format": "Generate a report with the following structure",
+    "sections": [
+      {
+        "section": "Executive Summary",
+        "content": "Overall health: X% checks passed. Critical issues: Y. Warnings: Z."
+      },
+      {
+        "section": "Critical Failures",
+        "content": "List all checks marked as critical: true that failed with ❌"
+      },
+      {
+        "section": "Warnings",
+        "content": "List all checks that passed with warnings ⚠️"
+      },
+      {
+        "section": "Module Health Report",
+        "content": "For each module (M0-M6), report: Database ✅/❌, APIs ✅/❌, UI ✅/❌, Workflows ✅/❌"
+      },
+      {
+        "section": "Detailed Findings",
+        "content": "For each failed check, provide: Check ID, Module, Issue Description, Recommended Fix"
+      },
+      {
+        "section": "Action Items",
+        "content": "Prioritized list of fixes needed (Critical → High → Medium → Low)"
+      }
+    ]
+  },
+
+  "usage_instructions": {
+    "step_1": "Copy this entire JSON",
+    "step_2": "Open Windsurf/Cursor/Claude",
+    "step_3": "Paste this prompt and say: 'Please perform a complete system audit based on this comprehensive checklist. Test every check_id and report findings.'",
+    "step_4": "AI will systematically go through each check",
+    "step_5": "Review the generated report",
+    "step_6": "Fix critical issues first, then warnings"
+  },
+
+  "automation_script": {
+    "description": "For automated testing, this checklist can be converted to:",
+    "formats": [
+      "Jest test suites (backend testing)",
+      "Cypress E2E tests (frontend testing)",
+      "Postman/Newman collections (API testing)",
+      "SQL validation scripts (database testing)"
+    ]
+  }
+}

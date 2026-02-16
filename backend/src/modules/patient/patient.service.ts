@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { prisma } from '../../common/utils/prisma.js';
 import { AppError } from '../../common/middleware/error-handler.js';
 import { CreatePatientInput, UpdatePatientInput, SearchPatientInput } from './patient.schema.js';
@@ -58,6 +59,14 @@ export class PatientService {
         nationality: data.nationality || 'Ghanaian',
         registrationSource: data.registrationSource || 'walk-in',
         createdBy: userId,
+
+        // Portal access
+        ...(data.portalAccessEnabled && {
+          portalAccessEnabled: true,
+          ...(data.portalPassword && {
+            portalPasswordHash: await bcrypt.hash(data.portalPassword, 12),
+          }),
+        }),
 
         // Create emergency contact if provided
         ...(data.emergencyContact && {
@@ -183,6 +192,12 @@ export class PatientService {
         ...(data.maritalStatus !== undefined && { maritalStatus: data.maritalStatus }),
         ...(data.religion !== undefined && { religion: data.religion }),
         ...(data.preferredLanguage !== undefined && { preferredLanguage: data.preferredLanguage }),
+        // Portal access
+        ...(data.portalAccessEnabled !== undefined && { portalAccessEnabled: data.portalAccessEnabled }),
+        ...(data.portalPassword && {
+          portalPasswordHash: await bcrypt.hash(data.portalPassword, 12),
+          portalAccessEnabled: true,
+        }),
       },
       include: {
         contacts: true,

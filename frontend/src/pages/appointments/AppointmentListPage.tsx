@@ -12,6 +12,7 @@ const statusStyles: Record<AppointmentStatus, { bg: string; color: string; label
   CHECKED_IN: { bg: "#dcfce7", color: "#166534", label: "Checked In" },
   IN_PROGRESS: { bg: "#fef3c7", color: "#92400e", label: "In Progress" },
   COMPLETED: { bg: "#f3f4f6", color: "#374151", label: "Completed" },
+  TRIAGED: { bg: "#e0f2fe", color: "#0369a1", label: "Triaged" },
   CANCELLED: { bg: "#fee2e2", color: "#991b1b", label: "Cancelled" },
   NO_SHOW: { bg: "#fecaca", color: "#dc2626", label: "No Show" },
 };
@@ -64,6 +65,10 @@ export default function AppointmentListPage() {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
+  const getErrorMessage = (err: any, fallback: string) => {
+    return err?.response?.data?.message || err?.message || fallback;
+  };
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['appointments', selectedDate],
     queryFn: () => appointmentService.list({ date: selectedDate, limit: 50 }),
@@ -75,8 +80,12 @@ export default function AppointmentListPage() {
       toast({ title: "Success", description: "Patient checked in successfully" });
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to check in patient", variant: "destructive" });
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: getErrorMessage(err, 'Failed to check in patient'),
+        variant: "destructive",
+      });
     },
   });
 

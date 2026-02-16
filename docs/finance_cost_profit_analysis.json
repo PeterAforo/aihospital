@@ -1,0 +1,849 @@
+{
+  "enhancement_name": "Cost Tracking & Profit Margin Analysis",
+  "module": "Finance & Pricing Management Module",
+  "priority": "HIGH - Essential for business intelligence",
+  "business_value": "Understand profitability of each service/product, make data-driven pricing decisions",
+
+  "problem_statement": {
+    "current_gap": "System only tracks selling prices, not costs. Cannot measure profitability.",
+    "business_questions_unanswered": [
+      "Which services are profitable vs loss-making?",
+      "What's the profit margin on drugs?",
+      "Are we losing money on NHIS patients?",
+      "Which lab tests have the best margins?",
+      "Should we raise prices on low-margin services?",
+      "What's our overall profit margin by department?"
+    ],
+    "solution": "Add cost tracking, automatic profit calculation, margin analysis & reporting"
+  },
+
+  "enhanced_data_model": {
+    "service_catalog_enhancements": {
+      "table": "service_catalog",
+      "new_columns": [
+        {
+          "column": "cost_price",
+          "type": "DECIMAL(10,2)",
+          "description": "What it costs the hospital to provide this service",
+          "example": "Consultation cost ₵25 (doctor salary, overhead, etc.)"
+        },
+        {
+          "column": "selling_price",
+          "type": "DECIMAL(10,2)",
+          "description": "What the hospital charges (renamed from base_price)",
+          "example": "Consultation sells for ₵50"
+        },
+        {
+          "column": "target_profit_percentage",
+          "type": "DECIMAL(5,2)",
+          "description": "Target profit margin for this service",
+          "example": "100% (sell for 2× cost)"
+        },
+        {
+          "column": "actual_profit_amount",
+          "type": "DECIMAL(10,2) GENERATED",
+          "description": "Calculated: selling_price - cost_price",
+          "example": "₵50 - ₵25 = ₵25 profit"
+        },
+        {
+          "column": "actual_profit_percentage",
+          "type": "DECIMAL(5,2) GENERATED",
+          "description": "Calculated: (profit / cost_price) × 100",
+          "example": "(₵25 / ₵25) × 100 = 100%"
+        },
+        {
+          "column": "last_cost_update",
+          "type": "TIMESTAMP",
+          "description": "When cost was last updated"
+        },
+        {
+          "column": "cost_calculation_method",
+          "type": "VARCHAR(50)",
+          "description": "How cost is calculated",
+          "values": ["manual", "activity_based", "average", "standard"]
+        }
+      ],
+      "example_record": {
+        "service_code": "CONS-GEN",
+        "service_name": "Consultation - General Doctor",
+        "cost_price": 25.00,
+        "selling_price": 50.00,
+        "target_profit_percentage": 100.00,
+        "actual_profit_amount": 25.00,
+        "actual_profit_percentage": 100.00,
+        "nhis_price": 30.00,
+        "nhis_profit_margin": "20% ((₵30-₵25)/₵25)"
+      }
+    },
+
+    "drug_pricing_enhancements": {
+      "table": "drug_formulary (extended)",
+      "existing_columns": [
+        "unit_cost (what we paid supplier) ← ALREADY HAVE THIS",
+        "selling_price (what we charge)"
+      ],
+      "new_columns": [
+        {
+          "column": "landed_cost",
+          "type": "DECIMAL(10,2)",
+          "description": "Total cost including shipping, taxes, handling",
+          "calculation": "unit_cost + (unit_cost × overhead_percentage)"
+        },
+        {
+          "column": "target_markup_percentage",
+          "type": "DECIMAL(5,2)",
+          "description": "Target markup for this drug category",
+          "example": "Essential medicines: 30%, Brand drugs: 50%"
+        },
+        {
+          "column": "actual_markup_percentage",
+          "type": "DECIMAL(5,2) GENERATED",
+          "description": "Calculated: ((selling_price - landed_cost) / landed_cost) × 100"
+        },
+        {
+          "column": "recommended_selling_price",
+          "type": "DECIMAL(10,2) GENERATED",
+          "description": "landed_cost × (1 + target_markup_percentage/100)"
+        },
+        {
+          "column": "margin_status",
+          "type": "VARCHAR(20) GENERATED",
+          "description": "below_target, at_target, above_target"
+        }
+      ],
+      "example_record": {
+        "drug_name": "Paracetamol 500mg",
+        "unit_cost": 0.30,
+        "landed_cost": 0.33,
+        "target_markup_percentage": 40.00,
+        "selling_price": 0.45,
+        "recommended_selling_price": 0.46,
+        "actual_markup_percentage": 36.36,
+        "profit_per_unit": 0.12,
+        "margin_status": "below_target",
+        "note": "Selling slightly below target margin"
+      }
+    },
+
+    "category_profit_settings": {
+      "table": "category_profit_settings (NEW)",
+      "description": "Set target profit margins at category level",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "organization_id UUID REFERENCES organizations(id)",
+        "category VARCHAR(100) (clinical_services, laboratory, radiology, pharmacy, etc.)",
+        "subcategory VARCHAR(100) (e.g., 'essential_medicines', 'brand_drugs', 'hematology_tests')",
+        
+        "-- Target margins --",
+        "target_profit_percentage DECIMAL(5,2) NOT NULL",
+        "minimum_profit_percentage DECIMAL(5,2) (Alert if below this)",
+        
+        "-- Pricing strategy --",
+        "pricing_strategy VARCHAR(50) (cost_plus, market_based, value_based, competitive)",
+        "auto_adjust_prices BOOLEAN DEFAULT FALSE (Auto-update prices when costs change)",
+        
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "examples": [
+        {
+          "category": "pharmacy",
+          "subcategory": "essential_medicines",
+          "target_profit_percentage": 30.00,
+          "minimum_profit_percentage": 20.00,
+          "pricing_strategy": "cost_plus",
+          "note": "Ghana regulation: max 30% on essential medicines"
+        },
+        {
+          "category": "pharmacy",
+          "subcategory": "brand_drugs",
+          "target_profit_percentage": 50.00,
+          "minimum_profit_percentage": 35.00,
+          "pricing_strategy": "market_based"
+        },
+        {
+          "category": "laboratory",
+          "subcategory": "hematology",
+          "target_profit_percentage": 60.00,
+          "minimum_profit_percentage": 40.00,
+          "pricing_strategy": "cost_plus"
+        },
+        {
+          "category": "clinical_services",
+          "subcategory": "consultation",
+          "target_profit_percentage": 100.00,
+          "minimum_profit_percentage": 75.00,
+          "pricing_strategy": "value_based"
+        }
+      ]
+    },
+
+    "cost_components": {
+      "table": "cost_components (NEW)",
+      "description": "Break down costs for activity-based costing",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "service_id UUID REFERENCES service_catalog(id)",
+        "component_type VARCHAR(100) (labor, materials, overhead, equipment, utilities)",
+        "component_name VARCHAR(200)",
+        "cost_amount DECIMAL(10,2)",
+        "percentage_of_total DECIMAL(5,2)",
+        "is_variable BOOLEAN (Variable vs fixed cost)",
+        "notes TEXT"
+      ],
+      "example_consultation_breakdown": [
+        {
+          "service": "Consultation - General Doctor",
+          "total_cost": 25.00,
+          "components": [
+            { "type": "labor", "name": "Doctor salary (30 min)", "cost": 15.00, "percentage": 60, "variable": false },
+            { "type": "overhead", "name": "Facility cost", "cost": 5.00, "percentage": 20, "variable": false },
+            { "type": "materials", "name": "Medical supplies", "cost": 2.00, "percentage": 8, "variable": true },
+            { "type": "equipment", "name": "Equipment depreciation", "cost": 2.00, "percentage": 8, "variable": false },
+            { "type": "utilities", "name": "Electricity, water", "cost": 1.00, "percentage": 4, "variable": true }
+          ]
+        }
+      ],
+      "example_lab_test_breakdown": [
+        {
+          "service": "Complete Blood Count (CBC)",
+          "total_cost": 20.00,
+          "components": [
+            { "type": "materials", "name": "Reagents", "cost": 8.00, "percentage": 40, "variable": true },
+            { "type": "labor", "name": "Lab tech time", "cost": 6.00, "percentage": 30, "variable": false },
+            { "type": "equipment", "name": "Analyzer usage", "cost": 4.00, "percentage": 20, "variable": false },
+            { "type": "overhead", "name": "Lab overhead", "cost": 2.00, "percentage": 10, "variable": false }
+          ]
+        }
+      ]
+    },
+
+    "cost_history": {
+      "table": "cost_history (NEW)",
+      "description": "Track cost changes over time for trend analysis",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "service_id UUID REFERENCES service_catalog(id)",
+        "drug_id UUID REFERENCES drug_formulary(id) NULL",
+        "old_cost DECIMAL(10,2)",
+        "new_cost DECIMAL(10,2)",
+        "cost_change_amount DECIMAL(10,2)",
+        "cost_change_percentage DECIMAL(5,2)",
+        "change_reason TEXT",
+        "effective_date DATE",
+        "recorded_by UUID REFERENCES users(id)",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "use_case": "Track supplier price increases, analyze cost trends, predict future costs"
+    }
+  },
+
+  "profit_margin_calculations": {
+    "calculation_formulas": {
+      "gross_profit": {
+        "formula": "Gross Profit = Selling Price - Cost Price",
+        "example": "Consultation: ₵50 - ₵25 = ₵25"
+      },
+      "profit_margin_percentage": {
+        "formula": "Profit Margin % = (Gross Profit / Cost Price) × 100",
+        "example": "Consultation: (₵25 / ₵25) × 100 = 100%",
+        "interpretation": "For every ₵1 spent, we make ₵1 profit"
+      },
+      "markup_percentage": {
+        "formula": "Markup % = (Gross Profit / Cost Price) × 100",
+        "note": "Same as profit margin % (different from markup on selling price)"
+      },
+      "gross_margin_on_selling_price": {
+        "formula": "Gross Margin % = (Gross Profit / Selling Price) × 100",
+        "example": "Consultation: (₵25 / ₵50) × 100 = 50%",
+        "interpretation": "Profit is 50% of selling price"
+      },
+      "contribution_margin": {
+        "formula": "Contribution Margin = Selling Price - Variable Costs",
+        "use": "For break-even analysis"
+      }
+    },
+
+    "profitability_tiers": {
+      "description": "Categorize services by profit margin",
+      "tiers": [
+        {
+          "tier": "Loss-making",
+          "margin_range": "< 0%",
+          "color": "red",
+          "action": "Immediate review - Increase price or reduce cost",
+          "example": "Lab test costs ₵40, sells for ₵35 (NHIS rate)"
+        },
+        {
+          "tier": "Low margin",
+          "margin_range": "0% - 20%",
+          "color": "orange",
+          "action": "Review pricing - May not be sustainable",
+          "example": "Drug costs ₵10, sells for ₵11 (10% margin)"
+        },
+        {
+          "tier": "Below target",
+          "margin_range": "20% - target",
+          "color": "yellow",
+          "action": "Consider price adjustment",
+          "example": "Target 40%, actual 30%"
+        },
+        {
+          "tier": "At target",
+          "margin_range": "target ± 5%",
+          "color": "green",
+          "action": "Maintain current pricing",
+          "example": "Target 50%, actual 48-52%"
+        },
+        {
+          "tier": "High margin",
+          "margin_range": "> target + 20%",
+          "color": "blue",
+          "action": "Consider price reduction or premium positioning",
+          "example": "Target 40%, actual 70%"
+        }
+      ]
+    }
+  },
+
+  "automated_pricing_recommendations": {
+    "description": "System suggests optimal prices based on target margins",
+    "algorithm": "```javascript\nfunction calculateRecommendedPrice({\n  costPrice,\n  targetProfitPercentage,\n  category,\n  subcategory,\n  minPrice = null,\n  maxPrice = null\n}) {\n  // 1. Get category-level target if service-level not set\n  if (!targetProfitPercentage) {\n    const categorySettings = await getCategoryProfitSettings(category, subcategory);\n    targetProfitPercentage = categorySettings.target_profit_percentage;\n  }\n  \n  // 2. Calculate recommended price\n  const recommendedPrice = costPrice * (1 + targetProfitPercentage / 100);\n  \n  // 3. Apply constraints\n  let finalPrice = recommendedPrice;\n  \n  if (minPrice && finalPrice < minPrice) {\n    finalPrice = minPrice;\n  }\n  \n  if (maxPrice && finalPrice > maxPrice) {\n    finalPrice = maxPrice;\n  }\n  \n  // 4. Check regulations\n  if (category === 'pharmacy' && subcategory === 'essential_medicines') {\n    const maxAllowedPrice = costPrice * 1.30; // Ghana: max 30% markup\n    if (finalPrice > maxAllowedPrice) {\n      finalPrice = maxAllowedPrice;\n      warnings.push('Price capped at 30% due to essential medicines regulation');\n    }\n  }\n  \n  // 5. Round to nearest 0.05 or 0.50 for practical pricing\n  finalPrice = Math.ceil(finalPrice * 20) / 20; // Round to nearest 0.05\n  \n  return {\n    costPrice,\n    targetProfitPercentage,\n    recommendedPrice: finalPrice,\n    actualProfitAmount: finalPrice - costPrice,\n    actualProfitPercentage: ((finalPrice - costPrice) / costPrice) * 100,\n    warnings\n  };\n}\n```",
+    "example_calls": [
+      {
+        "input": {
+          "costPrice": 25.00,
+          "targetProfitPercentage": 100.00,
+          "category": "clinical_services"
+        },
+        "output": {
+          "recommendedPrice": 50.00,
+          "actualProfitAmount": 25.00,
+          "actualProfitPercentage": 100.00
+        }
+      },
+      {
+        "input": {
+          "costPrice": 0.30,
+          "targetProfitPercentage": 50.00,
+          "category": "pharmacy",
+          "subcategory": "essential_medicines"
+        },
+        "output": {
+          "recommendedPrice": 0.40,
+          "actualProfitAmount": 0.10,
+          "actualProfitPercentage": 33.33,
+          "warnings": ["Price capped at 30% due to essential medicines regulation"]
+        }
+      }
+    ]
+  },
+
+  "real_world_examples": {
+    "example_1_consultation": {
+      "service": "Consultation - General Doctor",
+      "cost_breakdown": {
+        "doctor_salary_30min": 15.00,
+        "facility_overhead": 5.00,
+        "medical_supplies": 2.00,
+        "equipment_depreciation": 2.00,
+        "utilities": 1.00,
+        "total_cost": 25.00
+      },
+      "pricing_analysis": {
+        "cost_price": 25.00,
+        "selling_price_cash": 50.00,
+        "selling_price_nhis": 30.00,
+        "cash_profit": 25.00,
+        "cash_profit_margin": "100%",
+        "nhis_profit": 5.00,
+        "nhis_profit_margin": "20%",
+        "conclusion": "Cash patients very profitable, NHIS barely profitable"
+      }
+    },
+
+    "example_2_drug": {
+      "drug": "Paracetamol 500mg",
+      "cost_breakdown": {
+        "supplier_cost": 0.30,
+        "shipping": 0.02,
+        "handling": 0.01,
+        "landed_cost": 0.33
+      },
+      "pricing_analysis": {
+        "landed_cost": 0.33,
+        "target_markup": "40%",
+        "recommended_price": 0.46,
+        "current_selling_price": 0.45,
+        "actual_profit": 0.12,
+        "actual_markup": "36.4%",
+        "status": "Below target by 3.6%",
+        "recommendation": "Increase to ₵0.46 to meet target margin"
+      }
+    },
+
+    "example_3_lab_test": {
+      "test": "Complete Blood Count (CBC)",
+      "cost_breakdown": {
+        "reagents": 8.00,
+        "lab_tech_time": 6.00,
+        "analyzer_usage": 4.00,
+        "lab_overhead": 2.00,
+        "total_cost": 20.00
+      },
+      "pricing_analysis": {
+        "cost_price": 20.00,
+        "selling_price_cash": 40.00,
+        "selling_price_nhis": 35.00,
+        "target_margin": "100%",
+        "cash_margin": "100%",
+        "nhis_margin": "75%",
+        "status": "Cash at target, NHIS below target",
+        "conclusion": "NHIS underpays but still profitable"
+      }
+    },
+
+    "example_4_loss_making_service": {
+      "service": "HIV Test (NHIS)",
+      "cost_breakdown": {
+        "test_kit": 15.00,
+        "counseling_time": 8.00,
+        "overhead": 2.00,
+        "total_cost": 25.00
+      },
+      "pricing_analysis": {
+        "cost_price": 25.00,
+        "nhis_reimbursement": 0.00,
+        "cash_price": 25.00,
+        "profit_nhis": -25.00,
+        "profit_cash": 0.00,
+        "status": "LOSS-MAKING on NHIS (government subsidy)",
+        "conclusion": "Accept NHIS loss as social service, charge cash patients cost price"
+      }
+    }
+  },
+
+  "profitability_reports": {
+    "report_1_service_profitability": {
+      "name": "Service Profitability Report",
+      "endpoint": "GET /api/finance/reports/service-profitability",
+      "filters": [
+        "category",
+        "date_range",
+        "branch_id",
+        "min_margin",
+        "max_margin"
+      ],
+      "output": [
+        {
+          "service_code": "CONS-GEN",
+          "service_name": "Consultation - GP",
+          "cost_price": 25.00,
+          "selling_price": 50.00,
+          "profit_per_service": 25.00,
+          "profit_margin_percentage": 100.00,
+          "volume_last_month": 450,
+          "total_revenue": 22500.00,
+          "total_cost": 11250.00,
+          "total_profit": 11250.00,
+          "margin_status": "at_target",
+          "rank": 1
+        },
+        {
+          "service_code": "LAB-CBC",
+          "service_name": "Complete Blood Count",
+          "cost_price": 20.00,
+          "selling_price": 40.00,
+          "profit_per_service": 20.00,
+          "profit_margin_percentage": 100.00,
+          "volume_last_month": 200,
+          "total_revenue": 8000.00,
+          "total_cost": 4000.00,
+          "total_profit": 4000.00,
+          "margin_status": "at_target",
+          "rank": 2
+        }
+      ],
+      "visualization": "Table sorted by profit margin, color-coded by margin status"
+    },
+
+    "report_2_category_profitability": {
+      "name": "Category Profitability Summary",
+      "endpoint": "GET /api/finance/reports/category-profitability",
+      "output": [
+        {
+          "category": "Clinical Services",
+          "total_revenue": 125000.00,
+          "total_cost": 62500.00,
+          "total_profit": 62500.00,
+          "average_margin": "100%",
+          "top_service": "Consultation - Specialist",
+          "bottom_service": "Triage"
+        },
+        {
+          "category": "Laboratory",
+          "total_revenue": 45000.00,
+          "total_cost": 25000.00,
+          "total_profit": 20000.00,
+          "average_margin": "80%",
+          "top_service": "Lipid Panel",
+          "bottom_service": "Malaria RDT"
+        },
+        {
+          "category": "Pharmacy",
+          "total_revenue": 85000.00,
+          "total_cost": 60000.00,
+          "total_profit": 25000.00,
+          "average_margin": "42%",
+          "top_service": "Brand drugs",
+          "bottom_service": "Essential medicines (30% cap)"
+        }
+      ]
+    },
+
+    "report_3_nhis_vs_cash_profitability": {
+      "name": "NHIS vs Cash Profitability",
+      "description": "Compare profitability of NHIS vs cash patients",
+      "output": {
+        "cash_patients": {
+          "total_revenue": 180000.00,
+          "total_cost": 90000.00,
+          "total_profit": 90000.00,
+          "average_margin": "100%",
+          "patient_count": 3600
+        },
+        "nhis_patients": {
+          "total_revenue": 75000.00,
+          "total_cost": 62500.00,
+          "total_profit": 12500.00,
+          "average_margin": "20%",
+          "patient_count": 2500
+        },
+        "analysis": {
+          "cash_profit_per_patient": 25.00,
+          "nhis_profit_per_patient": 5.00,
+          "conclusion": "Cash patients 5× more profitable than NHIS",
+          "recommendation": "NHIS essential for volume but cash patients drive profit"
+        }
+      }
+    },
+
+    "report_4_low_margin_alerts": {
+      "name": "Low Margin Alert Report",
+      "description": "Services below minimum acceptable margin",
+      "endpoint": "GET /api/finance/reports/low-margin-alerts",
+      "output": [
+        {
+          "service": "Drug - Paracetamol",
+          "cost_price": 0.33,
+          "selling_price": 0.40,
+          "margin": "21%",
+          "target_margin": "30%",
+          "gap": "-9%",
+          "status": "Below minimum",
+          "action": "Increase price to ₵0.43",
+          "volume_monthly": 5000,
+          "lost_profit_monthly": 150.00
+        }
+      ]
+    },
+
+    "report_5_cost_trend_analysis": {
+      "name": "Cost Trend Analysis",
+      "description": "Track cost changes over time",
+      "output": {
+        "service": "Complete Blood Count",
+        "cost_history": [
+          { "date": "2024-01", "cost": 18.00, "reason": "Reagent price stable" },
+          { "date": "2024-02", "cost": 19.00, "reason": "Reagent supplier increased 5%" },
+          { "date": "2024-03", "cost": 20.00, "reason": "Added quality control costs" }
+        ],
+        "trend": "Increasing 11% over 3 months",
+        "current_selling_price": 40.00,
+        "margin_erosion": "From 122% to 100%",
+        "recommendation": "Consider price increase to ₵42 to restore margin"
+      }
+    }
+  },
+
+  "api_endpoints": {
+    "cost_management": [
+      {
+        "endpoint": "PUT /api/finance/services/:id/cost",
+        "description": "Update service cost price",
+        "permission": "MANAGE_COSTS",
+        "request_body": {
+          "newCostPrice": 27.00,
+          "changeReason": "Salary increase",
+          "effectiveDate": "2024-04-01"
+        },
+        "side_effects": [
+          "Update service_catalog.cost_price",
+          "Create record in cost_history",
+          "Recalculate profit margins",
+          "If auto_adjust_prices = TRUE, update selling price",
+          "Log COST_CHANGED in audit_logs"
+        ]
+      },
+      {
+        "endpoint": "POST /api/finance/services/:id/cost-breakdown",
+        "description": "Add cost component breakdown",
+        "permission": "MANAGE_COSTS",
+        "request_body": {
+          "components": [
+            { "type": "labor", "name": "Doctor salary", "cost": 15.00 },
+            { "type": "overhead", "name": "Facility", "cost": 5.00 }
+          ]
+        }
+      }
+    ],
+
+    "margin_analysis": [
+      {
+        "endpoint": "GET /api/finance/services/:id/profitability",
+        "description": "Get detailed profitability analysis for a service",
+        "permission": "VIEW_FINANCIAL_REPORTS",
+        "response": {
+          "serviceCode": "CONS-GEN",
+          "costPrice": 25.00,
+          "sellingPrice": 50.00,
+          "nhisPrice": 30.00,
+          "profitCash": 25.00,
+          "profitNHIS": 5.00,
+          "marginCash": "100%",
+          "marginNHIS": "20%",
+          "targetMargin": "100%",
+          "marginStatus": "cash_at_target_nhis_below",
+          "recommendedPriceCash": 50.00,
+          "lastMonthVolume": {
+            "cash": 250,
+            "nhis": 200
+          },
+          "lastMonthProfit": {
+            "cash": 6250.00,
+            "nhis": 1000.00,
+            "total": 7250.00
+          }
+        }
+      },
+      {
+        "endpoint": "GET /api/finance/margin-analysis",
+        "description": "Overall margin analysis",
+        "permission": "VIEW_FINANCIAL_REPORTS",
+        "query_params": {
+          "category": "Filter by category",
+          "branch_id": "Filter by branch",
+          "margin_status": "loss_making, low_margin, below_target, at_target, above_target"
+        },
+        "response": {
+          "summary": {
+            "averageMargin": "72%",
+            "servicesAboveTarget": 45,
+            "servicesBelowTarget": 23,
+            "lossM akingServices": 3
+          },
+          "services": [
+            { "service": "...", "margin": "...", "status": "..." }
+          ]
+        }
+      }
+    ],
+
+    "pricing_recommendations": [
+      {
+        "endpoint": "POST /api/finance/calculate-recommended-price",
+        "description": "Calculate optimal price based on cost and target margin",
+        "permission": "VIEW_PRICE_LIST",
+        "request_body": {
+          "costPrice": 25.00,
+          "targetProfitPercentage": 100.00,
+          "category": "clinical_services"
+        },
+        "response": {
+          "costPrice": 25.00,
+          "recommendedPrice": 50.00,
+          "actualProfitAmount": 25.00,
+          "actualProfitPercentage": 100.00,
+          "warnings": []
+        }
+      },
+      {
+        "endpoint": "POST /api/finance/bulk-adjust-prices",
+        "description": "Adjust prices for multiple services based on margin targets",
+        "permission": "MANAGE_PRICE_LIST",
+        "request_body": {
+          "category": "pharmacy",
+          "subcategory": "essential_medicines",
+          "adjustmentMethod": "set_target_margin",
+          "targetMargin": 30.00
+        },
+        "response": {
+          "servicesAdjusted": 45,
+          "totalPriceIncrease": 125.50,
+          "averageIncreasePercentage": 8.5
+        }
+      }
+    ]
+  },
+
+  "ui_components": {
+    "ProfitabilityDashboard": {
+      "route": "/finance/profitability",
+      "permission": "VIEW_FINANCIAL_REPORTS",
+      "sections": [
+        {
+          "section": "Key Metrics (Cards)",
+          "metrics": [
+            "Average Profit Margin: 72%",
+            "Most Profitable: Specialist Consultation (120%)",
+            "Least Profitable: HIV Test (0% - NHIS)",
+            "Services Below Target: 23"
+          ]
+        },
+        {
+          "section": "Profitability by Category (Bar Chart)",
+          "data": [
+            { "category": "Clinical", "margin": "95%", "color": "green" },
+            { "category": "Laboratory", "margin": "80%", "color": "green" },
+            { "category": "Radiology", "margin": "70%", "color": "yellow" },
+            { "category": "Pharmacy", "margin": "42%", "color": "orange" }
+          ]
+        },
+        {
+          "section": "Low Margin Alerts (Table)",
+          "columns": ["Service", "Cost", "Price", "Margin", "Target", "Gap", "Action"],
+          "data": [
+            {
+              "service": "Paracetamol",
+              "cost": "₵0.33",
+              "price": "₵0.40",
+              "margin": "21%",
+              "target": "30%",
+              "gap": "-9%",
+              "action": "[Adjust Price]"
+            }
+          ]
+        }
+      ],
+      "ui_mockup": "```\n┌────────────────────────────────────────────────────────┐\n│ Profitability Dashboard                                │\n├────────────────────────────────────────────────────────┤\n│ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ │\n│ │Avg Margin│ │Most Profit│ │Least Profit│ │Below   │ │\n│ │   72%    │ │Specialist│ │ HIV Test  │ │Target  │ │\n│ │          │ │  120%    │ │   0%      │ │   23   │ │\n│ └──────────┘ └──────────┘ └──────────┘ └──────────┘ │\n│                                                        │\n│ Profitability by Category                              │\n│ Clinical    ████████████████████ 95% ✓                │\n│ Laboratory  ████████████████ 80% ✓                    │\n│ Radiology   ██████████████ 70% ⚠                      │\n│ Pharmacy    ████████ 42% ⚠                             │\n│                                                        │\n│ 🔴 Low Margin Alerts (Need Attention)                 │\n│ Service      │Cost │Price│Margin│Target│Gap  │Action  │\n│──────────────┼─────┼─────┼──────┼──────┼─────┼────────│\n│ Paracetamol  │₵0.33│₵0.40│ 21%  │ 30%  │ -9% │[Adjust]│\n│ Amoxicillin  │₵0.80│₵0.95│ 19%  │ 30%  │-11% │[Adjust]│\n└────────────────────────────────────────────────────────┘\n```"
+    },
+
+    "ServiceCostEditor": {
+      "route": "/finance/costs",
+      "permission": "MANAGE_COSTS",
+      "features": [
+        "Edit cost price",
+        "View cost breakdown (components)",
+        "See profit margin impact",
+        "Get pricing recommendations",
+        "Track cost history"
+      ],
+      "ui_mockup": "```\n┌────────────────────────────────────────────────────────┐\n│ Edit Cost - Consultation - General Doctor              │\n├────────────────────────────────────────────────────────┤\n│ Cost Price: [₵25.00___]  Last updated: 2024-01-15    │\n│                                                        │\n│ Cost Breakdown:                                        │\n│ ├─ Doctor salary (30 min)  ₵15.00  (60%)             │\n│ ├─ Facility overhead        ₵5.00   (20%)             │\n│ ├─ Medical supplies         ₵2.00   (8%)              │\n│ ├─ Equipment depreciation   ₵2.00   (8%)              │\n│ └─ Utilities                ₵1.00   (4%)              │\n│                                                        │\n│ Current Selling Price: ₵50.00                          │\n│ Current Margin: 100% ✓ (At target)                     │\n│                                                        │\n│ If cost increases to ₵27.00:                           │\n│ └─ Margin drops to 85% ⚠ (Below target)               │\n│ └─ Recommended new price: ₵54.00 (to maintain margin) │\n│                                                        │\n│ [Update Cost] [Cancel]                                 │\n└────────────────────────────────────────────────────────┘\n```"
+    },
+
+    "PriceOptimizer": {
+      "route": "/finance/price-optimizer",
+      "permission": "MANAGE_PRICE_LIST",
+      "features": [
+        "Select category/subcategory",
+        "Set target margin",
+        "Preview price changes",
+        "Bulk apply price adjustments"
+      ],
+      "ui_mockup": "```\n┌────────────────────────────────────────────────────────┐\n│ Price Optimizer                                        │\n├────────────────────────────────────────────────────────┤\n│ Category: [Pharmacy ▼]  Subcategory: [Essential ▼]    │\n│ Target Margin: [30%____] (Max allowed for essential)  │\n│                                                        │\n│ [Calculate Recommended Prices]                         │\n│                                                        │\n│ Preview Changes (45 drugs):                            │\n│ Drug         │Current│Recommend│Change│New Margin      │\n│──────────────┼───────┼─────────┼──────┼────────────────│\n│ Paracetamol  │₵0.40  │₵0.43    │+₵0.03│30% ✓           │\n│ Amoxicillin  │₵0.95  │₵1.04    │+₵0.09│30% ✓           │\n│ ...                                                    │\n│                                                        │\n│ Total Impact:                                          │\n│ - Average price increase: 8.5%                         │\n│ - Additional monthly profit: ₵1,250                    │\n│                                                        │\n│ [Apply Changes] [Cancel]                               │\n└────────────────────────────────────────────────────────┘\n```"
+    }
+  },
+
+  "integration_scenarios": {
+    "scenario_1_cost_increase": {
+      "trigger": "Supplier increases drug cost",
+      "workflow": [
+        "1. Pharmacist receives new invoice from supplier",
+        "2. Updates drug cost in system: Paracetamol ₵0.30 → ₵0.35",
+        "3. System creates cost_history record",
+        "4. System recalculates profit margin: 40% → 29%",
+        "5. System generates alert: 'Paracetamol margin dropped below target'",
+        "6. System recommends new price: ₵0.49 (to restore 40% margin)",
+        "7. Finance officer reviews recommendation",
+        "8. Updates selling price OR accepts lower margin"
+      ]
+    },
+
+    "scenario_2_nhis_tariff_update": {
+      "trigger": "NHIA announces new tariff (annual)",
+      "workflow": [
+        "1. NHIA publishes new tariff list",
+        "2. Finance officer imports new NHIS prices",
+        "3. System compares: Old NHIS price vs New NHIS price vs Cost",
+        "4. System flags services where new NHIS price < cost (loss-making)",
+        "5. Generate report: 'Impact of NHIS Tariff Changes'",
+        "6. Hospital admin decides: Accept losses OR stop offering to NHIS"
+      ],
+      "example": {
+        "service": "Complete Blood Count",
+        "cost": 20.00,
+        "old_nhis_price": 35.00,
+        "new_nhis_price": 32.00,
+        "old_margin": "75%",
+        "new_margin": "60%",
+        "impact": "Margin reduced but still profitable - Accept"
+      }
+    },
+
+    "scenario_3_new_service_pricing": {
+      "trigger": "Hospital adds new service",
+      "workflow": [
+        "1. Finance officer creates new service in catalog",
+        "2. Enters cost breakdown components",
+        "3. System calculates total cost",
+        "4. System applies category target margin",
+        "5. System recommends selling price",
+        "6. Finance officer reviews and approves",
+        "7. Service is now available with pricing"
+      ],
+      "example": {
+        "service": "ECG (New service)",
+        "cost_components": {
+          "equipment_usage": 15.00,
+          "technician_time": 10.00,
+          "supplies": 5.00,
+          "overhead": 5.00,
+          "total_cost": 35.00
+        },
+        "category": "clinical_services",
+        "target_margin": "100%",
+        "recommended_price": 70.00,
+        "final_price": 75.00
+      }
+    }
+  },
+
+  "implementation_checklist": [
+    "☐ Add cost tracking columns to service_catalog",
+    "☐ Add cost tracking to drug_formulary",
+    "☐ Create category_profit_settings table",
+    "☐ Create cost_components table",
+    "☐ Create cost_history table",
+    "☐ Build cost price update API",
+    "☐ Build profit margin calculation functions",
+    "☐ Build pricing recommendation engine",
+    "☐ Create profitability dashboard",
+    "☐ Create cost editor UI",
+    "☐ Create price optimizer UI",
+    "☐ Add profit margin to billing invoices",
+    "☐ Set up low margin alerts",
+    "☐ Train finance team on cost tracking",
+    "☐ Import initial cost data"
+  ],
+
+  "success_metrics": [
+    "✅ All services have cost prices defined",
+    "✅ Profit margins calculated for all services",
+    "✅ Low margin services identified",
+    "✅ Pricing recommendations generated",
+    "✅ Cost trends tracked over time",
+    "✅ Finance team can make data-driven pricing decisions",
+    "✅ Average profit margin across categories known",
+    "✅ NHIS vs cash profitability understood"
+  ]
+}

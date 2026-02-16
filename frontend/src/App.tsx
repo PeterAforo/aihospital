@@ -6,6 +6,9 @@ import { RootState } from './store';
 import MainLayout from './components/layout/MainLayout';
 import AuthLayout from './components/layout/AuthLayout';
 
+// Contexts
+import { NotificationProvider } from './contexts/NotificationContext';
+
 // Auth Pages
 import LoginPage from './pages/auth/LoginPage';
 
@@ -30,12 +33,74 @@ import TriageStation from './pages/triage/TriageStation';
 // EMR Pages
 import EncounterWorkspace from './pages/emr/EncounterWorkspace';
 import EMRDashboard from './pages/emr/EMRDashboard';
+import LabResultsDashboard from './pages/emr/LabResultsDashboard';
 
 // Walk-in
 import WalkInRegistration from './pages/walkin/WalkInRegistration';
 
 // Settings
 import UserManagement from './pages/settings/UserManagement';
+import SettingsPage from './pages/settings/SettingsPage';
+
+// Pharmacy
+import PharmacyDashboard from './pages/pharmacy/PharmacyDashboard';
+import DispensingQueue from './pages/pharmacy/DispensingQueue';
+import StockManagement from './pages/pharmacy/StockManagement';
+import DispenseDetail from './pages/pharmacy/DispenseDetail';
+import PurchaseOrderManagement from './pages/pharmacy/PurchaseOrderManagement';
+import SupplierManagement from './pages/pharmacy/SupplierManagement';
+
+// Laboratory
+import LabDashboard from './pages/laboratory/LabDashboard';
+import LabWorklist from './pages/laboratory/LabWorklist';
+import LabOrderDetail from './pages/laboratory/LabOrderDetail';
+import LabVerificationQueue from './pages/laboratory/LabVerificationQueue';
+import LabReport from './pages/laboratory/LabReport';
+
+// Billing
+import BillingDashboard from './pages/billing/BillingDashboard';
+import InvoiceList from './pages/billing/InvoiceList';
+import InvoiceDetail from './pages/billing/InvoiceDetail';
+import OutstandingInvoices from './pages/billing/OutstandingInvoices';
+import NHISClaimsManager from './pages/billing/NHISClaimsManager';
+
+// Finance
+import FinancePricingPage from './pages/finance/FinancePricingPage';
+import ProfitabilityDashboard from './pages/finance/ProfitabilityDashboard';
+
+// Reports & Analytics
+import AnalyticsDashboard from './pages/reports/AnalyticsDashboard';
+
+// Radiology
+import RadiologyWorklist from './pages/radiology/RadiologyWorklist';
+import RadiologyOrderDetail from './pages/radiology/RadiologyOrderDetail';
+
+// Theatre
+import TheatreSchedule from './pages/theatre/TheatreSchedule';
+
+// Maternity
+import MaternityDashboard from './pages/maternity/MaternityDashboard';
+
+// Emergency
+import EmergencyBoard from './pages/emergency/EmergencyBoard';
+
+// Inventory
+import InventoryDashboard from './pages/inventory/InventoryDashboard';
+
+// Equipment
+import EquipmentDashboard from './pages/equipment/EquipmentDashboard';
+
+// HR
+import HRDashboard from './pages/hr/HRDashboard';
+
+// Inpatient
+import WardBedManagement from './pages/inpatient/WardBedManagement';
+
+// Portal
+import PortalRedirect from './pages/portal/PortalRedirect';
+import AdmissionsPage from './pages/inpatient/AdmissionsPage';
+import AdmissionDetailPage from './pages/inpatient/AdmissionDetail';
+import NewAdmission from './pages/inpatient/NewAdmission';
 
 // Registration
 import RegistrationWizard from './pages/registration/RegistrationWizard';
@@ -66,7 +131,9 @@ function App() {
       <Route
         element={
           <ProtectedRoute>
-            <MainLayout />
+            <NotificationProvider>
+              <MainLayout />
+            </NotificationProvider>
           </ProtectedRoute>
         }
       >
@@ -91,12 +158,74 @@ function App() {
         {/* EMR / Encounters */}
         <Route path="/emr" element={<EMRDashboard />} />
         <Route path="/encounters/:encounterId" element={<EncounterWorkspace />} />
+        <Route path="/emr/lab-results" element={<LabResultsDashboard />} />
         
         {/* OPD */}
         <Route path="/opd" element={<WalkInRegistration />} />
         
         {/* Settings */}
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/settings/users" element={<UserManagement />} />
+        
+        {/* Pharmacy */}
+        <Route path="/pharmacy" element={<PharmacyDashboard />} />
+        <Route path="/pharmacy/queue" element={<DispensingQueue />} />
+        <Route path="/pharmacy/stock" element={<StockManagement />} />
+        <Route path="/pharmacy/dispense/:prescriptionId" element={<DispenseDetail />} />
+        <Route path="/pharmacy/purchase-orders" element={<PurchaseOrderManagement />} />
+        <Route path="/pharmacy/suppliers" element={<SupplierManagement />} />
+        
+        {/* Laboratory */}
+        <Route path="/lab" element={<LabDashboard />} />
+        <Route path="/lab/worklist" element={<LabWorklist />} />
+        <Route path="/lab/verification" element={<LabVerificationQueue />} />
+        <Route path="/lab/order/:orderId" element={<LabOrderDetail />} />
+        <Route path="/lab/report/:orderId" element={<LabReport />} />
+        
+        {/* Billing */}
+        <Route path="/billing" element={<BillingDashboard />} />
+        <Route path="/billing/invoices" element={<InvoiceList />} />
+        <Route path="/billing/invoices/:invoiceId" element={<InvoiceDetail />} />
+        <Route path="/billing/outstanding" element={<OutstandingInvoices />} />
+        <Route path="/billing/nhis" element={<NHISClaimsManager />} />
+        
+        {/* Finance & Pricing */}
+        <Route path="/finance/pricing" element={<FinancePricingPage />} />
+        <Route path="/finance/profitability" element={<ProfitabilityDashboard />} />
+        
+        {/* Reports & Analytics */}
+        <Route path="/reports/analytics" element={<AnalyticsDashboard />} />
+        
+        {/* Radiology */}
+        <Route path="/radiology" element={<RadiologyWorklist />} />
+        <Route path="/radiology/orders/:orderId" element={<RadiologyOrderDetail />} />
+
+        {/* Theatre */}
+        <Route path="/theatre" element={<TheatreSchedule />} />
+
+        {/* Maternity */}
+        <Route path="/maternity" element={<MaternityDashboard />} />
+
+        {/* Emergency */}
+        <Route path="/emergency" element={<EmergencyBoard />} />
+
+        {/* Inventory */}
+        <Route path="/inventory" element={<InventoryDashboard />} />
+
+        {/* Equipment */}
+        <Route path="/equipment" element={<EquipmentDashboard />} />
+
+        {/* HR & Payroll */}
+        <Route path="/hr" element={<HRDashboard />} />
+
+        {/* Patient Portal */}
+        <Route path="/portal" element={<PortalRedirect />} />
+
+        {/* Inpatient */}
+        <Route path="/inpatient/wards" element={<WardBedManagement />} />
+        <Route path="/inpatient/admissions" element={<AdmissionsPage />} />
+        <Route path="/inpatient/admissions/:admissionId" element={<AdmissionDetailPage />} />
+        <Route path="/inpatient/admit" element={<NewAdmission />} />
       </Route>
 
       {/* 404 */}

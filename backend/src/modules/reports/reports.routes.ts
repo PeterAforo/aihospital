@@ -1,6 +1,7 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { ReportsController } from './reports.controller.js';
 import { authenticate, tenantGuard } from '../../common/middleware/auth.js';
+import { analyticsService } from './analytics.service.js';
 
 const router: Router = Router();
 const reportsController = new ReportsController();
@@ -20,5 +21,67 @@ router.get('/patients/:patientId/branch-activity', reportsController.getPatientB
 
 // Audit logs
 router.get('/audit-logs', reportsController.getAuditLogs);
+
+// ==================== ANALYTICS ENDPOINTS ====================
+
+router.get('/analytics/executive', async (req: any, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const data = await analyticsService.getExecutiveSummary(
+      req.tenantId!, startDate ? new Date(startDate as string) : undefined, endDate ? new Date(endDate as string) : undefined
+    );
+    res.json({ success: true, data });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/analytics/revenue', async (req: any, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const data = await analyticsService.getRevenueAnalytics(
+      req.tenantId!, startDate ? new Date(startDate as string) : undefined, endDate ? new Date(endDate as string) : undefined
+    );
+    res.json({ success: true, data });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/analytics/clinical', async (req: any, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const data = await analyticsService.getClinicalAnalytics(
+      req.tenantId!, startDate ? new Date(startDate as string) : undefined, endDate ? new Date(endDate as string) : undefined
+    );
+    res.json({ success: true, data });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/analytics/pharmacy', async (req: any, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const data = await analyticsService.getPharmacyAnalytics(
+      req.tenantId!, startDate ? new Date(startDate as string) : undefined, endDate ? new Date(endDate as string) : undefined
+    );
+    res.json({ success: true, data });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/analytics/lab', async (req: any, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const data = await analyticsService.getLabAnalytics(
+      req.tenantId!, startDate ? new Date(startDate as string) : undefined, endDate ? new Date(endDate as string) : undefined
+    );
+    res.json({ success: true, data });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/analytics/appointments', async (req: any, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const data = await analyticsService.getAppointmentAnalytics(
+      req.tenantId!, startDate ? new Date(startDate as string) : undefined, endDate ? new Date(endDate as string) : undefined
+    );
+    res.json({ success: true, data });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
 
 export default router;

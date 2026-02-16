@@ -34,6 +34,19 @@ export class AuthController {
     }
   }
 
+  async getMe(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user?.userId) {
+        sendError(res, 'Not authenticated', 401);
+        return;
+      }
+      const user = await authService.getMe(req.user.userId);
+      sendSuccess(res, user, 'User profile retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async logout(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       if (req.user?.userId) {

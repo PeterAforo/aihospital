@@ -1,0 +1,854 @@
+{
+  "module_name": "Finance & Pricing Management Module",
+  "priority": "CRITICAL - Must build BEFORE Billing",
+  "position": "Foundation Module - Phase 0 (alongside RBAC)",
+  "implementation_time": "2-3 weeks",
+  
+  "problem_statement": {
+    "question": "Where do we set prices for everything in the hospital?",
+    "examples": [
+      "Consultation fee: ₵50 for general doctor, ₵100 for specialist",
+      "Triage fee: ₵10",
+      "Lab test - Malaria RDT: ₵15",
+      "Drug - Paracetamol 500mg: ₵0.50 per tablet",
+      "X-ray: ₵80",
+      "Bed per night: ₵150"
+    ],
+    "complexity": "Multi-level pricing: Organization default → Branch override → Insurance/NHIS rates"
+  },
+
+  "solution_architecture": {
+    "name": "Centralized Finance & Pricing Module",
+    "location": "Tenant/Organization Settings",
+    "managed_by": "HOSPITAL_ADMIN or FINANCE_OFFICER",
+    "scope": [
+      "Organization-wide default pricing",
+      "Branch-specific pricing overrides",
+      "NHIS pricing (what NHIS pays)",
+      "Insurance company pricing",
+      "Discount schemes",
+      "Package pricing (e.g., ANC package)"
+    ]
+  },
+
+  "pricing_hierarchy": {
+    "description": "How prices are resolved when creating an invoice",
+    "priority_order": [
+      "1. Branch-specific price (if set) - HIGHEST PRIORITY",
+      "2. Organization default price",
+      "3. NHIS price (if patient has NHIS)",
+      "4. Insurance price (if patient has insurance)",
+      "5. System default (fallback)"
+    ],
+    "example": {
+      "scenario": "Patient with NHIS visits Tema Clinic for consultation",
+      "resolution": [
+        "Check: Does Tema Clinic have specific consultation price? No",
+        "Check: Does organization have default consultation price? Yes - ₵50",
+        "Check: Is patient NHIS? Yes",
+        "Check: What does NHIS pay for consultation? ₵30",
+        "Result: Charge ₵30 (NHIS rate), claim ₵30 from NHIS"
+      ]
+    }
+  },
+
+  "price_categories": {
+    "category_1_clinical_services": {
+      "description": "Professional fees and clinical services",
+      "items": [
+        {
+          "service": "Consultation - General Doctor",
+          "code": "CONS-GEN",
+          "category": "clinical_services",
+          "default_price": 50,
+          "nhis_price": 30,
+          "unit": "per_visit",
+          "taxable": false,
+          "is_nhis_covered": true
+        },
+        {
+          "service": "Consultation - Specialist",
+          "code": "CONS-SPEC",
+          "category": "clinical_services",
+          "default_price": 100,
+          "nhis_price": 60,
+          "unit": "per_visit",
+          "specialties": ["Cardiology", "Neurology", "Dermatology"],
+          "is_nhis_covered": true
+        },
+        {
+          "service": "Triage",
+          "code": "TRIAGE",
+          "default_price": 10,
+          "nhis_price": 10,
+          "unit": "per_patient",
+          "is_nhis_covered": true
+        },
+        {
+          "service": "Emergency Consultation",
+          "code": "CONS-EMER",
+          "default_price": 150,
+          "nhis_price": 100,
+          "unit": "per_visit",
+          "is_nhis_covered": true
+        },
+        {
+          "service": "Minor Procedure",
+          "code": "PROC-MINOR",
+          "default_price": 200,
+          "nhis_price": 150,
+          "examples": ["Wound suturing", "Abscess drainage", "Foreign body removal"]
+        },
+        {
+          "service": "Major Surgery",
+          "code": "SURG-MAJOR",
+          "default_price": 2000,
+          "nhis_price": 1500,
+          "examples": ["Appendectomy", "Cesarean section", "Hernia repair"]
+        },
+        {
+          "service": "Antenatal Care Visit",
+          "code": "ANC-VISIT",
+          "default_price": 40,
+          "nhis_price": 30,
+          "is_nhis_covered": true
+        },
+        {
+          "service": "Immunization",
+          "code": "IMMUN",
+          "default_price": 20,
+          "nhis_price": 0,
+          "note": "Free under NHIS for children"
+        }
+      ]
+    },
+
+    "category_2_drugs": {
+      "description": "Pharmaceutical products - linked to drug_formulary",
+      "pricing_method": "Mark-up based pricing",
+      "fields": [
+        "unit_cost (what we paid supplier)",
+        "markup_percentage (e.g., 30%)",
+        "selling_price (unit_cost × (1 + markup))",
+        "nhis_price (what NHIS reimburses)"
+      ],
+      "examples": [
+        {
+          "drug": "Paracetamol 500mg tablet",
+          "drug_id": "links to drug_formulary table",
+          "unit_cost": 0.30,
+          "markup_percentage": 50,
+          "selling_price": 0.45,
+          "nhis_price": 0.40,
+          "unit": "per_tablet",
+          "is_nhis_covered": true
+        },
+        {
+          "drug": "Amoxicillin 500mg capsule",
+          "unit_cost": 0.80,
+          "markup_percentage": 40,
+          "selling_price": 1.12,
+          "nhis_price": 1.00,
+          "is_nhis_covered": true
+        },
+        {
+          "drug": "Artemether-Lumefantrine (ACT)",
+          "unit_cost": 8.00,
+          "markup_percentage": 30,
+          "selling_price": 10.40,
+          "nhis_price": 9.00,
+          "is_nhis_covered": true
+        },
+        {
+          "drug": "Insulin NPH 100 units/mL",
+          "unit_cost": 45.00,
+          "markup_percentage": 25,
+          "selling_price": 56.25,
+          "nhis_price": 50.00,
+          "is_nhis_covered": true,
+          "note": "Controlled substance, higher markup restricted"
+        }
+      ],
+      "markup_rules": {
+        "description": "Different markups for different drug categories",
+        "categories": [
+          { "category": "Essential medicines", "max_markup": 30, "reason": "Government regulation" },
+          { "category": "Generic drugs", "typical_markup": 40 },
+          { "category": "Brand drugs", "typical_markup": 50 },
+          { "category": "Controlled substances", "max_markup": 20, "reason": "Strict regulation" },
+          { "category": "Over-the-counter", "typical_markup": 60 }
+        ]
+      }
+    },
+
+    "category_3_laboratory": {
+      "description": "Lab tests and diagnostics",
+      "items": [
+        {
+          "test": "Malaria Rapid Diagnostic Test (RDT)",
+          "code": "LAB-MAL-RDT",
+          "default_price": 15,
+          "nhis_price": 12,
+          "category": "parasitology",
+          "turnaround_time": "30 minutes",
+          "is_nhis_covered": true
+        },
+        {
+          "test": "Complete Blood Count (CBC)",
+          "code": "LAB-CBC",
+          "default_price": 40,
+          "nhis_price": 35,
+          "category": "hematology",
+          "turnaround_time": "4 hours",
+          "is_nhis_covered": true
+        },
+        {
+          "test": "Lipid Panel",
+          "code": "LAB-LIPID",
+          "default_price": 80,
+          "nhis_price": 70,
+          "category": "chemistry",
+          "turnaround_time": "24 hours",
+          "is_nhis_covered": true
+        },
+        {
+          "test": "HIV Test",
+          "code": "LAB-HIV",
+          "default_price": 25,
+          "nhis_price": 0,
+          "note": "Free under NHIS",
+          "is_nhis_covered": true
+        },
+        {
+          "test": "Blood Culture",
+          "code": "LAB-CULTURE",
+          "default_price": 150,
+          "nhis_price": 120,
+          "turnaround_time": "48-72 hours",
+          "is_nhis_covered": true
+        },
+        {
+          "test": "Pregnancy Test (Urine)",
+          "code": "LAB-PREG",
+          "default_price": 10,
+          "nhis_price": 8,
+          "is_nhis_covered": true
+        }
+      ]
+    },
+
+    "category_4_radiology": {
+      "description": "Imaging and radiology services",
+      "items": [
+        {
+          "service": "X-Ray - Chest",
+          "code": "RAD-XRAY-CHEST",
+          "default_price": 80,
+          "nhis_price": 60,
+          "is_nhis_covered": true
+        },
+        {
+          "service": "X-Ray - Extremity",
+          "code": "RAD-XRAY-LIMB",
+          "default_price": 60,
+          "nhis_price": 45,
+          "is_nhis_covered": true
+        },
+        {
+          "service": "Ultrasound - Abdominal",
+          "code": "RAD-US-ABD",
+          "default_price": 120,
+          "nhis_price": 100,
+          "is_nhis_covered": true
+        },
+        {
+          "service": "Ultrasound - Obstetric",
+          "code": "RAD-US-OB",
+          "default_price": 100,
+          "nhis_price": 80,
+          "is_nhis_covered": true
+        },
+        {
+          "service": "CT Scan - Head",
+          "code": "RAD-CT-HEAD",
+          "default_price": 600,
+          "nhis_price": 500,
+          "is_nhis_covered": false,
+          "note": "Requires pre-authorization"
+        },
+        {
+          "service": "MRI",
+          "code": "RAD-MRI",
+          "default_price": 1200,
+          "nhis_price": null,
+          "is_nhis_covered": false,
+          "note": "Not covered by NHIS"
+        }
+      ]
+    },
+
+    "category_5_inpatient": {
+      "description": "Admission and bed charges",
+      "items": [
+        {
+          "service": "Bed - General Ward",
+          "code": "BED-GEN",
+          "default_price": 100,
+          "nhis_price": 80,
+          "unit": "per_night",
+          "is_nhis_covered": true
+        },
+        {
+          "service": "Bed - Private Room",
+          "code": "BED-PRIV",
+          "default_price": 250,
+          "nhis_price": null,
+          "unit": "per_night",
+          "is_nhis_covered": false,
+          "note": "Private rooms not covered by NHIS"
+        },
+        {
+          "service": "ICU Bed",
+          "code": "BED-ICU",
+          "default_price": 500,
+          "nhis_price": 400,
+          "unit": "per_day",
+          "is_nhis_covered": true
+        },
+        {
+          "service": "Maternity Ward",
+          "code": "BED-MAT",
+          "default_price": 150,
+          "nhis_price": 120,
+          "unit": "per_night",
+          "is_nhis_covered": true
+        }
+      ]
+    },
+
+    "category_6_packages": {
+      "description": "Service packages (bundled pricing)",
+      "items": [
+        {
+          "package": "Antenatal Care (ANC) Package",
+          "code": "PKG-ANC",
+          "description": "Complete ANC care for pregnancy",
+          "default_price": 500,
+          "nhis_price": 400,
+          "included_services": [
+            "8 ANC visits",
+            "Lab tests (HIV, Hepatitis B, Blood group, Hemoglobin)",
+            "2 Ultrasounds",
+            "Iron and Folate supplements",
+            "Tetanus toxoid immunization"
+          ],
+          "is_nhis_covered": true,
+          "note": "Full ANC covered under NHIS"
+        },
+        {
+          "package": "Child Wellness Check (0-5 years)",
+          "code": "PKG-CHILD-WELLNESS",
+          "default_price": 100,
+          "nhis_price": 0,
+          "included_services": [
+            "Physical examination",
+            "Growth monitoring",
+            "Immunizations",
+            "Vitamin A supplementation",
+            "Deworming"
+          ],
+          "is_nhis_covered": true,
+          "note": "Free under NHIS"
+        },
+        {
+          "package": "Health Screening (Adult)",
+          "code": "PKG-SCREENING",
+          "default_price": 300,
+          "nhis_price": null,
+          "included_services": [
+            "Physical examination",
+            "Blood pressure check",
+            "Blood sugar (fasting)",
+            "Lipid profile",
+            "ECG"
+          ],
+          "is_nhis_covered": false
+        }
+      ]
+    }
+  },
+
+  "database_schema": {
+    "service_catalog": {
+      "table_name": "service_catalog",
+      "description": "Master catalog of all billable services",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "organization_id UUID REFERENCES organizations(id)",
+        "service_code VARCHAR(50) UNIQUE NOT NULL (e.g., CONS-GEN, LAB-CBC)",
+        "service_name VARCHAR(200) NOT NULL",
+        "category VARCHAR(100) (clinical_services, laboratory, radiology, inpatient, pharmacy, packages)",
+        "subcategory VARCHAR(100) (e.g., hematology, chemistry for labs)",
+        "description TEXT",
+        
+        "-- Pricing --",
+        "base_price DECIMAL(10,2) NOT NULL (Organization default price)",
+        "unit VARCHAR(50) (per_visit, per_test, per_tablet, per_night)",
+        
+        "-- NHIS --",
+        "is_nhis_covered BOOLEAN DEFAULT FALSE",
+        "nhis_price DECIMAL(10,2) NULL (What NHIS reimburses)",
+        "nhis_code VARCHAR(100) (NHIS service code)",
+        "requires_nhis_preauth BOOLEAN DEFAULT FALSE",
+        
+        "-- Tax --",
+        "is_taxable BOOLEAN DEFAULT FALSE",
+        "tax_rate DECIMAL(5,2) DEFAULT 0.00 (e.g., 12.5 for VAT)",
+        
+        "-- Settings --",
+        "is_active BOOLEAN DEFAULT TRUE",
+        "effective_from DATE",
+        "effective_to DATE NULL (For price changes)",
+        
+        "-- Metadata --",
+        "created_by UUID REFERENCES users(id)",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        "updated_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "indexes": [
+        "INDEX idx_service_code ON (service_code)",
+        "INDEX idx_category ON (category)",
+        "INDEX idx_organization ON (organization_id)",
+        "INDEX idx_active ON (is_active)"
+      ]
+    },
+
+    "branch_pricing": {
+      "table_name": "branch_pricing",
+      "description": "Branch-specific price overrides",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "branch_id UUID NOT NULL REFERENCES branches(id)",
+        "service_id UUID NOT NULL REFERENCES service_catalog(id)",
+        
+        "-- Override price --",
+        "branch_price DECIMAL(10,2) NOT NULL (Price at this specific branch)",
+        "reason TEXT (Why different from organization price?)",
+        
+        "-- Validity --",
+        "effective_from DATE NOT NULL",
+        "effective_to DATE NULL",
+        "is_active BOOLEAN DEFAULT TRUE",
+        
+        "created_by UUID REFERENCES users(id)",
+        "created_at TIMESTAMP DEFAULT NOW()",
+        
+        "UNIQUE(branch_id, service_id, effective_from)"
+      ],
+      "indexes": [
+        "INDEX idx_branch ON (branch_id)",
+        "INDEX idx_service ON (service_id)"
+      ],
+      "use_case": "Tema Clinic charges ₵60 for consultation while Main Hospital charges ₵50"
+    },
+
+    "drug_pricing": {
+      "table_name": "drug_pricing",
+      "description": "Drug pricing (extends drug_formulary table)",
+      "approach": "Add pricing columns to existing drug_formulary table",
+      "columns_to_add_to_drug_formulary": [
+        "unit_cost DECIMAL(10,2) (What we paid supplier)",
+        "markup_percentage DECIMAL(5,2) DEFAULT 30.00",
+        "selling_price DECIMAL(10,2) (Calculated: unit_cost × (1 + markup/100))",
+        "nhis_price DECIMAL(10,2) NULL (NHIS reimbursement)",
+        "price_per_unit VARCHAR(50) (per_tablet, per_ml, per_vial)",
+        "last_purchase_price DECIMAL(10,2) (Track price changes)",
+        "last_purchase_date DATE"
+      ],
+      "calculation": "selling_price = unit_cost × (1 + markup_percentage / 100)",
+      "example": {
+        "drug": "Paracetamol 500mg",
+        "unit_cost": 0.30,
+        "markup_percentage": 50,
+        "selling_price": 0.45,
+        "nhis_price": 0.40
+      }
+    },
+
+    "insurance_pricing": {
+      "table_name": "insurance_pricing",
+      "description": "Pricing agreements with insurance companies",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "organization_id UUID REFERENCES organizations(id)",
+        "insurance_company VARCHAR(200) (e.g., Vanguard, Star, Enterprise)",
+        "service_id UUID REFERENCES service_catalog(id)",
+        
+        "-- Contracted price --",
+        "insurance_price DECIMAL(10,2) NOT NULL",
+        "discount_percentage DECIMAL(5,2) (e.g., 10% off base price)",
+        
+        "-- Agreement --",
+        "contract_start_date DATE NOT NULL",
+        "contract_end_date DATE",
+        "is_active BOOLEAN DEFAULT TRUE",
+        
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "use_case": "Vanguard Insurance pays ₵45 for consultation (10% discount from ₵50)"
+    },
+
+    "discount_schemes": {
+      "table_name": "discount_schemes",
+      "description": "Discounts for specific patient groups",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "organization_id UUID REFERENCES organizations(id)",
+        "scheme_name VARCHAR(200) (e.g., Senior Citizen Discount, Staff Discount)",
+        "discount_type VARCHAR(50) (percentage, fixed_amount)",
+        "discount_value DECIMAL(10,2)",
+        "applies_to VARCHAR(100) (all_services, clinical_only, pharmacy_only)",
+        "eligibility_criteria TEXT",
+        
+        "is_active BOOLEAN DEFAULT TRUE",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "examples": [
+        {
+          "scheme_name": "Senior Citizen (65+)",
+          "discount_type": "percentage",
+          "discount_value": 10,
+          "applies_to": "all_services"
+        },
+        {
+          "scheme_name": "Hospital Staff",
+          "discount_type": "percentage",
+          "discount_value": 50,
+          "applies_to": "all_services"
+        }
+      ]
+    },
+
+    "price_history": {
+      "table_name": "price_history",
+      "description": "Track all price changes over time",
+      "columns": [
+        "id UUID PRIMARY KEY",
+        "service_id UUID REFERENCES service_catalog(id)",
+        "old_price DECIMAL(10,2)",
+        "new_price DECIMAL(10,2)",
+        "change_reason TEXT",
+        "effective_date DATE",
+        "changed_by UUID REFERENCES users(id)",
+        "created_at TIMESTAMP DEFAULT NOW()"
+      ],
+      "use_case": "Audit trail for price changes, financial analysis"
+    }
+  },
+
+  "price_resolution_logic": {
+    "description": "How the system determines what price to charge",
+    "function_name": "getPriceForService()",
+    "parameters": [
+      "serviceId or serviceCode",
+      "branchId (where service is being provided)",
+      "patientInsuranceType (NHIS, Private Insurance, Cash)",
+      "insuranceCompany (if private insurance)",
+      "discountSchemeId (if applicable)"
+    ],
+    "logic": "```javascript\nasync function getPriceForService({\n  serviceId,\n  branchId,\n  patientInsuranceType,\n  insuranceCompany = null,\n  discountSchemeId = null\n}) {\n  // 1. Get base service from catalog\n  const service = await prisma.service_catalog.findUnique({\n    where: { id: serviceId }\n  });\n  \n  let finalPrice = service.base_price;\n  let priceSource = 'base';\n  \n  // 2. Check for branch-specific pricing (HIGHEST PRIORITY)\n  const branchPrice = await prisma.branch_pricing.findFirst({\n    where: {\n      branch_id: branchId,\n      service_id: serviceId,\n      is_active: true,\n      effective_from: { lte: new Date() },\n      OR: [\n        { effective_to: null },\n        { effective_to: { gte: new Date() } }\n      ]\n    }\n  });\n  \n  if (branchPrice) {\n    finalPrice = branchPrice.branch_price;\n    priceSource = 'branch_override';\n  }\n  \n  // 3. Check patient insurance type\n  if (patientInsuranceType === 'NHIS' && service.is_nhis_covered) {\n    finalPrice = service.nhis_price || finalPrice;\n    priceSource = 'nhis';\n  } else if (patientInsuranceType === 'PRIVATE' && insuranceCompany) {\n    const insurancePrice = await prisma.insurance_pricing.findFirst({\n      where: {\n        insurance_company: insuranceCompany,\n        service_id: serviceId,\n        is_active: true\n      }\n    });\n    \n    if (insurancePrice) {\n      finalPrice = insurancePrice.insurance_price;\n      priceSource = 'insurance';\n    }\n  }\n  \n  // 4. Apply discounts (if applicable)\n  if (discountSchemeId) {\n    const discount = await prisma.discount_schemes.findUnique({\n      where: { id: discountSchemeId }\n    });\n    \n    if (discount && discount.is_active) {\n      if (discount.discount_type === 'percentage') {\n        finalPrice = finalPrice * (1 - discount.discount_value / 100);\n      } else if (discount.discount_type === 'fixed_amount') {\n        finalPrice = Math.max(0, finalPrice - discount.discount_value);\n      }\n      priceSource += '_with_discount';\n    }\n  }\n  \n  // 5. Add tax if applicable\n  let taxAmount = 0;\n  if (service.is_taxable) {\n    taxAmount = finalPrice * (service.tax_rate / 100);\n  }\n  \n  return {\n    serviceCode: service.service_code,\n    serviceName: service.service_name,\n    basePrice: service.base_price,\n    finalPrice: finalPrice,\n    taxAmount: taxAmount,\n    totalPrice: finalPrice + taxAmount,\n    priceSource: priceSource,\n    isNHISCovered: service.is_nhis_covered,\n    unit: service.unit\n  };\n}\n```",
+    "example_call": "```javascript\nconst price = await getPriceForService({\n  serviceId: 'consultation-general',\n  branchId: 'tema-clinic',\n  patientInsuranceType: 'NHIS'\n});\n\n// Returns:\n{\n  serviceCode: 'CONS-GEN',\n  serviceName: 'Consultation - General Doctor',\n  basePrice: 50.00,\n  finalPrice: 30.00,\n  taxAmount: 0,\n  totalPrice: 30.00,\n  priceSource: 'nhis',\n  isNHISCovered: true,\n  unit: 'per_visit'\n}\n```"
+  },
+
+  "multi_branch_pricing_examples": {
+    "scenario_1_uniform_pricing": {
+      "description": "All branches charge same price (organization default)",
+      "service": "Consultation - General Doctor",
+      "organization_price": 50,
+      "branch_prices": {
+        "Main Hospital": 50,
+        "Tema Clinic": 50,
+        "Kumasi Clinic": 50
+      },
+      "setup": "No branch_pricing records needed - all use base_price from service_catalog"
+    },
+
+    "scenario_2_branch_override": {
+      "description": "Tema Clinic charges more (upscale area)",
+      "service": "Consultation - General Doctor",
+      "organization_price": 50,
+      "branch_prices": {
+        "Main Hospital": 50,
+        "Tema Clinic": 60,
+        "Kumasi Clinic": 50
+      },
+      "setup": "```sql\nINSERT INTO branch_pricing (branch_id, service_id, branch_price, reason)\nVALUES (\n  'tema-clinic-id',\n  'consultation-service-id',\n  60.00,\n  'Upscale area, higher operating costs'\n);\n```"
+    },
+
+    "scenario_3_rural_discount": {
+      "description": "Tamale branch charges less (rural area)",
+      "service": "Consultation - General Doctor",
+      "organization_price": 50,
+      "branch_prices": {
+        "Main Hospital": 50,
+        "Tema Clinic": 60,
+        "Tamale Clinic": 35
+      },
+      "setup": "```sql\nINSERT INTO branch_pricing (branch_id, service_id, branch_price, reason)\nVALUES (\n  'tamale-clinic-id',\n  'consultation-service-id',\n  35.00,\n  'Rural area, lower income levels'\n);\n```"
+    }
+  },
+
+  "api_endpoints": {
+    "service_catalog_management": [
+      {
+        "endpoint": "GET /api/finance/services",
+        "description": "List all services in catalog",
+        "permission": "VIEW_PRICE_LIST",
+        "query_params": {
+          "category": "Filter by category (clinical, lab, radiology, etc.)",
+          "nhis_covered": "Filter NHIS-covered services only",
+          "active": "Filter active services"
+        },
+        "response": {
+          "services": [
+            {
+              "id": "uuid",
+              "serviceCode": "CONS-GEN",
+              "serviceName": "Consultation - General Doctor",
+              "category": "clinical_services",
+              "basePrice": 50.00,
+              "nhisPrice": 30.00,
+              "isNHISCovered": true
+            }
+          ]
+        }
+      },
+      {
+        "endpoint": "POST /api/finance/services",
+        "description": "Create new service in catalog",
+        "permission": "MANAGE_PRICE_LIST",
+        "request_body": {
+          "serviceCode": "LAB-NEW-TEST",
+          "serviceName": "New Lab Test",
+          "category": "laboratory",
+          "basePrice": 100,
+          "nhisPrice": 80,
+          "isNHISCovered": true
+        }
+      },
+      {
+        "endpoint": "PUT /api/finance/services/:id/price",
+        "description": "Update service price (creates price history)",
+        "permission": "MANAGE_PRICE_LIST",
+        "request_body": {
+          "newPrice": 60,
+          "changeReason": "Market adjustment",
+          "effectiveDate": "2024-04-01"
+        },
+        "side_effects": [
+          "Create record in price_history",
+          "Update service_catalog.base_price",
+          "Log PRICE_CHANGED in audit_logs"
+        ]
+      }
+    ],
+
+    "branch_pricing_management": [
+      {
+        "endpoint": "GET /api/finance/branches/:branchId/pricing",
+        "description": "Get all branch-specific prices",
+        "permission": "VIEW_PRICE_LIST",
+        "response": {
+          "branchPricing": [
+            {
+              "serviceCode": "CONS-GEN",
+              "serviceName": "Consultation",
+              "organizationPrice": 50,
+              "branchPrice": 60,
+              "difference": "+10 (20% higher)"
+            }
+          ]
+        }
+      },
+      {
+        "endpoint": "POST /api/finance/branches/:branchId/pricing",
+        "description": "Set branch-specific price",
+        "permission": "MANAGE_PRICE_LIST",
+        "request_body": {
+          "serviceId": "uuid",
+          "branchPrice": 60,
+          "reason": "Premium location",
+          "effectiveFrom": "2024-04-01"
+        }
+      },
+      {
+        "endpoint": "DELETE /api/finance/branches/:branchId/pricing/:id",
+        "description": "Remove branch override (revert to organization price)",
+        "permission": "MANAGE_PRICE_LIST"
+      }
+    },
+
+    "price_lookup": [
+      {
+        "endpoint": "POST /api/finance/calculate-price",
+        "description": "Calculate final price for a service (used by billing)",
+        "permission": "CREATE_INVOICE",
+        "request_body": {
+          "serviceId": "uuid",
+          "branchId": "uuid",
+          "patientId": "uuid",
+          "quantity": 1,
+          "discountSchemeId": null
+        },
+        "response": {
+          "serviceCode": "CONS-GEN",
+          "serviceName": "Consultation - General Doctor",
+          "basePrice": 50.00,
+          "finalPrice": 30.00,
+          "taxAmount": 0,
+          "totalPrice": 30.00,
+          "priceSource": "nhis",
+          "breakdown": {
+            "organizationPrice": 50.00,
+            "branchOverride": null,
+            "insuranceAdjustment": -20.00,
+            "discountApplied": 0,
+            "taxAdded": 0
+          }
+        }
+      }
+    ],
+
+    "reporting": [
+      {
+        "endpoint": "GET /api/finance/price-comparison",
+        "description": "Compare prices across branches",
+        "permission": "VIEW_FINANCIAL_REPORTS",
+        "response": {
+          "services": [
+            {
+              "serviceCode": "CONS-GEN",
+              "serviceName": "Consultation",
+              "branches": {
+                "Main Hospital": 50,
+                "Tema Clinic": 60,
+                "Kumasi Clinic": 50,
+                "Tamale Clinic": 35
+              },
+              "average": 48.75,
+              "variance": "High"
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  "frontend_components": {
+    "PriceListManagement": {
+      "route": "/finance/price-list",
+      "permission": "VIEW_PRICE_LIST",
+      "features": [
+        "Tabbed view by category (Clinical, Lab, Radiology, Drugs, Inpatient)",
+        "Search and filter",
+        "Edit price (inline or modal)",
+        "View price history",
+        "Bulk price update (e.g., increase all lab tests by 10%)",
+        "Import/Export (CSV/Excel)"
+      ],
+      "ui_mockup": "```\n┌────────────────────────────────────────────────────────┐\n│ Price List Management                    [+ Add Service]\n├────────────────────────────────────────────────────────┤\n│ [Clinical] [Laboratory] [Radiology] [Pharmacy] [Inpatient]\n│                                                        │\n│ Search: [________________] 🔍  Filter: [All] [NHIS]   │\n├────────────────────────────────────────────────────────┤\n│ Service Code │ Service Name      │ Base Price │ NHIS  │ Actions\n│──────────────┼──────────────────┼───────────┼───────┼────────\n│ CONS-GEN     │ Consultation (GP) │ ₵50.00    │ ₵30.00│ [Edit] [History]\n│ LAB-CBC      │ Complete Blood    │ ₵40.00    │ ₵35.00│ [Edit] [History]\n│ RAD-XRAY-CHE │ X-Ray Chest       │ ₵80.00    │ ₵60.00│ [Edit] [History]\n└────────────────────────────────────────────────────────┘\n```"
+    },
+
+    "BranchPricingOverrides": {
+      "route": "/finance/branch-pricing",
+      "permission": "MANAGE_PRICE_LIST",
+      "features": [
+        "Select branch from dropdown",
+        "View organization prices vs branch prices",
+        "Set branch-specific prices",
+        "Highlight differences",
+        "Remove overrides"
+      ],
+      "ui_mockup": "```\n┌────────────────────────────────────────────────────────┐\n│ Branch Pricing - [Tema Clinic ▼]                      │\n├────────────────────────────────────────────────────────┤\n│ Service          │ Org Price │ Branch Price │ Diff   │ Action\n│──────────────────┼──────────┼─────────────┼────────┼───────\n│ Consultation (GP)│ ₵50.00   │ ₵60.00      │ +₵10   │ [Edit] [Remove]\n│ Lab - CBC        │ ₵40.00   │ ₵40.00      │ -      │ [Set Override]\n│ X-Ray Chest      │ ₵80.00   │ ₵90.00      │ +₵10   │ [Edit] [Remove]\n└────────────────────────────────────────────────────────┘\n```"
+    },
+
+    "PriceCalculator": {
+      "route": "/finance/price-calculator",
+      "permission": "VIEW_PRICE_LIST",
+      "features": [
+        "Select service",
+        "Select branch",
+        "Select patient insurance type",
+        "Shows final price breakdown",
+        "Useful for front desk to quote prices"
+      ]
+    }
+  },
+
+  "integration_with_billing": {
+    "description": "How pricing module integrates with billing",
+    "workflow": [
+      "1. Patient completes consultation/lab/radiology",
+      "2. Billing module calls GET /api/finance/calculate-price for each service",
+      "3. System returns final price based on: branch, insurance type, discounts",
+      "4. Billing module creates invoice with calculated prices",
+      "5. For NHIS patients: Invoice shows NHIS price, claim submitted to NHIS"
+    ],
+    "example": "```javascript\n// In billing module\nasync function createInvoiceForEncounter(encounterId) {\n  const encounter = await getEncounter(encounterId);\n  const lineItems = [];\n  \n  // 1. Add consultation charge\n  const consultationPrice = await financeService.calculatePrice({\n    serviceCode: 'CONS-GEN',\n    branchId: encounter.branch_id,\n    patientId: encounter.patient_id\n  });\n  lineItems.push(consultationPrice);\n  \n  // 2. Add prescription items\n  for (const drug of encounter.prescriptions) {\n    const drugPrice = await financeService.getDrugPrice({\n      drugId: drug.drug_id,\n      quantity: drug.quantity,\n      patientId: encounter.patient_id\n    });\n    lineItems.push(drugPrice);\n  }\n  \n  // 3. Add lab tests\n  for (const lab of encounter.labOrders) {\n    const labPrice = await financeService.calculatePrice({\n      serviceId: lab.test_id,\n      branchId: encounter.branch_id,\n      patientId: encounter.patient_id\n    });\n    lineItems.push(labPrice);\n  }\n  \n  // 4. Create invoice\n  const invoice = await createInvoice({\n    patientId: encounter.patient_id,\n    encounterId: encounter.id,\n    lineItems: lineItems,\n    totalAmount: lineItems.reduce((sum, item) => sum + item.totalPrice, 0)\n  });\n  \n  return invoice;\n}\n```"
+  },
+
+  "ghana_specific_considerations": {
+    "nhis_pricing": {
+      "description": "NHIS has approved tariffs for services",
+      "important_notes": [
+        "NHIS prices are SET by NHIA, hospitals cannot change them",
+        "Hospital can charge above NHIS price for cash patients",
+        "NHIS only pays what's in their tariff",
+        "Some services require pre-authorization",
+        "Claims must use correct NHIS codes"
+      ],
+      "example": {
+        "service": "Consultation",
+        "hospital_cash_price": 50,
+        "nhis_tariff": 30,
+        "result": "NHIS patient pays ₵0, hospital gets ₵30 from NHIS"
+      }
+    },
+    "essential_medicines_pricing": {
+      "description": "Ghana regulates markup on essential medicines",
+      "regulation": "Maximum 30% markup on essential medicines",
+      "enforcement": "System should warn if markup exceeds 30% for essential drugs"
+    },
+    "tax_considerations": {
+      "vat": "Services exempt from VAT in Ghana (healthcare)",
+      "nhil": "National Health Insurance Levy (2.5%) - usually included in drug cost",
+      "covid_levy": "COVID-19 Health Recovery Levy (1%) on some items"
+    }
+  },
+
+  "implementation_priority": {
+    "why_build_now": [
+      "Billing module DEPENDS on pricing",
+      "Pharmacy module needs drug prices",
+      "Lab module needs test prices",
+      "Every revenue-generating activity needs pricing"
+    ],
+    "recommended_sequence": [
+      "1. Build Finance & Pricing Module (2-3 weeks)",
+      "2. Seed with Ghana standard prices",
+      "3. THEN build Billing/NHIS module",
+      "4. THEN build Pharmacy dispensing",
+      "5. THEN build Lab processing"
+    ]
+  },
+
+  "success_criteria": [
+    "✅ All services have prices defined",
+    "✅ Organization can set default prices",
+    "✅ Branches can override prices",
+    "✅ NHIS prices correctly configured",
+    "✅ Price calculation API returns correct prices",
+    "✅ Price history tracked",
+    "✅ Billing module can fetch prices seamlessly"
+  ]
+}

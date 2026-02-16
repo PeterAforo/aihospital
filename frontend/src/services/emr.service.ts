@@ -197,6 +197,196 @@ class EMRService {
     const response = await api.get(`/emr/encounters/patient/${patientId}?${params}`);
     return response.data.data;
   }
+
+  // ==================== LAB ORDERS ====================
+
+  async searchLabTests(query: string, limit = 20): Promise<LabTest[]> {
+    const response = await api.get(`/emr/lab-tests/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+    return response.data.data;
+  }
+
+  async createLabOrder(data: {
+    encounterId: string;
+    patientId: string;
+    priority?: 'ROUTINE' | 'URGENT' | 'STAT';
+    notes?: string;
+    tests: { testId: string; notes?: string }[];
+  }): Promise<LabOrder> {
+    const response = await api.post('/emr/lab-orders', data);
+    return response.data.data;
+  }
+
+  async getLabOrdersByEncounter(encounterId: string): Promise<LabOrder[]> {
+    const response = await api.get(`/emr/encounters/${encounterId}/lab-orders`);
+    return response.data.data;
+  }
+
+  async cancelLabOrder(orderId: string): Promise<void> {
+    await api.post(`/emr/lab-orders/${orderId}/cancel`);
+  }
+
+  // ==================== PRESCRIPTIONS ====================
+
+  async searchDrugs(query: string, limit = 20): Promise<Drug[]> {
+    const response = await api.get(`/emr/drugs/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+    return response.data.data;
+  }
+
+  async getPrescriptionOptions(): Promise<{ frequencies: FrequencyOption[]; durations: DurationOption[] }> {
+    const response = await api.get('/emr/prescription-options');
+    return response.data.data;
+  }
+
+  async createPrescription(data: {
+    encounterId: string;
+    patientId: string;
+    notes?: string;
+    items: {
+      drugId: string;
+      dosage: string;
+      frequency: string;
+      duration: string;
+      quantity: number;
+      instructions?: string;
+    }[];
+  }): Promise<Prescription> {
+    const response = await api.post('/emr/prescriptions', data);
+    return response.data.data;
+  }
+
+  async getPrescriptionsByEncounter(encounterId: string): Promise<Prescription[]> {
+    const response = await api.get(`/emr/encounters/${encounterId}/prescriptions`);
+    return response.data.data;
+  }
+
+  async cancelPrescription(prescriptionId: string): Promise<void> {
+    await api.post(`/emr/prescriptions/${prescriptionId}/cancel`);
+  }
+
+  async validatePrescription(patientId: string, drugIds: string[]): Promise<CDSValidationResult> {
+    const response = await api.post('/emr/prescriptions/validate', { patientId, drugIds });
+    return response.data.data;
+  }
+}
+
+// Lab Order Types
+export interface LabTest {
+  id: string;
+  name: string;
+  code?: string;
+  category?: string;
+  sampleType?: string;
+  normalRange?: string;
+  unit?: string;
+  nhisApproved: boolean;
+  nhisPrice?: number;
+  cashPrice?: number;
+  turnaroundTime?: number;
+}
+
+export interface LabOrderItem {
+  id: string;
+  testId: string;
+  status: string;
+  result?: string;
+  resultValue?: number;
+  unit?: string;
+  normalRange?: string;
+  isAbnormal: boolean;
+  isCritical: boolean;
+  performedAt?: string;
+  notes?: string;
+  test: LabTest;
+}
+
+export interface LabOrder {
+  id: string;
+  encounterId?: string;
+  patientId: string;
+  orderedBy: string;
+  orderDate: string;
+  priority: 'ROUTINE' | 'URGENT' | 'STAT';
+  status: string;
+  notes?: string;
+  items: LabOrderItem[];
+  patient?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    mrn: string;
+  };
+}
+
+// Prescription Types
+export interface Drug {
+  id: string;
+  genericName: string;
+  brandName?: string;
+  strength?: string;
+  form?: string;
+  category?: string;
+  nhisApproved: boolean;
+  nhisPrice?: number;
+  cashPrice?: number;
+}
+
+export interface PrescriptionItem {
+  id: string;
+  drugId: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  quantity: number;
+  instructions?: string;
+  dispensedQty: number;
+  status: string;
+  drug: Drug;
+}
+
+export interface Prescription {
+  id: string;
+  encounterId: string;
+  patientId: string;
+  doctorId: string;
+  status: string;
+  notes?: string;
+  createdAt: string;
+  items: PrescriptionItem[];
+  doctor?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface FrequencyOption {
+  value: string;
+  label: string;
+}
+
+export interface DurationOption {
+  value: string;
+  label: string;
+}
+
+export type CDSAlertSeverity = 'CRITICAL' | 'WARNING' | 'INFO';
+
+export interface CDSAlert {
+  severity: CDSAlertSeverity;
+  type: 'ALLERGY' | 'INTERACTION' | 'PEDIATRIC_DOSE' | 'DUPLICATE' | 'RENAL' | 'PREGNANCY';
+  drugId: string;
+  drugName: string;
+  message: string;
+  details: string;
+  canOverride: boolean;
+}
+
+export interface CDSValidationResult {
+  safe: boolean;
+  alerts: CDSAlert[];
+  criticalCount: number;
+  warningCount: number;
+  infoCount: number;
 }
 
 export const emrService = new EMRService();

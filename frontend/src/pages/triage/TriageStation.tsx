@@ -132,12 +132,21 @@ export default function TriageStation() {
 
   const handleSubmit = async () => {
     if (!selectedPatient || !formData.triageLevel) return;
+    
+    // Validate required fields
+    if (!formData.assessment.chiefComplaint?.trim()) {
+      alert('Chief complaint is required');
+      return;
+    }
 
     await createTriageMutation.mutateAsync({
       appointmentId: selectedPatient.appointmentId,
       patientId: selectedPatient.patient.id,
       vitalSigns: formData.vitalSigns,
-      assessment: formData.assessment,
+      assessment: {
+        ...formData.assessment,
+        chiefComplaint: formData.assessment.chiefComplaint.trim(),
+      },
       triageLevel: formData.triageLevel,
       overrideReason: formData.overrideReason || undefined,
     });
