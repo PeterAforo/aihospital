@@ -680,6 +680,15 @@ router.post('/prescriptions', requirePermission('PRESCRIBE', 'CREATE_ENCOUNTER')
       });
     }
 
+    // Log CDS alerts for audit trail
+    if (validation.alerts.length > 0) {
+      try {
+        await cdsService.logAlerts(user.tenantId, patientId, validation.alerts, 'PRESCRIBING', encounterId);
+      } catch (e) {
+        console.warn('[CDS] Failed to log prescribing alerts:', e);
+      }
+    }
+
     const result = await prescriptionService.createPrescription(user.tenantId, user.userId, {
       encounterId,
       patientId,
@@ -730,6 +739,131 @@ router.post('/prescriptions/:id/cancel', requirePermission('PRESCRIBE', 'CREATE_
     if (error.message.includes('Can only cancel')) {
       return res.status(400).json({ success: false, error: error.message });
     }
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== CDS ALERT MANAGEMENT ====================
+
+/**
+ * Validate dispensing (pharmacist safety check)
+ * POST /api/emr/cds/validate-dispensing
+ */
+router.post('/cds/validate-dispensing', requirePermission('DISPENSE_MEDICATION', 'VIEW_PRESCRIPTION_QUEUE'), async (req: AuthRequest, res) => {
+  try {
+    const user = (req as any).user;
+    const { prescriptionId } = req.body;
+
+    if (!prescriptionId) {
+      return res.status(400).json({ success: false, error: 'prescriptionId is required' });
+    }
+
+    const result = await cdsService.validateDispensing(prescriptionId, user.tenantId);
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Record CDS alert override
+ * POST /api/emr/cds/override
+ */
+router.post('/cds/override', async (req: AuthRequest, res) => {
+  try {
+    const user = (req as any).user;
+    const { alertLogId, reason } = req.body;
+
+    if (!alertLogId || !reason) {
+      return res.status(400).json({ success: false, error: 'alertLogId and reason are required' });
+    }
+
+    await cdsService.recordOverride(alertLogId, user.userId, reason);
+    return res.json({ success: true, message: 'Override recorded' });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Get CDS alert history
+ * GET /api/emr/cds/alerts?patientId=&alertType=&startDate=&endDate=&limit=
+ */
+router.get('/cds/alerts', async (req: AuthRequest, res) => {
+  try {
+    const user = (req as any).user;
+    const { patientId, alertType, startDate, endDate, limit } = req.query;
+
+    const alerts = await cdsService.getAlertHistory(
+      user.tenantId,
+      patientId as string,
+      alertType as string,
+      startDate ? new Date(startDate as string) : undefined,
+      endDate ? new Date(endDate as string) : undefined,
+      limit ? parseInt(limit as string) : 50
+    );
+    return res.json({ success: true, data: alerts });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Get CDS override statistics
+ * GET /api/emr/cds/override-stats?startDate=&endDate=
+ */
+router.get('/cds/override-stats', async (req: AuthRequest, res) => {
+  try {
+    const user = (req as any).user;
+    const { startDate, endDate } = req.query;
+
+    const stats = await cdsService.getOverrideStats(
+      user.tenantId,
+      startDate ? new Date(startDate as string) : undefined,
+      endDate ? new Date(endDate as string) : undefined
+    );
+    return res.json({ success: true, data: stats });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * List drug interactions database
+ * GET /api/emr/cds/interactions?activeOnly=true
+ */
+router.get('/cds/interactions', async (req: AuthRequest, res) => {
+  try {
+    const activeOnly = req.query.activeOnly !== 'false';
+    const interactions = await cdsService.listInteractions(activeOnly);
+    return res.json({ success: true, data: interactions });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Add custom drug interaction
+ * POST /api/emr/cds/interactions
+ */
+router.post('/cds/interactions', requirePermission('MANAGE_DRUGS', 'MANAGE_PHARMACY'), async (req: AuthRequest, res) => {
+  try {
+    const interaction = await cdsService.addInteraction(req.body);
+    return res.status(201).json({ success: true, data: interaction });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Deactivate drug interaction
+ * DELETE /api/emr/cds/interactions/:id
+ */
+router.delete('/cds/interactions/:id', requirePermission('MANAGE_DRUGS', 'MANAGE_PHARMACY'), async (req: AuthRequest, res) => {
+  try {
+    await cdsService.deactivateInteraction(req.params.id);
+    return res.json({ success: true, message: 'Interaction deactivated' });
+  } catch (error: any) {
     return res.status(500).json({ success: false, error: error.message });
   }
 });

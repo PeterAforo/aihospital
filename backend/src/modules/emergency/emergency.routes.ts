@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { emergencyService } from './emergency.service.js';
 import { authenticate, tenantGuard } from '../../common/middleware/auth.js';
+import { erWebSocketService } from '../../common/services/er-websocket.service';
 
 const router: Router = Router();
 
@@ -45,6 +46,7 @@ router.get('/visits/:id', async (req: any, res: Response) => {
 router.post('/visits', async (req: any, res: Response) => {
   try {
     const visit = await emergencyService.createERVisit(req.tenantId!, req.body);
+    erWebSocketService.notifyPatientAdded(req.tenantId!, visit);
     res.status(201).json({ success: true, data: visit });
   } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
 });
@@ -52,6 +54,7 @@ router.post('/visits', async (req: any, res: Response) => {
 router.patch('/visits/:id/triage', async (req: any, res: Response) => {
   try {
     const visit = await emergencyService.triageERVisit(req.params.id, req.body);
+    erWebSocketService.notifyTriageUpdate(req.tenantId!, visit);
     res.json({ success: true, data: visit });
   } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
 });
@@ -61,6 +64,11 @@ router.patch('/visits/:id/status', async (req: any, res: Response) => {
     const { status, ...rest } = req.body;
     if (!status) return res.status(400).json({ success: false, error: 'status is required' });
     const visit = await emergencyService.updateERVisitStatus(req.params.id, status, rest);
+    if (status === 'DISCHARGED' || status === 'TRANSFERRED') {
+      erWebSocketService.notifyPatientDischarged(req.tenantId!, req.params.id);
+    } else {
+      erWebSocketService.notifyPatientUpdated(req.tenantId!, visit);
+    }
     res.json({ success: true, data: visit });
   } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
 });

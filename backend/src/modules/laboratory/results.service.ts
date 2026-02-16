@@ -132,7 +132,7 @@ class ResultsService {
       ? 'HIGH'
       : 'LOW';
 
-    await prisma.criticalValueAlert.create({
+    const alert = await prisma.criticalValueAlert.create({
       data: {
         tenantId,
         orderItemId: orderItem.id,
@@ -143,6 +143,28 @@ class ResultsService {
         notifiedTo: orderItem.order.orderedBy,
       },
     });
+
+    // Auto-notify ordering doctor via in-app notification
+    try {
+      const patient = await prisma.patient.findUnique({
+        where: { id: orderItem.order.patientId },
+        select: { firstName: true, lastName: true },
+      });
+      const patientName = patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
+
+      await notificationService.notifyCriticalLabValue({
+        doctorId: orderItem.order.orderedBy,
+        patientName,
+        testName: orderItem.test.name,
+        resultValue,
+        criticalType,
+        orderId: orderItem.order.id,
+        alertId: alert.id,
+      });
+    } catch (err) {
+      // Don't fail the alert creation if notification fails
+      console.error('Failed to send critical value notification:', err);
+    }
   }
 
   async verifyResult(

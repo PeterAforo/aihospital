@@ -162,6 +162,21 @@ export class AuthService {
       );
     }
 
+    // Check if MFA is enabled — if so, return partial response requiring MFA verification
+    if (user.mfaEnabled) {
+      // Reset failed attempts on correct password
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
+
+      return {
+        mfaRequired: true,
+        mfaUserId: user.id,
+        message: 'MFA verification required. Please provide your authenticator code.',
+      };
+    }
+
     // Successful login — reset failed attempts and lockout
     // Resolve user permissions from RBAC system
     const permissions = await getUserPermissions(user.id);
@@ -291,6 +306,55 @@ export class AuthService {
       role: user.role,
       permissions,
       tenant: user.tenant,
+    };
+  }
+
+  async completeMFALogin(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        tenant: { select: { id: true, name: true, subdomain: true } },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      throw new AppError('User not found or inactive', 401);
+    }
+
+    const permissions = await getUserPermissions(user.id);
+
+    const tokens = this.generateTokens({
+      userId: user.id,
+      tenantId: user.tenantId,
+      role: user.role,
+      email: user.email,
+      branchId: user.branchId || undefined,
+      departmentId: user.departmentId || undefined,
+      branchAccessScope: user.branchAccessScope || undefined,
+      permissions,
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken: tokens.refreshToken,
+        lastLogin: new Date(),
+        lastLoginAt: new Date(),
+      },
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        permissions,
+        tenant: user.tenant,
+      },
+      tokens,
     };
   }
 

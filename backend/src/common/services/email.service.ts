@@ -129,6 +129,100 @@ class EmailService {
       html,
     });
   }
+  async sendPasswordReset(email: string, name: string, resetToken: string, expiryMinutes = 30): Promise<SendEmailResponse> {
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">MediCare Ghana</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+          <h2 style="color: #1f2937;">Password Reset Request</h2>
+          <p style="color: #6b7280;">Hi ${name},</p>
+          <p style="color: #6b7280;">We received a request to reset your password. Click the button below to set a new password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Reset Password</a>
+          </div>
+          <p style="color: #6b7280; font-size: 14px;">This link expires in ${expiryMinutes} minutes.</p>
+          <p style="color: #6b7280; font-size: 14px;">If you didn't request this, please ignore this email. Your password will remain unchanged.</p>
+          <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 20px 0;">
+            <p style="color: #92400e; margin: 0; font-size: 13px;"><strong>Security Tip:</strong> Never share your password or this link with anyone. MediCare Ghana staff will never ask for your password.</p>
+          </div>
+        </div>
+        <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+          <p>© ${new Date().getFullYear()} MediCare Ghana. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: 'Password Reset - MediCare Ghana',
+      html,
+      text: `Hi ${name}, reset your password using this link: ${resetUrl}. Expires in ${expiryMinutes} minutes.`,
+    });
+  }
+
+  async sendAlert(email: string, name: string, alertTitle: string, alertBody: string, severity: 'info' | 'warning' | 'critical' = 'info'): Promise<SendEmailResponse> {
+    const colors = {
+      info: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
+      warning: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
+      critical: { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' },
+    };
+    const c = colors[severity];
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">MediCare Ghana</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+          <h2 style="color: #1f2937;">Hi ${name},</h2>
+          <div style="background: ${c.bg}; border-left: 4px solid ${c.border}; padding: 16px; margin: 20px 0;">
+            <h3 style="color: ${c.text}; margin: 0 0 8px 0;">${alertTitle}</h3>
+            <p style="color: ${c.text}; margin: 0;">${alertBody}</p>
+          </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Go to Dashboard</a>
+          </div>
+        </div>
+        <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+          <p>© ${new Date().getFullYear()} MediCare Ghana. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: `[${severity.toUpperCase()}] ${alertTitle} - MediCare Ghana`,
+      html,
+    });
+  }
+
+  async sendReceipt(email: string, name: string, receiptHtml: string): Promise<SendEmailResponse> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">MediCare Ghana</h1>
+          <p style="color: #bfdbfe; margin: 5px 0 0;">Payment Receipt</p>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+          <p style="color: #6b7280;">Dear ${name},</p>
+          <p style="color: #6b7280;">Thank you for your payment. Here is your receipt:</p>
+          ${receiptHtml}
+        </div>
+        <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
+          <p>© ${new Date().getFullYear()} MediCare Ghana. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: 'Payment Receipt - MediCare Ghana',
+      html,
+    });
+  }
 }
 
 export const emailService = new EmailService();

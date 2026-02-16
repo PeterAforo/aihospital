@@ -54,25 +54,49 @@ const ALLERGY_DRUG_MAP: Record<string, string[]> = {
   'egg': [],
 };
 
-// Known drug-drug interactions
-// Each entry: [drugA keywords, drugB keywords, severity, message]
-const DRUG_INTERACTIONS: [string[], string[], AlertSeverity, string][] = [
-  [['warfarin'], ['aspirin', 'ibuprofen', 'diclofenac', 'naproxen'], 'WARNING', 'Increased bleeding risk. Monitor INR closely.'],
-  [['warfarin'], ['metronidazole'], 'WARNING', 'Metronidazole increases warfarin effect. Monitor INR.'],
-  [['warfarin'], ['erythromycin', 'azithromycin', 'ciprofloxacin'], 'WARNING', 'Antibiotic may increase warfarin effect. Monitor INR.'],
-  [['metformin'], ['contrast dye'], 'WARNING', 'Hold metformin 48h before/after contrast.'],
-  [['digoxin'], ['furosemide', 'hydrochlorothiazide'], 'WARNING', 'Diuretic-induced hypokalemia increases digoxin toxicity risk. Monitor K+.'],
-  [['digoxin'], ['amiodarone'], 'WARNING', 'Amiodarone increases digoxin levels. Reduce digoxin dose by 50%.'],
-  [['lisinopril', 'enalapril', 'ramipril'], ['losartan', 'valsartan'], 'WARNING', 'ACE inhibitor + ARB: increased risk of hyperkalemia and renal impairment.'],
-  [['lisinopril', 'enalapril', 'ramipril'], ['potassium'], 'WARNING', 'ACE inhibitor + potassium: risk of hyperkalemia. Monitor K+.'],
-  [['simvastatin', 'atorvastatin'], ['erythromycin', 'clarithromycin'], 'WARNING', 'Macrolide increases statin levels. Risk of rhabdomyolysis.'],
-  [['methotrexate'], ['nsaid', 'ibuprofen', 'diclofenac'], 'CRITICAL', 'NSAIDs reduce methotrexate clearance. Potentially fatal toxicity.'],
-  [['carbamazepine'], ['erythromycin'], 'WARNING', 'Erythromycin increases carbamazepine levels. Risk of toxicity.'],
-  [['phenytoin'], ['metronidazole', 'fluconazole'], 'WARNING', 'May increase phenytoin levels. Monitor levels.'],
-  [['tramadol'], ['fluoxetine', 'amitriptyline'], 'WARNING', 'Serotonin syndrome risk. Use with caution.'],
-  [['amlodipine', 'nifedipine'], ['atenolol'], 'INFO', 'Calcium channel blocker + beta blocker: monitor for excessive bradycardia/hypotension.'],
-  [['insulin regular', 'insulin nph'], ['glibenclamide', 'metformin'], 'INFO', 'Multiple hypoglycemics: increased hypoglycemia risk. Monitor blood glucose.'],
-  [['ciprofloxacin'], ['antacid', 'omeprazole', 'ranitidine'], 'INFO', 'Antacids may reduce ciprofloxacin absorption. Space doses 2h apart.'],
+// Known drug-drug interactions (expanded for Ghana Essential Medicines List)
+// Each entry: [drugA keywords, drugB keywords, severity, message, management]
+const DRUG_INTERACTIONS: [string[], string[], AlertSeverity, string, string][] = [
+  // === CRITICAL (Contraindicated) ===
+  [['methotrexate'], ['nsaid', 'ibuprofen', 'diclofenac', 'naproxen', 'piroxicam'], 'CRITICAL', 'NSAIDs reduce methotrexate clearance. Potentially fatal toxicity.', 'Avoid combination. Use paracetamol for pain.'],
+  [['warfarin'], ['metronidazole'], 'CRITICAL', 'Metronidazole dramatically increases warfarin effect. Risk of fatal bleeding.', 'Avoid if possible. If essential, reduce warfarin dose by 25-50% and monitor INR every 2 days.'],
+  [['ergotamine'], ['erythromycin', 'clarithromycin', 'azithromycin'], 'CRITICAL', 'Risk of ergotism (vasospasm, gangrene).', 'Contraindicated. Use alternative antibiotic or migraine treatment.'],
+  [['cisapride'], ['erythromycin', 'clarithromycin', 'fluconazole', 'ketoconazole'], 'CRITICAL', 'Risk of fatal cardiac arrhythmia (QT prolongation).', 'Contraindicated combination.'],
+  [['simvastatin', 'lovastatin'], ['itraconazole', 'ketoconazole', 'erythromycin', 'clarithromycin'], 'CRITICAL', 'Risk of rhabdomyolysis (muscle breakdown, renal failure).', 'Use atorvastatin or rosuvastatin instead, or suspend statin during antibiotic course.'],
+
+  // === WARNING (Major) ===
+  [['warfarin'], ['aspirin', 'ibuprofen', 'diclofenac', 'naproxen', 'piroxicam', 'indomethacin'], 'WARNING', 'Increased bleeding risk with anticoagulant + NSAID.', 'Monitor INR closely. Consider paracetamol instead. Add PPI for GI protection.'],
+  [['warfarin'], ['erythromycin', 'azithromycin', 'ciprofloxacin', 'cotrimoxazole'], 'WARNING', 'Antibiotic may increase warfarin effect.', 'Monitor INR within 3-5 days of starting antibiotic. Adjust warfarin dose as needed.'],
+  [['digoxin'], ['furosemide', 'hydrochlorothiazide', 'bendroflumethiazide'], 'WARNING', 'Diuretic-induced hypokalemia increases digoxin toxicity risk.', 'Monitor K+ and digoxin levels. Consider K+ supplementation or K+-sparing diuretic.'],
+  [['digoxin'], ['amiodarone'], 'WARNING', 'Amiodarone increases digoxin levels by 50-100%.', 'Reduce digoxin dose by 50% when starting amiodarone. Monitor digoxin levels.'],
+  [['digoxin'], ['verapamil'], 'WARNING', 'Verapamil increases digoxin levels and additive AV block risk.', 'Reduce digoxin dose by 25-50%. Monitor heart rate and digoxin levels.'],
+  [['lisinopril', 'enalapril', 'ramipril', 'captopril'], ['losartan', 'valsartan', 'candesartan'], 'WARNING', 'ACE inhibitor + ARB: increased risk of hyperkalemia, hypotension, and renal impairment.', 'Avoid dual RAAS blockade. Use one agent only.'],
+  [['lisinopril', 'enalapril', 'ramipril', 'captopril'], ['potassium', 'spironolactone'], 'WARNING', 'ACE inhibitor + potassium: risk of life-threatening hyperkalemia.', 'Monitor K+ within 1 week. Avoid K+ supplements if K+ > 5.0.'],
+  [['simvastatin', 'atorvastatin'], ['erythromycin', 'clarithromycin'], 'WARNING', 'Macrolide increases statin levels. Risk of rhabdomyolysis.', 'Use azithromycin instead (less interaction). Monitor for muscle pain.'],
+  [['carbamazepine'], ['erythromycin', 'clarithromycin', 'isoniazid'], 'WARNING', 'Increases carbamazepine levels. Risk of toxicity (ataxia, nystagmus, drowsiness).', 'Monitor carbamazepine levels. Use azithromycin if antibiotic needed.'],
+  [['phenytoin'], ['metronidazole', 'fluconazole', 'isoniazid'], 'WARNING', 'May increase phenytoin levels causing toxicity.', 'Monitor phenytoin levels. Watch for nystagmus, ataxia.'],
+  [['tramadol'], ['fluoxetine', 'amitriptyline', 'sertraline', 'paroxetine'], 'WARNING', 'Serotonin syndrome risk (agitation, tremor, hyperthermia).', 'Use with caution. Monitor for serotonin syndrome symptoms. Consider alternative analgesic.'],
+  [['tramadol'], ['carbamazepine'], 'WARNING', 'Carbamazepine reduces tramadol efficacy and increases seizure risk.', 'Use alternative analgesic. Avoid combination.'],
+  [['metformin'], ['contrast dye', 'iodinated contrast'], 'WARNING', 'Risk of lactic acidosis with contrast media.', 'Hold metformin 48h before and after contrast. Check renal function before restarting.'],
+  [['lithium'], ['ibuprofen', 'diclofenac', 'naproxen', 'piroxicam'], 'WARNING', 'NSAIDs increase lithium levels. Risk of toxicity.', 'Monitor lithium levels. Use paracetamol instead. If NSAID essential, check lithium in 5 days.'],
+  [['lithium'], ['furosemide', 'hydrochlorothiazide', 'bendroflumethiazide'], 'WARNING', 'Diuretics increase lithium levels by reducing renal clearance.', 'Monitor lithium levels closely. Adjust lithium dose as needed.'],
+  [['rifampicin'], ['oral contraceptive', 'ethinylestradiol', 'levonorgestrel'], 'WARNING', 'Rifampicin reduces contraceptive efficacy. Risk of unintended pregnancy.', 'Use additional barrier method. Consider higher-dose OCP or alternative contraception.'],
+  [['rifampicin'], ['warfarin'], 'WARNING', 'Rifampicin dramatically reduces warfarin effect.', 'Increase warfarin dose (may need 2-3x). Monitor INR frequently.'],
+  [['rifampicin'], ['atorvastatin', 'simvastatin'], 'WARNING', 'Rifampicin reduces statin levels significantly.', 'May need higher statin dose. Monitor lipid levels.'],
+  [['ciprofloxacin', 'levofloxacin', 'moxifloxacin'], ['amiodarone'], 'WARNING', 'Both prolong QT interval. Risk of fatal arrhythmia.', 'Avoid combination. Use alternative antibiotic.'],
+  [['fluconazole', 'ketoconazole'], ['warfarin'], 'WARNING', 'Azole antifungals increase warfarin effect significantly.', 'Monitor INR within 3 days. Reduce warfarin dose proactively.'],
+  [['cotrimoxazole'], ['warfarin'], 'WARNING', 'Cotrimoxazole increases warfarin effect. Bleeding risk.', 'Monitor INR. Consider dose reduction.'],
+  [['cotrimoxazole'], ['methotrexate'], 'WARNING', 'Both are folate antagonists. Increased bone marrow toxicity.', 'Avoid combination. If essential, give folinic acid rescue.'],
+  [['artemether', 'artesunate'], ['lumefantrine', 'amodiaquine'], 'INFO', 'Standard ACT combination — monitor QT in patients with cardiac history.', 'Routine monitoring. ECG if cardiac risk factors present.'],
+
+  // === INFO (Monitor) ===
+  [['amlodipine', 'nifedipine'], ['atenolol', 'propranolol', 'metoprolol'], 'INFO', 'Calcium channel blocker + beta blocker: monitor for excessive bradycardia/hypotension.', 'Monitor heart rate and blood pressure. Reduce doses if symptomatic.'],
+  [['insulin regular', 'insulin nph', 'insulin glargine'], ['glibenclamide', 'gliclazide', 'metformin'], 'INFO', 'Multiple hypoglycemics: increased hypoglycemia risk.', 'Monitor blood glucose more frequently. Educate patient on hypoglycemia symptoms.'],
+  [['ciprofloxacin', 'levofloxacin'], ['antacid', 'omeprazole', 'ranitidine', 'calcium', 'iron', 'zinc'], 'INFO', 'Antacids/minerals reduce fluoroquinolone absorption.', 'Space doses at least 2 hours apart. Take fluoroquinolone first.'],
+  [['doxycycline', 'tetracycline'], ['antacid', 'calcium', 'iron', 'zinc'], 'INFO', 'Minerals reduce tetracycline absorption.', 'Space doses at least 2-3 hours apart.'],
+  [['metformin'], ['alcohol', 'ethanol'], 'INFO', 'Alcohol increases risk of lactic acidosis with metformin.', 'Advise patient to limit alcohol intake.'],
+  [['amlodipine'], ['simvastatin'], 'INFO', 'Amlodipine increases simvastatin levels. Max simvastatin dose 20mg.', 'Limit simvastatin to 20mg/day or switch to atorvastatin.'],
+  [['omeprazole', 'esomeprazole'], ['clopidogrel'], 'INFO', 'PPI may reduce clopidogrel antiplatelet effect.', 'Consider pantoprazole instead (less interaction).'],
 ];
 
 export class CDSService {
@@ -168,22 +192,36 @@ export class CDSService {
 
     const combinedDrugNames = [...allDrugNames, ...activeDrugNames];
 
-    for (const [groupA, groupB, severity, message] of DRUG_INTERACTIONS) {
-      // Check if any drug from groupA and groupB are both present
+    // Also fetch DB-stored interactions
+    const dbInteractions = await prisma.drugInteraction.findMany({
+      where: { isActive: true },
+    });
+
+    // Combine built-in + DB interactions
+    const allInteractions: [string[], string[], AlertSeverity, string, string][] = [
+      ...DRUG_INTERACTIONS,
+      ...dbInteractions.map(di => [
+        [di.drugAName.toLowerCase()],
+        [di.drugBName.toLowerCase()],
+        di.severity as AlertSeverity,
+        di.description,
+        di.management || '',
+      ] as [string[], string[], AlertSeverity, string, string]),
+    ];
+
+    for (const [groupA, groupB, severity, message, management] of allInteractions) {
       const hasA = combinedDrugNames.some(dn => groupA.some(a => dn.includes(a)));
       const hasB = combinedDrugNames.some(dn => groupB.some(b => dn.includes(b)));
 
       if (hasA && hasB) {
-        // Find which new drug triggered this
         const triggerDrug = drugs.find(d => {
           const name = d.genericName.toLowerCase();
           return groupA.some(a => name.includes(a)) || groupB.some(b => name.includes(b));
         });
 
         if (triggerDrug) {
-          // Avoid duplicate alerts
           const alreadyAlerted = alerts.some(
-            a => a.type === 'INTERACTION' && a.message === message && a.drugId === triggerDrug.id
+            a => a.type === 'INTERACTION' && a.message === `DRUG INTERACTION: ${message}` && a.drugId === triggerDrug.id
           );
           if (!alreadyAlerted) {
             const interactingWith = combinedDrugNames.find(dn => {
@@ -199,7 +237,7 @@ export class CDSService {
               drugId: triggerDrug.id,
               drugName: triggerDrug.genericName,
               message: `DRUG INTERACTION: ${message}`,
-              details: `${triggerDrug.genericName} interacts with ${interactingWith || 'another prescribed medication'}. ${message}`,
+              details: `${triggerDrug.genericName} interacts with ${interactingWith || 'another prescribed medication'}. ${message}${management ? ` Management: ${management}` : ''}`,
               canOverride: severity !== 'CRITICAL',
             });
           }
@@ -262,6 +300,171 @@ export class CDSService {
       warningCount,
       infoCount,
     };
+  }
+
+  /**
+   * Validate drugs at dispensing time (pharmacist safety check)
+   */
+  async validateDispensing(
+    prescriptionId: string,
+    tenantId: string
+  ): Promise<CDSValidationResult> {
+    const prescription = await prisma.prescription.findUnique({
+      where: { id: prescriptionId },
+      include: {
+        items: { include: { drug: true } },
+        patient: { include: { allergies: true, chronicConditions: true } },
+      },
+    });
+
+    if (!prescription) {
+      return { safe: true, alerts: [], criticalCount: 0, warningCount: 0, infoCount: 0 };
+    }
+
+    const drugIds = prescription.items.map(i => i.drugId);
+    return this.validatePrescription(prescription.patientId, drugIds, tenantId);
+  }
+
+  /**
+   * Log CDS alerts to the database for audit trail
+   */
+  async logAlerts(
+    tenantId: string,
+    patientId: string,
+    alerts: CDSAlert[],
+    context: 'PRESCRIBING' | 'DISPENSING',
+    encounterId?: string,
+    prescriptionId?: string
+  ): Promise<void> {
+    if (alerts.length === 0) return;
+
+    await prisma.cDSAlertLog.createMany({
+      data: alerts.map(alert => ({
+        tenantId,
+        patientId,
+        encounterId,
+        prescriptionId,
+        alertType: alert.type,
+        severity: alert.severity,
+        drugId: alert.drugId,
+        drugName: alert.drugName,
+        message: alert.message,
+        details: alert.details,
+        context,
+      })),
+    });
+  }
+
+  /**
+   * Record a pharmacist/doctor override of a CDS alert
+   */
+  async recordOverride(
+    alertLogId: string,
+    userId: string,
+    reason: string
+  ): Promise<void> {
+    await prisma.cDSAlertLog.update({
+      where: { id: alertLogId },
+      data: {
+        wasOverridden: true,
+        overriddenBy: userId,
+        overrideReason: reason,
+        overriddenAt: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Get CDS alert history for a patient
+   */
+  async getAlertHistory(
+    tenantId: string,
+    patientId?: string,
+    alertType?: string,
+    startDate?: Date,
+    endDate?: Date,
+    limit = 50
+  ) {
+    const where: any = { tenantId };
+    if (patientId) where.patientId = patientId;
+    if (alertType) where.alertType = alertType;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = startDate;
+      if (endDate) where.createdAt.lte = endDate;
+    }
+
+    return prisma.cDSAlertLog.findMany({
+      where,
+      include: {
+        patient: {
+          select: { id: true, mrn: true, firstName: true, lastName: true },
+        },
+        overrideUser: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  /**
+   * Get override statistics for compliance reporting
+   */
+  async getOverrideStats(tenantId: string, startDate?: Date, endDate?: Date) {
+    const where: any = { tenantId };
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = startDate;
+      if (endDate) where.createdAt.lte = endDate;
+    }
+
+    const [totalAlerts, overriddenAlerts, criticalAlerts, criticalOverrides] = await Promise.all([
+      prisma.cDSAlertLog.count({ where }),
+      prisma.cDSAlertLog.count({ where: { ...where, wasOverridden: true } }),
+      prisma.cDSAlertLog.count({ where: { ...where, severity: 'CRITICAL' } }),
+      prisma.cDSAlertLog.count({ where: { ...where, severity: 'CRITICAL', wasOverridden: true } }),
+    ]);
+
+    return {
+      totalAlerts,
+      overriddenAlerts,
+      overrideRate: totalAlerts > 0 ? ((overriddenAlerts / totalAlerts) * 100).toFixed(1) + '%' : '0%',
+      criticalAlerts,
+      criticalOverrides,
+      criticalOverrideRate: criticalAlerts > 0 ? ((criticalOverrides / criticalAlerts) * 100).toFixed(1) + '%' : '0%',
+    };
+  }
+
+  /**
+   * Manage custom drug interactions in the database
+   */
+  async addInteraction(data: {
+    drugAName: string;
+    drugBName: string;
+    severity: string;
+    description: string;
+    mechanism?: string;
+    management?: string;
+    evidenceLevel?: string;
+    source?: string;
+  }) {
+    return prisma.drugInteraction.create({ data });
+  }
+
+  async listInteractions(activeOnly = true) {
+    return prisma.drugInteraction.findMany({
+      where: activeOnly ? { isActive: true } : {},
+      orderBy: [{ severity: 'asc' }, { drugAName: 'asc' }],
+    });
+  }
+
+  async deactivateInteraction(id: string) {
+    return prisma.drugInteraction.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 }
 

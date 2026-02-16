@@ -3,6 +3,7 @@ import { authenticate, requirePermission, AuthRequest } from '../../common/middl
 import { dispensingService } from './dispensing.service';
 import { stockService } from './stock.service';
 import { purchaseOrderService } from './purchase-order.service';
+import { expiryAlertService } from './expiry-alert.service';
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.get('/queue/:prescriptionId', requirePermission('VIEW_PRESCRIPTION_QUEUE'
 router.post('/dispense', requirePermission('DISPENSE_MEDICATION'), async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user!;
-    const { prescriptionId, items, counselingNotes } = req.body;
+    const { prescriptionId, items, counselingNotes, overrideCdsAlerts, overrideReason } = req.body;
     
     if (!prescriptionId || !items || items.length === 0) {
       return res.status(400).json({ success: false, error: 'prescriptionId and items are required' });
@@ -54,8 +55,13 @@ router.post('/dispense', requirePermission('DISPENSE_MEDICATION'), async (req: A
       user.tenantId,
       user.currentBranchId || user.primaryBranchId || '',
       user.userId,
-      { prescriptionId, items, counselingNotes }
+      { prescriptionId, items, counselingNotes, overrideCdsAlerts, overrideReason }
     );
+
+    // If CDS blocked the dispensing, return 422
+    if (result.blocked) {
+      return res.status(422).json(result);
+    }
     
     res.json({ success: true, data: result });
   } catch (error: any) {
@@ -617,6 +623,89 @@ router.post('/transfers/:id/receive', requirePermission('RECEIVE_TRANSFER'), asy
     res.json({ success: true, data: updated });
   } catch (error: any) {
     console.error('[TRANSFER_RECEIVE_ERROR]', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== EXPIRY ALERTS & DISPOSAL ====================
+
+// Get expiry dashboard summary
+router.get('/expiry/summary', requirePermission('VIEW_PHARMACY_STOCK', 'MANAGE_PHARMACY'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const summary = await expiryAlertService.getExpirySummary(
+      user.tenantId,
+      (req.query.branchId as string) || user.currentBranchId || user.primaryBranchId
+    );
+    res.json({ success: true, data: summary });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get FEFO dispensing recommendations
+router.get('/expiry/fefo', requirePermission('VIEW_PHARMACY_STOCK', 'DISPENSE_MEDICATION'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const recommendations = await expiryAlertService.getFefoRecommendations(
+      user.tenantId,
+      (req.query.branchId as string) || user.currentBranchId || user.primaryBranchId,
+      req.query.limit ? parseInt(req.query.limit as string) : 20
+    );
+    res.json({ success: true, data: recommendations });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Process disposal of expired/damaged stock
+router.post('/expiry/dispose', requirePermission('MANAGE_PHARMACY'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { disposals } = req.body;
+
+    if (!disposals || !Array.isArray(disposals) || disposals.length === 0) {
+      return res.status(400).json({ success: false, error: 'disposals array is required' });
+    }
+
+    const result = await expiryAlertService.processDisposal(
+      user.tenantId,
+      user.currentBranchId || user.primaryBranchId || '',
+      user.userId,
+      disposals
+    );
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get disposal history
+router.get('/expiry/disposal-history', requirePermission('VIEW_PHARMACY_STOCK', 'MANAGE_PHARMACY'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { branchId, startDate, endDate, limit } = req.query;
+
+    const history = await expiryAlertService.getDisposalHistory(
+      user.tenantId,
+      (branchId as string) || user.currentBranchId || user.primaryBranchId,
+      startDate ? new Date(startDate as string) : undefined,
+      endDate ? new Date(endDate as string) : undefined,
+      limit ? parseInt(limit as string) : 50
+    );
+    res.json({ success: true, data: history });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Generate expiry alert notifications (can be called by cron or manually)
+router.post('/expiry/generate-alerts', requirePermission('MANAGE_PHARMACY'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const result = await expiryAlertService.generateAlertNotifications(user.tenantId);
+    res.json({ success: true, data: result });
+  } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
 });

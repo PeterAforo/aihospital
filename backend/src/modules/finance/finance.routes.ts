@@ -2,7 +2,9 @@ import { Router, Response } from 'express';
 import { authenticate, requirePermission, authorize, AuthRequest } from '../../common/middleware/auth.js';
 import { financeService } from './finance.service.js';
 import { seedServiceCatalog } from './seed-service-catalog.js';
-import { ServiceCategory } from '@prisma/client';
+import { ServiceCategory, AccountType } from '@prisma/client';
+import { generalLedgerService } from './general-ledger.service';
+import { cashFlowService } from './cash-flow.service';
 
 const router: Router = Router();
 
@@ -508,6 +510,188 @@ router.post('/seed', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN', 'MEDICAL_DIRECTO
   try {
     const user = req.user!;
     const result = await seedServiceCatalog(user.tenantId);
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== GENERAL LEDGER ====================
+
+// Chart of Accounts
+router.get('/gl/accounts', requirePermission('VIEW_INVOICES'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { accountType } = req.query;
+    const accounts = await generalLedgerService.getAccounts(user.tenantId, accountType as AccountType | undefined);
+    res.json({ success: true, data: accounts });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/gl/accounts', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const account = await generalLedgerService.createAccount(user.tenantId, req.body);
+    res.status(201).json({ success: true, data: account });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.put('/gl/accounts/:id', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    const account = await generalLedgerService.updateAccount(req.params.id, req.body);
+    res.json({ success: true, data: account });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/gl/accounts/seed', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const result = await generalLedgerService.seedDefaultAccounts(user.tenantId);
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Journal Entries
+router.get('/gl/journal-entries', requirePermission('VIEW_INVOICES'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { startDate, endDate, status, sourceModule, limit } = req.query;
+    const entries = await generalLedgerService.getJournalEntries(user.tenantId, {
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+      status: status as string,
+      sourceModule: sourceModule as string,
+      limit: limit ? parseInt(limit as string) : undefined,
+    });
+    res.json({ success: true, data: entries });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/gl/journal-entries', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const entry = await generalLedgerService.createJournalEntry(user.tenantId, user.userId, req.body);
+    res.status(201).json({ success: true, data: entry });
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/gl/journal-entries/:id/reverse', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { reason } = req.body;
+    const reversal = await generalLedgerService.reverseJournalEntry(user.tenantId, req.params.id, user.userId, reason || 'Reversal');
+    res.json({ success: true, data: reversal });
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Reports
+router.get('/gl/trial-balance', requirePermission('VIEW_INVOICES'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { asOfDate } = req.query;
+    const tb = await generalLedgerService.getTrialBalance(user.tenantId, asOfDate ? new Date(asOfDate as string) : undefined);
+    res.json({ success: true, data: tb });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/gl/profit-and-loss', requirePermission('VIEW_INVOICES'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ success: false, error: 'startDate and endDate are required' });
+    }
+    const pnl = await generalLedgerService.getProfitAndLoss(user.tenantId, new Date(startDate as string), new Date(endDate as string));
+    res.json({ success: true, data: pnl });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/gl/balance-sheet', requirePermission('VIEW_INVOICES'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { asOfDate } = req.query;
+    const bs = await generalLedgerService.getBalanceSheet(user.tenantId, asOfDate ? new Date(asOfDate as string) : undefined);
+    res.json({ success: true, data: bs });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Fiscal Periods
+router.get('/gl/fiscal-periods', requirePermission('VIEW_INVOICES'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const periods = await generalLedgerService.getFiscalPeriods(user.tenantId);
+    res.json({ success: true, data: periods });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/gl/fiscal-periods', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const period = await generalLedgerService.createFiscalPeriod(user.tenantId, {
+      name: req.body.name,
+      startDate: new Date(req.body.startDate),
+      endDate: new Date(req.body.endDate),
+    });
+    res.status(201).json({ success: true, data: period });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/gl/fiscal-periods/:id/close', authorize('HOSPITAL_ADMIN', 'SUPER_ADMIN'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const result = await generalLedgerService.closeFiscalPeriod(user.tenantId, req.params.id, user.userId);
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== CASH FLOW & BUDGET ====================
+
+router.get('/gl/cash-flow', requirePermission('VIEW_INVOICES'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ success: false, error: 'startDate and endDate are required' });
+    }
+    const cf = await cashFlowService.getCashFlowStatement(user.tenantId, new Date(startDate as string), new Date(endDate as string));
+    res.json({ success: true, data: cf });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/gl/budget-vs-actual', requirePermission('VIEW_INVOICES'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { fiscalYear } = req.query;
+    const year = fiscalYear ? parseInt(fiscalYear as string) : new Date().getFullYear();
+    const result = await cashFlowService.getBudgetVsActual(user.tenantId, year);
     res.json({ success: true, data: result });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

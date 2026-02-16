@@ -121,6 +121,33 @@ export class NotificationService {
       },
     });
   }
+
+  async notifyCriticalLabValue(params: {
+    doctorId: string;
+    patientName: string;
+    testName: string;
+    resultValue: number;
+    criticalType: string;
+    orderId?: string;
+    alertId?: string;
+  }) {
+    const urgencyPrefix = '🚨 CRITICAL';
+    return this.createNotification({
+      userId: params.doctorId,
+      type: 'LAB_RESULT',
+      title: `${urgencyPrefix} Lab Value - ${params.testName}`,
+      message: `CRITICAL ${params.criticalType} value for ${params.patientName}: ${params.testName} = ${params.resultValue}. Immediate review required.`,
+      data: {
+        orderId: params.orderId,
+        alertId: params.alertId,
+        patientName: params.patientName,
+        testName: params.testName,
+        resultValue: params.resultValue,
+        criticalType: params.criticalType,
+        isCritical: true,
+      },
+    });
+  }
 }
 
 export const notificationService = new NotificationService();

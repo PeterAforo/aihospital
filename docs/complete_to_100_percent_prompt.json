@@ -1,0 +1,1495 @@
+{
+  "prompt_name": "MediCare Ghana - 72% to 100% Production-Ready Completion Plan",
+  "current_status": {
+    "overall_completion": "72%",
+    "database": "90%",
+    "backend": "78%",
+    "frontend": "68%",
+    "integration_testing": "45%",
+    "devops": "20%",
+    "total_modules": 25,
+    "production_ready": false
+  },
+
+  "target_status": {
+    "overall_completion": "100%",
+    "all_layers": "95%+",
+    "production_ready": true,
+    "fully_tested": true,
+    "deployed": true
+  },
+
+  "completion_roadmap": {
+    "phase_1_critical_gaps": {
+      "name": "Phase 1: Complete Critical Features & Integrations",
+      "duration": "4-6 weeks",
+      "priority": "P0 - CRITICAL",
+      "focus": "Get all modules to 85%+, complete missing integrations"
+    },
+    "phase_2_advanced_features": {
+      "name": "Phase 2: Add Advanced Features",
+      "duration": "3-4 weeks",
+      "priority": "P1 - HIGH",
+      "focus": "Add P&L, General Ledger, advanced analytics, production features"
+    },
+    "phase_3_testing_qa": {
+      "name": "Phase 3: Comprehensive Testing & QA",
+      "duration": "2-3 weeks",
+      "priority": "P0 - CRITICAL",
+      "focus": "Automated tests, E2E tests, load testing, security testing"
+    },
+    "phase_4_production_deployment": {
+      "name": "Phase 4: Production Readiness & Deployment",
+      "duration": "2 weeks",
+      "priority": "P0 - CRITICAL",
+      "focus": "Docker, CI/CD, monitoring, production deployment"
+    }
+  },
+
+  "instructions_for_ai": {
+    "task": "Review each module below and complete ALL missing items. For each module, implement missing features, add advanced capabilities, write tests, and ensure production readiness.",
+    "success_criteria": {
+      "backend": "All APIs working, fully tested, error handling, logging",
+      "frontend": "All forms validated, loading states, error messages, responsive",
+      "integration": "All external systems integrated, E2E workflows tested",
+      "testing": "80%+ code coverage, all E2E scenarios passing",
+      "production": "Docker containerized, CI/CD pipeline, monitoring, deployed"
+    },
+    "reporting": "For each module, report: Completed items ✅, Remaining gaps ❌, Estimated time, Blockers"
+  },
+
+  "module_completion_checklist": {
+    "M1_AUTH_MULTITENANCY": {
+      "module": "Authentication & Multi-tenancy",
+      "current_completion": "92%",
+      "target_completion": "98%",
+      "critical_priority": "P0",
+      
+      "missing_features": [
+        {
+          "feature": "MFA/2FA Implementation",
+          "status": "TODO stub exists",
+          "requirements": [
+            "Generate QR code for Google Authenticator/Authy",
+            "Verify TOTP codes",
+            "Backup codes generation",
+            "Enforce MFA for admin roles",
+            "MFA setup wizard",
+            "MFA recovery workflow"
+          ],
+          "estimated_time": "3-4 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Forgot/Reset Password",
+          "status": "TODO stub exists",
+          "requirements": [
+            "Email password reset link (with token expiry)",
+            "SMS reset code (Ghana mobile)",
+            "Security questions (optional)",
+            "Password strength validator",
+            "Password history (prevent reuse of last 5)",
+            "Account lockout after failed attempts"
+          ],
+          "estimated_time": "2-3 days",
+          "priority": "P0"
+        },
+        {
+          "feature": "Session Management",
+          "requirements": [
+            "Active sessions list per user",
+            "Logout from all devices",
+            "Session timeout (configurable)",
+            "Remember me functionality",
+            "Device fingerprinting",
+            "Suspicious login alerts"
+          ],
+          "estimated_time": "2 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "API Rate Limiting",
+          "requirements": [
+            "Rate limit per endpoint (100 req/min)",
+            "Rate limit per user/IP",
+            "Rate limit headers in response",
+            "429 Too Many Requests handling"
+          ],
+          "estimated_time": "1 day",
+          "priority": "P1"
+        }
+      ],
+      
+      "testing_requirements": [
+        "Unit tests: JWT generation, token refresh, password hashing",
+        "Integration tests: Login flow, MFA flow, password reset",
+        "Security tests: SQL injection, XSS, CSRF, brute force",
+        "E2E tests: Complete user registration to login journey"
+      ],
+      
+      "production_requirements": [
+        "Redis for session storage (not in-memory)",
+        "Secure JWT secrets in environment vars",
+        "HTTPS only in production",
+        "Security headers (Helmet.js)",
+        "Audit logging for all auth events"
+      ]
+    },
+
+    "M2_PATIENT_REGISTRATION": {
+      "module": "Patient Registration",
+      "current_completion": "87%",
+      "target_completion": "95%",
+      
+      "missing_features": [
+        {
+          "feature": "Photo Upload",
+          "status": "MISSING",
+          "requirements": [
+            "Upload patient photo (JPG, PNG)",
+            "Image compression (max 500KB)",
+            "Face detection validation (optional)",
+            "Crop/rotate functionality",
+            "Store in S3/Cloud storage",
+            "Display in patient profile"
+          ],
+          "estimated_time": "2-3 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Document Attachments",
+          "requirements": [
+            "Upload ID documents (Ghana Card, Passport, etc.)",
+            "Upload insurance cards (NHIS, private)",
+            "Upload medical records from other hospitals",
+            "Document viewer (PDF, images)",
+            "Document versioning",
+            "Secure storage with encryption"
+          ],
+          "estimated_time": "3 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Advanced Search",
+          "requirements": [
+            "Fuzzy search (handle typos in names)",
+            "Search by multiple criteria (name + DOB + phone)",
+            "Search results ranking by relevance",
+            "Search suggestions/autocomplete",
+            "Recent searches",
+            "Search filters (age range, gender, branch, insurance type)"
+          ],
+          "estimated_time": "2 days",
+          "priority": "P2"
+        },
+        {
+          "feature": "Merge Duplicate Patients",
+          "requirements": [
+            "Identify potential duplicates (similar names, DOB, phone)",
+            "Side-by-side comparison UI",
+            "Select primary record",
+            "Merge encounters, prescriptions, invoices to primary",
+            "Archive duplicate record",
+            "Audit trail of merge operation"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        }
+      ],
+      
+      "integration_requirements": [
+        "Ghana Card API: Real-time verification (if available)",
+        "NHIS API: Verify NHIS number validity",
+        "SMS: Send registration confirmation to patient",
+        "Email: Send patient portal credentials"
+      ],
+      
+      "testing_requirements": [
+        "Unit tests: MRN generation, duplicate detection algorithm",
+        "Integration tests: Ghana Card integration, NHIS verification",
+        "E2E tests: Register patient → Portal login → Book appointment"
+      ]
+    },
+
+    "M6_PHARMACY": {
+      "module": "Pharmacy & Drug Dispensing",
+      "current_completion": "77%",
+      "target_completion": "95%",
+      
+      "missing_features": [
+        {
+          "feature": "Drug Interaction Checks (CRITICAL)",
+          "status": "MISSING",
+          "requirements": [
+            "Drug-drug interaction database (common interactions)",
+            "Check interactions when dispensing",
+            "Severity levels (minor, moderate, major, contraindicated)",
+            "Clinical decision support alerts",
+            "Pharmacist override with reason",
+            "Log all interaction warnings",
+            "Integration with prescription module CDS"
+          ],
+          "estimated_time": "5-6 days",
+          "priority": "P0 - CRITICAL FOR PATIENT SAFETY"
+        },
+        {
+          "feature": "Expiry Alerts & Management",
+          "status": "MISSING",
+          "requirements": [
+            "Automated expiry alerts (90 days, 60 days, 30 days)",
+            "Expiring stock dashboard widget",
+            "Email/SMS notifications to pharmacy manager",
+            "Near-expiry stock report",
+            "Expired stock disposal workflow",
+            "Disposal documentation & audit trail",
+            "FIFO/FEFO dispensing recommendations"
+          ],
+          "estimated_time": "3-4 days",
+          "priority": "P0 - CRITICAL"
+        },
+        {
+          "feature": "Batch Tracking & Recall",
+          "requirements": [
+            "Track batch numbers for all stock",
+            "Batch-specific expiry dates",
+            "Dispense from specific batch",
+            "Batch recall workflow (if manufacturer recall)",
+            "Trace which patients received recalled batch",
+            "Notification to patients if needed"
+          ],
+          "estimated_time": "4 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Auto-Reorder & Smart Procurement",
+          "requirements": [
+            "Reorder level alerts",
+            "Consumption rate analysis",
+            "Automatic PO generation when stock low",
+            "Seasonal demand forecasting",
+            "Supplier performance tracking",
+            "Lead time management"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Controlled Substances Tracking",
+          "requirements": [
+            "Narcotic drugs register",
+            "Double verification for controlled substances",
+            "Detailed audit trail (who dispensed, to whom, when)",
+            "Regulatory compliance reports",
+            "Lock and key tracking (physical security)"
+          ],
+          "estimated_time": "3 days",
+          "priority": "P1"
+        }
+      ],
+      
+      "advanced_features_to_add": [
+        {
+          "feature": "Pharmacy Dashboard Analytics",
+          "components": [
+            "Top 10 dispensed drugs (daily/weekly/monthly)",
+            "Stock value by category",
+            "Slow-moving vs fast-moving drugs",
+            "Expiry cost (value of expired drugs)",
+            "Procurement cost trends",
+            "Average days to dispense after prescription",
+            "Stock-out incidents tracking"
+          ],
+          "estimated_time": "3 days"
+        },
+        {
+          "feature": "Drug Formulary Management",
+          "components": [
+            "Add new drugs to formulary",
+            "Mark drugs as preferred/alternative",
+            "Generic substitution rules",
+            "Therapeutic equivalent suggestions",
+            "Drug pricing updates",
+            "Import formulary from Excel/CSV"
+          ],
+          "estimated_time": "2-3 days"
+        }
+      ],
+      
+      "integration_requirements": [
+        "Finance module: Cost price updates affect P&L",
+        "Billing module: Dispensed drugs auto-create invoice items",
+        "EMR module: Prescription status updates when dispensed",
+        "Inventory module: Stock movements logged"
+      ]
+    },
+
+    "M7_LABORATORY": {
+      "module": "Laboratory",
+      "current_completion": "77%",
+      "target_completion": "95%",
+      
+      "missing_features": [
+        {
+          "feature": "Instrument Integration (HL7/ASTM)",
+          "status": "MISSING",
+          "requirements": [
+            "HL7 message parser (ORU^R01 for results)",
+            "ASTM protocol support",
+            "Auto-import results from analyzers (Hematology, Chemistry, etc.)",
+            "Bidirectional interface (send orders, receive results)",
+            "Instrument connection monitoring",
+            "Manual result entry fallback",
+            "Supported instruments: Mindray, Sysmex, Roche, Abbott"
+          ],
+          "estimated_time": "7-10 days",
+          "priority": "P1 - HIGH VALUE"
+        },
+        {
+          "feature": "Auto-Validation & Delta Checks",
+          "status": "MISSING",
+          "requirements": [
+            "Auto-validation for results within normal range",
+            "Delta checks (compare with previous results)",
+            "Critical value auto-flagging",
+            "Auto-alert doctor for critical values",
+            "Pathologist review queue for abnormals",
+            "Machine learning-based outlier detection (optional)"
+          ],
+          "estimated_time": "5-6 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Quality Control Management",
+          "requirements": [
+            "Daily QC logging for each analyzer",
+            "QC ranges (Levey-Jennings charts)",
+            "QC pass/fail tracking",
+            "Block result reporting if QC failed",
+            "QC trend analysis",
+            "Calibration records",
+            "External quality assessment (EQA) tracking"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Sample Tracking with Barcodes",
+          "requirements": [
+            "Print barcode labels for samples",
+            "Barcode scanner integration",
+            "Track sample from collection → lab → analysis → disposal",
+            "Sample status real-time updates",
+            "Lost sample workflow",
+            "Sample storage location tracking (fridge, freezer)"
+          ],
+          "estimated_time": "4 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Lab Report Enhancements",
+          "requirements": [
+            "Custom report templates per test",
+            "Include reference ranges on report",
+            "Highlight abnormal results (bold, colored)",
+            "Graphs for trend data (e.g., glucose over time)",
+            "Digital signature from pathologist",
+            "Watermark (PRELIMINARY vs FINAL)",
+            "QR code for verification",
+            "Patient-friendly report format"
+          ],
+          "estimated_time": "3-4 days",
+          "priority": "P1"
+        }
+      ],
+      
+      "advanced_features_to_add": [
+        {
+          "feature": "Lab Dashboard Analytics",
+          "components": [
+            "Test turnaround time (TAT) monitoring",
+            "TAT by test type (goal vs actual)",
+            "Critical value notifications sent",
+            "Rejected samples (hemolyzed, clotted, insufficient)",
+            "Test volume trends",
+            "Revenue per test type",
+            "Instrument downtime tracking"
+          ],
+          "estimated_time": "3 days"
+        },
+        {
+          "feature": "Reagent Inventory Management",
+          "components": [
+            "Track reagent stock levels",
+            "Consumption tracking per test",
+            "Reagent expiry alerts",
+            "Auto-calculate reagent needs based on test volume",
+            "Supplier management for reagents"
+          ],
+          "estimated_time": "3 days"
+        }
+      ]
+    },
+
+    "M8_RADIOLOGY": {
+      "module": "Radiology",
+      "current_completion": "67%",
+      "target_completion": "90%",
+      
+      "missing_features": [
+        {
+          "feature": "DICOM/PACS Integration",
+          "status": "MISSING - MAJOR GAP",
+          "requirements": [
+            "DICOM image storage (local or cloud PACS)",
+            "DICOM viewer (Cornerstone.js or OHIF Viewer)",
+            "DICOM worklist (send orders to modality)",
+            "DICOM query/retrieve",
+            "Image archiving (compress old studies)",
+            "CD/DVD burning for patient copies",
+            "DICOM anonymization for research"
+          ],
+          "estimated_time": "10-14 days",
+          "priority": "P1 - HIGH VALUE (if hospital has digital imaging)",
+          "note": "Skip if hospital uses film X-rays only"
+        },
+        {
+          "feature": "Image Viewer",
+          "requirements": [
+            "Web-based DICOM viewer",
+            "Zoom, pan, window/level adjustments",
+            "Measurements (distance, angle, area)",
+            "Annotations and markup",
+            "Multi-planar reconstruction (MPR) for CT/MRI",
+            "Cine loop for dynamic studies",
+            "Comparison view (current vs prior)"
+          ],
+          "estimated_time": "Included in DICOM integration",
+          "priority": "P1"
+        },
+        {
+          "feature": "Radiologist Reporting Enhancements",
+          "requirements": [
+            "Voice dictation (speech-to-text API)",
+            "Structured reporting templates",
+            "BI-RADS for mammography",
+            "TNM staging for oncology",
+            "Critical findings alert workflow",
+            "Addendum reports",
+            "Peer review and teaching file"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P2"
+        },
+        {
+          "feature": "Radiation Dose Tracking",
+          "requirements": [
+            "Log radiation dose per study (CT, fluoroscopy)",
+            "Patient cumulative dose tracking",
+            "Alert if dose exceeds threshold",
+            "Regulatory compliance reporting"
+          ],
+          "estimated_time": "2-3 days",
+          "priority": "P2"
+        }
+      ],
+      
+      "advanced_features_to_add": [
+        {
+          "feature": "Radiology Dashboard",
+          "components": [
+            "Pending studies queue",
+            "Average reporting time",
+            "Modality utilization (X-ray, CT, MRI, Ultrasound)",
+            "Critical findings logged",
+            "Revenue by modality"
+          ],
+          "estimated_time": "2 days"
+        }
+      ]
+    },
+
+    "M9_BILLING_INVOICING": {
+      "module": "Billing & Invoicing",
+      "current_completion": "75%",
+      "target_completion": "95%",
+      
+      "missing_features": [
+        {
+          "feature": "Receipt Printing",
+          "status": "MISSING",
+          "requirements": [
+            "Thermal printer support (POS printer)",
+            "Receipt template (hospital letterhead, items, totals)",
+            "Print preview",
+            "Reprint functionality",
+            "Email receipt to patient",
+            "SMS receipt summary (total, balance)",
+            "Receipt numbering sequence"
+          ],
+          "estimated_time": "3-4 days",
+          "priority": "P0 - CRITICAL"
+        },
+        {
+          "feature": "Payment Gateway Integration",
+          "status": "MISSING - CRITICAL FOR ONLINE PAYMENTS",
+          "requirements": [
+            "MTN Mobile Money integration",
+            "Vodafone Cash integration",
+            "AirtelTigo Money integration",
+            "Debit/Credit card (Paystack or Flutterwave)",
+            "Payment confirmation webhooks",
+            "Automatic invoice status update on payment",
+            "Failed payment retry mechanism",
+            "Refund processing"
+          ],
+          "estimated_time": "7-10 days",
+          "priority": "P0 - CRITICAL FOR PATIENT PORTAL PAYMENTS"
+        },
+        {
+          "feature": "Invoice Reminders & Collections",
+          "requirements": [
+            "Automated SMS reminders for unpaid invoices",
+            "Email invoice with payment link",
+            "Payment plan setup (installments)",
+            "Debt aging report (30, 60, 90 days overdue)",
+            "Collection notes and follow-up tracking",
+            "Write-off workflow (with approval)",
+            "Bad debt provisioning"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Split Billing",
+          "requirements": [
+            "Insurance pays portion, patient pays remainder",
+            "Co-payment tracking",
+            "Deductibles",
+            "Multiple payers on one invoice",
+            "Claim submission to insurance",
+            "Payment reconciliation between payers"
+          ],
+          "estimated_time": "3-4 days",
+          "priority": "P1"
+        }
+      ],
+      
+      "advanced_features_to_add": [
+        {
+          "feature": "Billing Dashboard",
+          "components": [
+            "Today's revenue (cash vs card vs MoMo vs NHIS)",
+            "Outstanding invoices by age",
+            "Collection rate trend",
+            "Revenue by service type (consultation, pharmacy, lab, radiology)",
+            "Revenue by doctor",
+            "Payment method distribution",
+            "Write-offs this month"
+          ],
+          "estimated_time": "3 days"
+        }
+      ]
+    },
+
+    "M10_NHIS_CLAIMS": {
+      "module": "NHIS Claims",
+      "current_completion": "72%",
+      "target_completion": "95%",
+      
+      "missing_features": [
+        {
+          "feature": "Live NHIS API Integration",
+          "status": "STUB - NEEDS REAL INTEGRATION",
+          "requirements": [
+            "Connect to NHIA claims portal API",
+            "Real-time eligibility verification",
+            "Electronic claims submission (XML upload)",
+            "Claims status tracking (submitted, processing, approved, rejected)",
+            "Download remittance advice",
+            "Automatic payment posting on approval",
+            "Rejection handling workflow (edit and resubmit)"
+          ],
+          "estimated_time": "10-14 days",
+          "priority": "P0 - CRITICAL FOR NHIS HOSPITALS",
+          "note": "Requires NHIA API credentials and documentation"
+        },
+        {
+          "feature": "Claims Validation & Error Checking",
+          "requirements": [
+            "Validate NHIS card number format",
+            "Check service codes match NHIS tariff",
+            "Ensure ICD-10 codes are NHIS-approved",
+            "Verify drug is in NHIS formulary",
+            "Pre-submission validation to reduce rejections",
+            "Validation error messages displayed to user"
+          ],
+          "estimated_time": "3-4 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Claims Reconciliation Dashboard",
+          "requirements": [
+            "Match submitted claims to NHIS payments received",
+            "Identify unpaid claims",
+            "Track rejection reasons (top 10)",
+            "Claims aging (pending > 90 days)",
+            "Expected vs actual reimbursement variance",
+            "Auto-generate queries for unpaid claims"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        }
+      ]
+    },
+
+    "M11_FINANCE_PRICING": {
+      "module": "Finance & Pricing",
+      "current_completion": "68%",
+      "target_completion": "98%",
+      
+      "missing_advanced_features": [
+        {
+          "feature": "General Ledger (GL)",
+          "status": "MISSING - CRITICAL FOR ACCOUNTING",
+          "requirements": [
+            "Chart of Accounts (Assets, Liabilities, Equity, Revenue, Expenses)",
+            "GL account hierarchy (parent-child)",
+            "Journal entries (debit/credit double-entry bookkeeping)",
+            "Automated journal entries from transactions (invoices, payments, expenses)",
+            "Trial balance report",
+            "GL account balance inquiry",
+            "Period closing (month-end, year-end)",
+            "Account reconciliation"
+          ],
+          "estimated_time": "10-14 days",
+          "priority": "P0 - CRITICAL FOR PROPER ACCOUNTING",
+          "database_tables": [
+            "gl_accounts (chart of accounts)",
+            "journal_entries",
+            "journal_entry_lines (debit/credit lines)",
+            "fiscal_periods",
+            "account_balances (running balances)"
+          ]
+        },
+        {
+          "feature": "Profit & Loss Statement (P&L / Income Statement)",
+          "status": "MISSING",
+          "requirements": [
+            "Revenue by category (consultation, pharmacy, lab, radiology, inpatient)",
+            "Cost of Goods Sold (COGS) - drug costs, lab reagents",
+            "Gross Profit calculation",
+            "Operating Expenses (salaries, rent, utilities, supplies)",
+            "Operating Income",
+            "Other Income/Expenses",
+            "Net Income/Loss",
+            "P&L by period (monthly, quarterly, annual)",
+            "P&L by branch comparison",
+            "Export to PDF/Excel"
+          ],
+          "estimated_time": "5-7 days",
+          "priority": "P0 - CRITICAL"
+        },
+        {
+          "feature": "Balance Sheet",
+          "status": "MISSING",
+          "requirements": [
+            "Assets section (Current: Cash, Accounts Receivable, Inventory; Fixed: Equipment, Building)",
+            "Liabilities section (Current: Accounts Payable, Short-term Debt; Long-term: Loans)",
+            "Equity section (Capital, Retained Earnings)",
+            "Balance Sheet equation validation (Assets = Liabilities + Equity)",
+            "Comparative balance sheet (current vs prior period)",
+            "Export to PDF/Excel"
+          ],
+          "estimated_time": "5-7 days",
+          "priority": "P0 - CRITICAL"
+        },
+        {
+          "feature": "Cash Flow Statement",
+          "status": "MISSING",
+          "requirements": [
+            "Operating Activities (cash from operations)",
+            "Investing Activities (purchase/sale of assets)",
+            "Financing Activities (loans, capital contributions)",
+            "Net change in cash",
+            "Cash flow forecast (next 30/60/90 days)",
+            "Export to PDF/Excel"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Budget Management",
+          "requirements": [
+            "Create annual budget by GL account",
+            "Budget by department/branch",
+            "Budget vs Actual reports",
+            "Variance analysis (favorable/unfavorable)",
+            "Budget revision workflow",
+            "Alert when spending exceeds budget"
+          ],
+          "estimated_time": "5-6 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Expense Management",
+          "requirements": [
+            "Expense categories (salaries, utilities, supplies, rent, etc.)",
+            "Record expenses (date, amount, category, vendor, receipt)",
+            "Expense approval workflow",
+            "Petty cash management",
+            "Vendor payment tracking",
+            "Expense reports by category/period",
+            "Tax-deductible expense tracking"
+          ],
+          "estimated_time": "5-6 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Financial Dashboard",
+          "requirements": [
+            "Real-time P&L summary (Revenue, Expenses, Net Income)",
+            "Cash position (bank balances)",
+            "Accounts Receivable aging",
+            "Accounts Payable aging",
+            "Key financial ratios (Current Ratio, Quick Ratio, Profit Margin)",
+            "Revenue trend graph (daily, weekly, monthly)",
+            "Expense trend graph",
+            "Top revenue sources",
+            "Top expense categories"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P0"
+        }
+      ],
+      
+      "integration_requirements": [
+        "Billing module: Invoices auto-create journal entries (DR Accounts Receivable, CR Revenue)",
+        "Pharmacy: Drug purchases create entries (DR Inventory, CR Accounts Payable)",
+        "Payroll: Salary payments create entries (DR Salary Expense, CR Cash)",
+        "Lab/Radiology: Revenue recognition from completed tests"
+      ]
+    },
+
+    "M16_NOTIFICATIONS": {
+      "module": "Notifications",
+      "current_completion": "62%",
+      "target_completion": "95%",
+      
+      "missing_features": [
+        {
+          "feature": "Email Notifications",
+          "status": "MISSING",
+          "requirements": [
+            "Email service provider (SendGrid, Mailgun, AWS SES)",
+            "Email templates (appointment reminders, lab results, invoices, receipts)",
+            "HTML email design",
+            "Personalization (patient name, MRN, etc.)",
+            "Email delivery tracking (sent, opened, clicked)",
+            "Bounce handling",
+            "Unsubscribe management"
+          ],
+          "estimated_time": "5-7 days",
+          "priority": "P0"
+        },
+        {
+          "feature": "Push Notifications (Mobile App)",
+          "status": "MISSING",
+          "requirements": [
+            "Firebase Cloud Messaging (FCM) integration",
+            "Push notification service",
+            "Notification templates",
+            "Device token registration",
+            "Notification delivery tracking",
+            "Deep linking (notification → specific app page)",
+            "Badge count management"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Notification Preferences",
+          "status": "MISSING",
+          "requirements": [
+            "User preference settings (email on/off, SMS on/off, push on/off)",
+            "Notification type preferences (appointments, lab results, billing, etc.)",
+            "Quiet hours (no notifications 10pm-7am)",
+            "Frequency settings (immediate, daily digest, weekly)",
+            "Opt-out per notification type"
+          ],
+          "estimated_time": "3-4 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Notification Templates Management",
+          "requirements": [
+            "Admin UI to edit notification templates",
+            "Template variables ({{patientName}}, {{appointmentDate}}, etc.)",
+            "Preview before send",
+            "Multi-language support (English, Twi, Ga - Ghana languages)",
+            "Template versioning"
+          ],
+          "estimated_time": "3 days",
+          "priority": "P2"
+        }
+      ],
+      
+      "notification_types_to_implement": [
+        {
+          "type": "Appointment Reminders",
+          "channels": ["SMS", "Email", "Push"],
+          "timing": "24 hours before, 2 hours before",
+          "content": "Appointment with Dr. {{doctorName}} at {{time}} on {{date}}"
+        },
+        {
+          "type": "Lab Results Ready",
+          "channels": ["SMS", "Email", "Push"],
+          "timing": "Immediately when approved",
+          "content": "Your {{testName}} results are ready. View in patient portal."
+        },
+        {
+          "type": "Prescription Ready for Pickup",
+          "channels": ["SMS"],
+          "timing": "When dispensed",
+          "content": "Your prescription is ready for pickup at {{branchName}} pharmacy."
+        },
+        {
+          "type": "Invoice/Bill Payment Due",
+          "channels": ["SMS", "Email"],
+          "timing": "On invoice creation, 7 days before due, on due date, 7 days overdue",
+          "content": "Invoice #{{invoiceNumber}} of ₵{{amount}} is due on {{dueDate}}."
+        },
+        {
+          "type": "Payment Confirmation",
+          "channels": ["SMS", "Email"],
+          "timing": "Immediately after payment",
+          "content": "Payment of ₵{{amount}} received. Receipt #{{receiptNumber}}."
+        },
+        {
+          "type": "Critical Lab Value Alert (to Doctor)",
+          "channels": ["SMS", "Email", "In-app"],
+          "timing": "Immediately",
+          "content": "CRITICAL: Patient {{patientName}} ({{MRN}}) - {{testName}}: {{value}} (Critical range)"
+        }
+      ]
+    },
+
+    "M20_MOBILE_APP": {
+      "module": "Mobile App (React Native)",
+      "current_completion": "33%",
+      "target_completion": "95%",
+      
+      "critical_gaps": [
+        {
+          "issue": "Not Runnable - Expo Not Installed",
+          "status": "BLOCKER",
+          "requirements": [
+            "Install Expo CLI globally",
+            "Configure package.json with correct dependencies",
+            "Set up expo.config.js",
+            "Configure API base URL for development/production",
+            "Add iOS and Android icons and splash screens",
+            "Test on iOS Simulator",
+            "Test on Android Emulator",
+            "Test on physical devices"
+          ],
+          "estimated_time": "2-3 days",
+          "priority": "P0"
+        },
+        {
+          "feature": "Complete All Screens",
+          "status": "Scaffolded only",
+          "requirements": [
+            "Patient App: Login, Register, Home, Appointments (book/view), Lab Results, Prescriptions, Invoices (view/pay), Profile, Notifications",
+            "Doctor App: Login, Home, Schedule, Patient List, EMR Access, Prescriptions, Lab Results, Notifications",
+            "API Integration for all screens",
+            "Loading states, error handling",
+            "Offline mode (cache data with AsyncStorage)",
+            "Pull-to-refresh functionality"
+          ],
+          "estimated_time": "10-14 days",
+          "priority": "P0"
+        },
+        {
+          "feature": "Mobile-Specific Features",
+          "requirements": [
+            "Camera for scanning QR codes (appointment verification)",
+            "Biometric authentication (Face ID, Touch ID)",
+            "Push notifications (FCM)",
+            "Deep linking (open specific pages from notifications)",
+            "Share prescription/lab results (PDF)",
+            "Barcode scanner (scan patient MRN)",
+            "Location services (find nearest branch)"
+          ],
+          "estimated_time": "7-10 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "App Store Deployment",
+          "requirements": [
+            "App Store (iOS) - Apple Developer Account, App Store Connect setup, TestFlight beta",
+            "Google Play Store (Android) - Google Play Console, Release APK/AAB",
+            "App icons (multiple sizes)",
+            "Screenshots for stores",
+            "App descriptions",
+            "Privacy policy URL",
+            "Terms of service URL"
+          ],
+          "estimated_time": "5-7 days",
+          "priority": "P1"
+        }
+      ]
+    },
+
+    "M22_REPORTS_ANALYTICS": {
+      "module": "Reports & Analytics",
+      "current_completion": "62%",
+      "target_completion": "98%",
+      
+      "missing_features": [
+        {
+          "feature": "Chart Visualizations",
+          "status": "MISSING",
+          "requirements": [
+            "Chart library (Chart.js, Recharts, or D3.js)",
+            "Line charts (revenue trends, patient volume over time)",
+            "Bar charts (revenue by service, top diagnoses)",
+            "Pie charts (payment methods, insurance breakdown)",
+            "Area charts (cumulative revenue)",
+            "Heatmaps (appointment density by hour/day)",
+            "Interactive charts (zoom, pan, tooltips)",
+            "Export charts as images (PNG, SVG)"
+          ],
+          "estimated_time": "5-7 days",
+          "priority": "P0"
+        },
+        {
+          "feature": "Export to PDF/Excel",
+          "status": "MISSING - CRITICAL",
+          "requirements": [
+            "PDF generation (PDFKit or Puppeteer)",
+            "Excel generation (ExcelJS or XLSX)",
+            "Export all reports to PDF and Excel",
+            "Professional formatting (headers, footers, page numbers)",
+            "Hospital letterhead on PDF",
+            "Excel with formulas and charts",
+            "Batch export (multiple reports at once)"
+          ],
+          "estimated_time": "5-7 days",
+          "priority": "P0"
+        },
+        {
+          "feature": "Scheduled Reports",
+          "status": "MISSING",
+          "requirements": [
+            "Schedule reports (daily, weekly, monthly)",
+            "Email scheduled reports to recipients",
+            "Cron jobs or scheduled tasks",
+            "Report scheduling UI (select report, frequency, recipients)",
+            "Report delivery log (when sent, to whom)",
+            "Failed delivery retry mechanism"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Custom Report Builder",
+          "requirements": [
+            "Drag-and-drop report builder (select tables, columns, filters)",
+            "SQL query builder UI",
+            "Save custom reports",
+            "Share custom reports with other users",
+            "Report templates library",
+            "Permission-based report access"
+          ],
+          "estimated_time": "10-14 days",
+          "priority": "P2"
+        }
+      ],
+      
+      "reports_to_implement": [
+        {
+          "category": "Clinical Reports",
+          "reports": [
+            "Disease Surveillance (Top 10 ICD-10 diagnoses)",
+            "Antibiotic Prescribing Patterns",
+            "Morbidity & Mortality Report",
+            "Inpatient Bed Occupancy by Ward",
+            "Average Length of Stay (ALOS)",
+            "Readmission Rate (within 30 days)",
+            "Surgical Procedures Log",
+            "Emergency Department Metrics (wait time, admission rate)"
+          ]
+        },
+        {
+          "category": "Financial Reports",
+          "reports": [
+            "Revenue Summary (daily, weekly, monthly)",
+            "Revenue by Service Type",
+            "Revenue by Doctor",
+            "Revenue by Branch",
+            "Outstanding Invoices (Debt Aging)",
+            "Payment Method Distribution",
+            "NHIS vs Cash Revenue Comparison",
+            "Profit Margin by Service",
+            "Expense Report by Category",
+            "Cash Flow Report"
+          ]
+        },
+        {
+          "category": "Operational Reports",
+          "reports": [
+            "Patient Registration Trends",
+            "Appointment Statistics (booked, completed, cancelled, no-show)",
+            "Doctor Productivity (patients seen per day)",
+            "Average Wait Time",
+            "Lab Test Turnaround Time",
+            "Pharmacy Dispensing Volume",
+            "Stock Turnover Rate",
+            "Equipment Utilization"
+          ]
+        },
+        {
+          "category": "Compliance/Regulatory",
+          "reports": [
+            "NHIS Claims Summary",
+            "Controlled Substances Register (Narcotics)",
+            "Infection Control Report",
+            "Adverse Events Log",
+            "Patient Satisfaction Survey Results",
+            "Staff Training Records"
+          ]
+        }
+      ]
+    },
+
+    "M12_INPATIENT": {
+      "module": "Inpatient / Ward Management",
+      "current_completion": "72%",
+      "target_completion": "95%",
+      
+      "missing_features": [
+        {
+          "feature": "Nursing Notes & Documentation",
+          "status": "MISSING",
+          "requirements": [
+            "Shift nursing notes (day, night)",
+            "Fluid balance chart (input/output)",
+            "Medication administration record (MAR) - digital",
+            "Wound care documentation",
+            "Pain assessment scale",
+            "Nursing care plan",
+            "Handover notes between shifts",
+            "Patient safety checklist (fall risk, pressure ulcer risk)"
+          ],
+          "estimated_time": "7-10 days",
+          "priority": "P0"
+        },
+        {
+          "feature": "Bed Transfer Workflow",
+          "status": "MISSING",
+          "requirements": [
+            "Transfer patient between beds (same ward)",
+            "Transfer patient between wards",
+            "Transfer reason documentation",
+            "Notification to nursing staff",
+            "Bed availability update",
+            "Transfer history tracking",
+            "Billing adjustment if ward type changes"
+          ],
+          "estimated_time": "3-4 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Discharge Summary Auto-Generation",
+          "requirements": [
+            "Auto-populate from admission and encounter data",
+            "Diagnosis at admission vs discharge",
+            "Procedures performed",
+            "Medications prescribed at discharge",
+            "Follow-up instructions",
+            "Follow-up appointment auto-scheduled",
+            "Discharge summary PDF",
+            "Digital signature from attending doctor"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Ward Round Checklist",
+          "requirements": [
+            "Daily ward round by doctor",
+            "Patient list for ward round",
+            "Quick notes per patient",
+            "Orders during round (medications, investigations)",
+            "Ward round summary report"
+          ],
+          "estimated_time": "3 days",
+          "priority": "P2"
+        }
+      ]
+    },
+
+    "M13_MATERNITY": {
+      "module": "Maternity / Obstetrics",
+      "current_completion": "67%",
+      "target_completion": "95%",
+      
+      "missing_features": [
+        {
+          "feature": "Partograph",
+          "status": "MISSING - CRITICAL FOR LABOR MONITORING",
+          "requirements": [
+            "WHO partograph template",
+            "Cervical dilation plotting",
+            "Fetal heart rate tracking (every 30 min)",
+            "Contractions frequency and duration",
+            "Descent of fetal head",
+            "Maternal vital signs",
+            "Alert line and action line",
+            "Automatic alerts for abnormal labor progress",
+            "Save and print partograph"
+          ],
+          "estimated_time": "7-10 days",
+          "priority": "P0 - CRITICAL FOR MATERNITY WARD"
+        },
+        {
+          "feature": "Child Growth Charts (WHO)",
+          "status": "MISSING",
+          "requirements": [
+            "WHO growth charts (weight-for-age, height-for-age, weight-for-height)",
+            "Plot child measurements on chart",
+            "Z-score calculation",
+            "Growth trend analysis",
+            "Underweight/stunting/wasting alerts",
+            "Export chart to PDF"
+          ],
+          "estimated_time": "5-7 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Immunization Scheduler",
+          "requirements": [
+            "Ghana immunization schedule (BCG, OPV, Pentavalent, Measles, etc.)",
+            "Auto-schedule immunizations based on date of birth",
+            "Immunization due alerts",
+            "Immunization card printing",
+            "SMS reminders to mothers"
+          ],
+          "estimated_time": "4-5 days",
+          "priority": "P1"
+        }
+      ]
+    },
+
+    "M14_EMERGENCY_DEPT": {
+      "module": "Emergency Department",
+      "current_completion": "67%",
+      "target_completion": "90%",
+      
+      "missing_features": [
+        {
+          "feature": "Trauma Scoring (GCS, RTS, etc.)",
+          "status": "MISSING",
+          "requirements": [
+            "Glasgow Coma Scale (GCS) calculator",
+            "Revised Trauma Score (RTS)",
+            "APACHE II (for ICU)",
+            "Quick SOFA (sepsis screening)",
+            "Auto-calculate based on vitals",
+            "Score trending over time"
+          ],
+          "estimated_time": "3-4 days",
+          "priority": "P1"
+        },
+        {
+          "feature": "Real-Time ER Board (WebSocket)",
+          "status": "MISSING",
+          "requirements": [
+            "Live ER patient board (visible on TV screens)",
+            "Patient status updates in real-time (arrived, triaged, in treatment, waiting for lab, discharged)",
+            "WebSocket for live updates (no page refresh)",
+            "Color-coded by triage priority",
+            "Bed/room assignment display",
+            "Elapsed time since arrival"
+          ],
+          "estimated_time": "5-7 days",
+          "priority": "P1"
+        }
+      ]
+    }
+  },
+
+  "testing_requirements": {
+    "unit_tests": {
+      "target_coverage": "80%",
+      "priority_services": [
+        "Authentication (JWT, password hashing)",
+        "Billing calculations",
+        "Drug interaction checker",
+        "NHIS claims XML generation",
+        "Finance journal entry creation",
+        "Profit margin calculations",
+        "MRN generation",
+        "Duplicate patient detection"
+      ],
+      "tools": "Jest for Node.js, React Testing Library for frontend",
+      "estimated_time": "10-14 days"
+    },
+    
+    "integration_tests": {
+      "focus": "API endpoint testing",
+      "scenarios": [
+        "POST /auth/login returns JWT",
+        "Prescription creation triggers dispensing workflow",
+        "Invoice generation includes all services",
+        "Payment updates invoice balance",
+        "NHIS claim submission creates XML file"
+      ],
+      "tools": "Supertest for API testing",
+      "estimated_time": "7-10 days"
+    },
+    
+    "e2e_tests": {
+      "critical_workflows": [
+        "Complete outpatient visit: Register → Appointment → Triage → Consultation → Prescription → Dispense → Lab → Billing → Payment",
+        "Inpatient admission: Admit → Daily care → Discharge",
+        "NHIS claim: Service delivery → Invoice → Claim → Submit → Track",
+        "Patient portal: Login → Book appointment → View lab results → Pay bill"
+      ],
+      "tools": "Cypress or Playwright",
+      "estimated_time": "10-14 days"
+    },
+    
+    "load_performance_tests": {
+      "scenarios": [
+        "100 concurrent users booking appointments",
+        "50 concurrent pharmacy dispensing operations",
+        "Database query optimization (< 200ms for most queries)",
+        "API response time (< 500ms for 95th percentile)"
+      ],
+      "tools": "Artillery or K6",
+      "estimated_time": "3-5 days"
+    },
+    
+    "security_tests": {
+      "checks": [
+        "SQL injection prevention",
+        "XSS prevention",
+        "CSRF protection",
+        "Authentication bypass attempts",
+        "Authorization bypass (user trying to access other tenant's data)",
+        "Sensitive data exposure (passwords, tokens in logs)",
+        "OWASP Top 10 compliance"
+      ],
+      "tools": "OWASP ZAP, Manual penetration testing",
+      "estimated_time": "5-7 days"
+    }
+  },
+
+  "production_readiness": {
+    "devops_infrastructure": {
+      "docker_containerization": {
+        "requirements": [
+          "Dockerfile for backend (Node.js)",
+          "Dockerfile for frontend (React - Nginx)",
+          "Docker Compose for local development",
+          "Multi-stage builds for optimization",
+          "Health check endpoints",
+          "Environment variable configuration"
+        ],
+        "estimated_time": "3-4 days"
+      },
+      
+      "cicd_pipeline": {
+        "requirements": [
+          "GitHub Actions or GitLab CI",
+          "Automated build on push to main",
+          "Run tests before deployment",
+          "Automated deployment to staging",
+          "Manual approval for production deployment",
+          "Rollback mechanism",
+          "Deployment notifications (Slack/Email)"
+        ],
+        "estimated_time": "4-5 days"
+      },
+      
+      "cloud_deployment": {
+        "recommended_platform": "AWS, Google Cloud, or Azure",
+        "requirements": [
+          "Production server setup (EC2, GCE, or Azure VM)",
+          "Database (RDS PostgreSQL or managed Postgres)",
+          "Redis for sessions and caching",
+          "S3/Cloud Storage for file uploads (patient photos, documents, images)",
+          "CDN for static assets (CloudFront, Cloud CDN)",
+          "Load balancer (Application Load Balancer)",
+          "Auto-scaling groups (if expected high traffic)",
+          "SSL certificate (Let's Encrypt or ACM)",
+          "Domain setup and DNS configuration"
+        ],
+        "estimated_time": "5-7 days"
+      },
+      
+      "monitoring_logging": {
+        "requirements": [
+          "Application monitoring (Sentry for error tracking)",
+          "Uptime monitoring (Pingdom, UptimeRobot)",
+          "Log aggregation (CloudWatch, Loggly, or ELK stack)",
+          "Performance monitoring (New Relic, Datadog, or APM)",
+          "Database monitoring (query performance, slow queries)",
+          "Alert rules (downtime, errors, high CPU/memory)",
+          "On-call rotation setup"
+        ],
+        "estimated_time": "4-5 days"
+      },
+      
+      "backup_disaster_recovery": {
+        "requirements": [
+          "Daily automated database backups (retention: 30 days)",
+          "Backup testing (restore test monthly)",
+          "Point-in-time recovery capability",
+          "File storage backups (patient documents, images)",
+          "Backup to separate region/datacenter",
+          "Disaster recovery plan documentation",
+          "Recovery Time Objective (RTO): < 4 hours",
+          "Recovery Point Objective (RPO): < 1 hour"
+        ],
+        "estimated_time": "3-4 days"
+      },
+      
+      "security_hardening": {
+        "requirements": [
+          "WAF (Web Application Firewall) - AWS WAF, Cloudflare",
+          "DDoS protection",
+          "Database encryption at rest",
+          "SSL/TLS encryption in transit",
+          "Secrets management (AWS Secrets Manager, Vault)",
+          "IP whitelisting for admin access",
+          "VPN for internal access",
+          "Regular security updates (OS, dependencies)",
+          "Penetration testing (annual or bi-annual)"
+        ],
+        "estimated_time": "5-7 days"
+      }
+    },
+    
+    "documentation": {
+      "requirements": [
+        "API documentation (Swagger/OpenAPI)",
+        "User manuals (per role: Doctor, Nurse, Pharmacist, etc.)",
+        "Admin guide (system configuration, user management)",
+        "Developer documentation (setup, architecture, contribution guide)",
+        "Deployment guide (production deployment steps)",
+        "Troubleshooting guide",
+        "FAQ",
+        "Video tutorials (screen recordings)"
+      ],
+      "estimated_time": "7-10 days"
+    },
+    
+    "training": {
+      "requirements": [
+        "Staff training plan",
+        "Training materials (slides, handouts)",
+        "Hands-on training sessions (per role)",
+        "Super-user training (power users per department)",
+        "Training records",
+        "Post-training support plan"
+      ],
+      "estimated_time": "Ongoing during deployment"
+    }
+  },
+
+  "implementation_timeline": {
+    "phase_1_critical_gaps": {
+      "duration": "4-6 weeks",
+      "focus": "Complete all missing features to get modules to 85%+",
+      "deliverables": [
+        "MFA/2FA working",
+        "Password reset working",
+        "Photo upload",
+        "Drug interaction checks (CRITICAL)",
+        "Expiry alerts",
+        "Instrument integration (Lab)",
+        "Receipt printing",
+        "Payment gateway (MTN MoMo, Vodafone, cards)",
+        "Email notifications",
+        "General Ledger & journal entries",
+        "P&L and Balance Sheet"
+      ]
+    },
+    
+    "phase_2_advanced_features": {
+      "duration": "3-4 weeks",
+      "focus": "Add advanced features and enhancements",
+      "deliverables": [
+        "DICOM/PACS (if needed)",
+        "Partograph for maternity",
+        "Real-time ER board",
+        "Budget management",
+        "Cash flow statement",
+        "Chart visualizations for analytics",
+        "Scheduled reports",
+        "Mobile app fully functional"
+      ]
+    },
+    
+    "phase_3_testing": {
+      "duration": "2-3 weeks",
+      "focus": "Comprehensive testing",
+      "deliverables": [
+        "Unit tests (80% coverage)",
+        "Integration tests",
+        "E2E tests (all critical workflows)",
+        "Load testing",
+        "Security testing",
+        "Bug fixes"
+      ]
+    },
+    
+    "phase_4_production": {
+      "duration": "2 weeks",
+      "focus": "Production deployment",
+      "deliverables": [
+        "Docker containers",
+        "CI/CD pipeline",
+        "Cloud deployment",
+        "Monitoring setup",
+        "Backup setup",
+        "Documentation",
+        "Training",
+        "Go live"
+      ]
+    },
+    
+    "total_timeline": "11-15 weeks to 100% production-ready"
+  },
+
+  "success_criteria": {
+    "functional": [
+      "All 25 modules at 95%+ completion",
+      "All critical workflows work end-to-end",
+      "All integrations functional (NHIS, Mobile Money, Email, SMS)",
+      "All reports generate and export correctly",
+      "Mobile app published to stores"
+    ],
+    
+    "technical": [
+      "80%+ test coverage",
+      "All E2E tests passing",
+      "API response time < 500ms (95th percentile)",
+      "Page load time < 2 seconds",
+      "Zero critical security vulnerabilities",
+      "Uptime > 99.5%"
+    ],
+    
+    "business": [
+      "System handles 1000+ patients per day",
+      "NHIS claims submitted successfully",
+      "Payments collected (cash, card, mobile money)",
+      "Financial reports accurate",
+      "Staff trained and productive"
+    ]
+  },
+
+  "usage": "Use this comprehensive prompt with Windsurf/Cursor/Claude AI to systematically complete all remaining work. Address each module in order of priority (P0 → P1 → P2). For each module, implement missing features, add advanced capabilities, write tests, and ensure production readiness."
+}

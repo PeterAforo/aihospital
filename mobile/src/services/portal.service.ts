@@ -57,6 +57,37 @@ export interface PortalInvoice {
   balanceDue: number;
   status: string;
   createdAt: string;
+  items?: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+  }>;
+}
+
+export interface PortalVital {
+  id: string;
+  recordedAt: string;
+  temperature?: number;
+  bloodPressureSystolic?: number;
+  bloodPressureDiastolic?: number;
+  heartRate?: number;
+  respiratoryRate?: number;
+  oxygenSaturation?: number;
+  weight?: number;
+  height?: number;
+  bmi?: number;
+}
+
+export interface PortalNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  data?: Record<string, any>;
 }
 
 class PortalService {
@@ -105,8 +136,22 @@ class PortalService {
     return res.data.data;
   }
 
-  async getVitals() {
+  async getVitals(): Promise<PortalVital[]> {
     const res = await api.get('/portal/vitals');
+    return res.data.data;
+  }
+
+  async getNotifications(): Promise<PortalNotification[]> {
+    const res = await api.get('/portal/notifications');
+    return res.data.data;
+  }
+
+  async markNotificationRead(id: string): Promise<void> {
+    await api.patch(`/portal/notifications/${id}/read`);
+  }
+
+  async initializePayment(invoiceId: string): Promise<{ authorization_url: string; reference: string }> {
+    const res = await api.post('/portal/payments/initialize', { invoiceId });
     return res.data.data;
   }
 }

@@ -54,6 +54,8 @@ export default function HomeScreen({ onNavigate }: { onNavigate: (tab: string) =
           { label: 'Check lab results', tab: 'lab' },
           { label: 'View prescriptions', tab: 'prescriptions' },
           { label: 'Pay outstanding bills', tab: 'invoices' },
+          { label: 'View my vitals', tab: 'vitals' },
+          { label: 'Notifications', tab: 'notifications' },
         ].map((action) => (
           <TouchableOpacity key={action.tab} style={styles.actionRow} onPress={() => onNavigate(action.tab)}>
             <Text style={styles.actionText}>{action.label}</Text>

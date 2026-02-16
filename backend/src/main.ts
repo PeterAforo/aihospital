@@ -42,6 +42,10 @@ import mobileRoutes from './modules/mobile/mobile.routes.js';
 // Import services
 import { queueWebSocketService } from './common/services/queue-websocket.service.js';
 import { reminderScheduler } from './common/services/reminder-scheduler.service.js';
+import { paystackService } from './modules/billing/paystack.service';
+import crypto from 'crypto';
+import { apiLimiter, webhookLimiter } from './common/middleware/rate-limiter';
+import { erWebSocketService } from './common/services/er-websocket.service';
 
 const app = express();
 
@@ -67,6 +71,47 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Metrics endpoint for monitoring
+app.get('/metrics', async (req, res) => {
+  const uptime = process.uptime();
+  const memUsage = process.memoryUsage();
+  let dbStatus = 'unknown';
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbStatus = 'connected';
+  } catch { dbStatus = 'disconnected'; }
+
+  res.json({
+    uptime: Math.round(uptime),
+    uptimeHuman: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m`,
+    memory: {
+      rss: Math.round(memUsage.rss / 1024 / 1024) + ' MB',
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + ' MB',
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + ' MB',
+    },
+    database: dbStatus,
+    websockets: {
+      queueClients: queueWebSocketService.getAllConnectedClients(),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Apply global API rate limiter
+app.use('/api', apiLimiter);
+
+// Paystack webhook (no auth — verified by signature)
+app.post('/api/webhooks/paystack', webhookLimiter, express.json(), (req, res) => {
+  const secret = process.env.PAYSTACK_SECRET_KEY || '';
+  const hash = crypto.createHmac('sha512', secret).update(JSON.stringify(req.body)).digest('hex');
+  if (hash !== req.headers['x-paystack-signature']) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+  paystackService.handleWebhook(req.body)
+    .then(result => res.json(result))
+    .catch(err => res.status(500).json({ error: err.message }));
 });
 
 // Audit logging middleware (logs all POST/PUT/DELETE/PATCH requests)
@@ -121,7 +166,8 @@ async function bootstrap() {
 
     // Initialize WebSocket for queue updates
     queueWebSocketService.init(server);
-    logger.info('WebSocket server initialized');
+    erWebSocketService.init(server);
+    logger.info('WebSocket servers initialized (queue + ER board)');
 
     // Start reminder scheduler
     reminderScheduler.start();

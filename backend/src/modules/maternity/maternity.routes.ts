@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { maternityService } from './maternity.service.js';
 import { authenticate, tenantGuard } from '../../common/middleware/auth.js';
+import { partographService } from './partograph.service';
 
 const router: Router = Router();
 
@@ -94,6 +95,37 @@ router.get('/dashboard', async (req: any, res: Response) => {
     const stats = await maternityService.getDashboardStats(req.tenantId!);
     res.json({ success: true, data: stats });
   } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+// ==================== PARTOGRAPH ====================
+
+router.get('/deliveries/:deliveryRecordId/partograph', async (req: any, res: Response) => {
+  try {
+    const data = await partographService.getPartographData(req.params.deliveryRecordId);
+    res.json({ success: true, data });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/deliveries/:deliveryRecordId/partograph/entries', async (req: any, res: Response) => {
+  try {
+    const entries = await partographService.getEntries(req.params.deliveryRecordId);
+    res.json({ success: true, data: entries });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.post('/deliveries/:deliveryRecordId/partograph/entries', async (req: any, res: Response) => {
+  try {
+    const user = req.user!;
+    const entry = await partographService.addEntry(req.params.deliveryRecordId, user.userId || user.id, req.body);
+    res.status(201).json({ success: true, data: entry });
+  } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
+});
+
+router.delete('/partograph/entries/:entryId', async (req: any, res: Response) => {
+  try {
+    await partographService.deleteEntry(req.params.entryId);
+    res.json({ success: true, message: 'Entry deleted' });
+  } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
 });
 
 export default router;

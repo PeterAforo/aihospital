@@ -3,6 +3,9 @@ import { authenticate, requirePermission, AuthRequest } from '../../common/middl
 import { invoiceService } from './invoice.service';
 import { paymentService } from './payment.service';
 import { nhisService } from './nhis.service';
+import { receiptService } from './receipt.service';
+import { paystackService } from './paystack.service';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -456,6 +459,84 @@ router.get('/nhis/tariffs', requirePermission('VIEW_NHIS_CLAIMS'), async (req: A
     const { category, activeOnly } = req.query;
     const tariffs = await nhisService.getTariffs(category as string, activeOnly !== 'false');
     res.json({ success: true, data: tariffs });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== PAYSTACK PAYMENT GATEWAY ====================
+
+// Initialize Paystack payment
+router.post('/paystack/initialize', requirePermission('PROCESS_PAYMENT'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { invoiceId, email, channels } = req.body;
+    if (!invoiceId || !email) {
+      return res.status(400).json({ success: false, error: 'invoiceId and email are required' });
+    }
+    const invoice = await invoiceService.getInvoiceById(invoiceId);
+    if (!invoice || invoice.balance <= 0) {
+      return res.status(400).json({ success: false, error: 'Invoice not found or already paid' });
+    }
+    const result = await paystackService.initializePayment({
+      invoiceId,
+      tenantId: user.tenantId,
+      amount: invoice.balance,
+      email,
+      channels,
+    });
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Verify Paystack transaction
+router.get('/paystack/verify/:reference', requirePermission('PROCESS_PAYMENT', 'VIEW_INVOICES'), async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await paystackService.verifyTransaction(req.params.reference);
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== RECEIPTS ====================
+
+// Generate PDF receipt for a payment
+router.get('/receipts/:paymentId/pdf', requirePermission('VIEW_INVOICES', 'PROCESS_PAYMENT'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const pdfBuffer = await receiptService.generateReceipt(req.params.paymentId, user.tenantId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=receipt-${req.params.paymentId}.pdf`);
+    res.send(pdfBuffer);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get receipt data (JSON) for a payment
+router.get('/receipts/:paymentId', requirePermission('VIEW_INVOICES', 'PROCESS_PAYMENT'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const data = await receiptService.getReceiptData(req.params.paymentId, user.tenantId);
+    res.json({ success: true, data });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Email receipt to patient
+router.post('/receipts/:paymentId/email', requirePermission('VIEW_INVOICES', 'PROCESS_PAYMENT'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Patient email is required' });
+    }
+    const result = await receiptService.emailReceipt(req.params.paymentId, user.tenantId, email);
+    res.json({ success: true, data: result });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

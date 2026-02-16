@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { invoiceService } from '../billing/invoice.service';
+import { cdsService } from '../emr/cds.service';
 
 const prisma = new PrismaClient();
 
@@ -155,7 +156,7 @@ class DispensingService {
     tenantId: string,
     branchId: string,
     userId: string,
-    data: DispenseDto
+    data: DispenseDto & { overrideCdsAlerts?: boolean; overrideReason?: string }
   ) {
     const prescription = await prisma.prescription.findUnique({
       where: { id: data.prescriptionId },
@@ -173,6 +174,37 @@ class DispensingService {
 
     if (prescription.status === 'DISPENSED' || prescription.status === 'CANCELLED') {
       throw new Error(`Prescription is already ${prescription.status.toLowerCase()}`);
+    }
+
+    // Run CDS safety check at dispensing time
+    const cdsResult = await cdsService.validateDispensing(data.prescriptionId, tenantId);
+
+    if (cdsResult.alerts.length > 0) {
+      // Log all alerts
+      try {
+        await cdsService.logAlerts(
+          tenantId,
+          prescription.patientId,
+          cdsResult.alerts,
+          'DISPENSING',
+          prescription.encounterId,
+          data.prescriptionId
+        );
+      } catch (e) {
+        console.warn('[CDS] Failed to log dispensing alerts:', e);
+      }
+
+      // Block if critical alerts and no override
+      if (!cdsResult.safe && !data.overrideCdsAlerts) {
+        return {
+          success: false,
+          blocked: true,
+          reason: 'Dispensing blocked by clinical decision support',
+          cdsAlerts: cdsResult.alerts,
+          criticalCount: cdsResult.criticalCount,
+          warningCount: cdsResult.warningCount,
+        };
+      }
     }
 
     const dispensingRecords = [];

@@ -184,8 +184,9 @@ model User {
   emailVerifiedAt DateTime?
 
   // Security - 2FA
-  mfaEnabled Boolean @default(false)
-  mfaSecret  String?
+  mfaEnabled    Boolean  @default(false)
+  mfaSecret     String?
+  mfaBackupCodes String[] @default([])
 
   // Password reset
   passwordResetToken   String?
@@ -252,6 +253,9 @@ model User {
   nursingNotes           NursingNote[]  @relation("NursingNotes")
   wardRoundsAsDoctor     WardRound[]    @relation("WardRounds")
   surgicalTeamRoles      SurgicalTeamMember[] @relation("SurgicalTeam")
+
+  // CDS relations
+  cdsOverrides           CDSAlertLog[]        @relation("CDSOverrides")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -539,6 +543,7 @@ model Patient {
   surgeries          Surgery[]
   pregnancies        Pregnancy[]
   erVisits           ERVisit[]
+  cdsAlertLogs       CDSAlertLog[]
 
   @@unique([tenantId, mrn])
   @@unique([tenantId, ghanaCardNumber])
@@ -3471,6 +3476,7 @@ model DeliveryRecord {
   updatedAt           DateTime     @updatedAt
 
   pregnancy           Pregnancy    @relation(fields: [pregnancyId], references: [id])
+  partographEntries   PartographEntry[]
 
   newborns            NewbornRecord[]
 
@@ -3506,6 +3512,50 @@ model NewbornRecord {
 
   @@index([deliveryRecordId])
   @@map("newborn_records")
+}
+
+model PartographEntry {
+  id                String   @id @default(uuid())
+  deliveryRecordId  String
+  recordedAt        DateTime @default(now())
+  hoursFromStart    Float    // hours since active labour started
+  // Cervical dilation (cm) - plotted on partograph
+  cervicalDilation  Float?
+  // Descent of head (fifths palpable above brim: 5/5 to 0/5)
+  descentOfHead     Int?
+  // Contractions per 10 minutes
+  contractionsPerTen Int?
+  contractionDuration String? // <20s, 20-40s, >40s
+  // Amniotic fluid
+  membranes         String?  // INTACT, RUPTURED
+  liquorColor       String?  // CLEAR, MECONIUM_LIGHT, MECONIUM_THICK, BLOODY, ABSENT
+  // Moulding
+  moulding          String?  // NONE, PLUS1, PLUS2, PLUS3
+  // Vital signs
+  bloodPressureSystolic  Int?
+  bloodPressureDiastolic Int?
+  pulse             Int?
+  temperature       Float?
+  // Urine
+  urineVolume       String?  // ADEQUATE, REDUCED, NIL
+  urineProtein      String?  // NONE, TRACE, PLUS1, PLUS2, PLUS3
+  urineAcetone      String?  // NONE, TRACE, POSITIVE
+  // Oxytocin
+  oxytocinDose      Float?   // mIU/min
+  // Drugs/IV fluids
+  drugsGiven        String?
+  ivFluids          String?
+  // Fetal heart rate
+  fetalHeartRate    Int?
+  // Notes
+  notes             String?
+  recordedBy        String
+  createdAt         DateTime @default(now())
+
+  deliveryRecord    DeliveryRecord @relation(fields: [deliveryRecordId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryRecordId, hoursFromStart])
+  @@map("partograph_entries")
 }
 
 model PostnatalVisit {
@@ -3959,4 +4009,142 @@ model Attendance {
   @@unique([userId, date])
   @@index([tenantId, date])
   @@map("attendance")
+}
+
+// ==================== DRUG INTERACTION DATABASE ====================
+
+model DrugInteraction {
+  id            String   @id @default(uuid())
+  drugAName     String   // Generic name keyword for drug A
+  drugBName     String   // Generic name keyword for drug B
+  severity      String   // CRITICAL, WARNING, INFO
+  description   String   // Clinical description of the interaction
+  mechanism     String?  // Pharmacological mechanism
+  management    String?  // How to manage the interaction
+  evidenceLevel String?  // HIGH, MODERATE, LOW
+  source        String?  // Reference source (e.g., BNF, WHO)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([drugAName])
+  @@index([drugBName])
+  @@map("drug_interactions")
+}
+
+model CDSAlertLog {
+  id              String   @id @default(uuid())
+  tenantId        String
+  patientId       String
+  encounterId     String?
+  prescriptionId  String?
+  alertType       String   // ALLERGY, INTERACTION, PEDIATRIC_DOSE, DUPLICATE, RENAL, PREGNANCY
+  severity        String   // CRITICAL, WARNING, INFO
+  drugId          String?
+  drugName        String?
+  interactingDrug String?
+  message         String
+  details         String?
+  wasOverridden   Boolean  @default(false)
+  overriddenBy    String?
+  overrideReason  String?
+  overriddenAt    DateTime?
+  context         String?  // PRESCRIBING, DISPENSING
+  createdAt       DateTime @default(now())
+
+  patient      Patient  @relation(fields: [patientId], references: [id])
+  overrideUser User?    @relation("CDSOverrides", fields: [overriddenBy], references: [id])
+
+  @@index([tenantId, patientId])
+  @@index([tenantId, createdAt])
+  @@index([alertType, severity])
+  @@map("cds_alert_logs")
+}
+
+// ==================== GENERAL LEDGER ====================
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model ChartOfAccount {
+  id            String      @id @default(uuid())
+  tenantId      String
+  accountCode   String
+  accountName   String
+  accountType   AccountType
+  parentId      String?
+  description   String?
+  isActive      Boolean     @default(true)
+  normalBalance String      @default("DEBIT") // DEBIT or CREDIT
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  parent   ChartOfAccount?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children ChartOfAccount[] @relation("AccountHierarchy")
+  journalLines JournalLine[]
+
+  @@unique([tenantId, accountCode])
+  @@index([tenantId, accountType])
+  @@map("chart_of_accounts")
+}
+
+model JournalEntry {
+  id            String   @id @default(uuid())
+  tenantId      String
+  entryNumber   String
+  entryDate     DateTime @default(now())
+  description   String
+  reference     String?
+  sourceModule  String?  // BILLING, PHARMACY, PAYROLL, MANUAL
+  sourceId      String?
+  status        String   @default("POSTED") // DRAFT, POSTED, REVERSED
+  reversedById  String?
+  postedBy      String
+  approvedBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  lines JournalLine[]
+
+  @@unique([tenantId, entryNumber])
+  @@index([tenantId, entryDate])
+  @@index([tenantId, status])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id             String  @id @default(uuid())
+  journalEntryId String
+  accountId      String
+  debit          Float   @default(0)
+  credit         Float   @default(0)
+  description    String?
+
+  journalEntry JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@map("journal_lines")
+}
+
+model FiscalPeriod {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  status    String   @default("OPEN") // OPEN, CLOSED, LOCKED
+  closedBy  String?
+  closedAt  DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, name])
+  @@index([tenantId, status])
+  @@map("fiscal_periods")
 }
