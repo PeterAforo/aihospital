@@ -44,6 +44,8 @@ export interface CreatePatientRequest {
     status?: string;
     notes?: string;
   }>;
+  portalAccessEnabled?: boolean;
+  portalPassword?: string;
 }
 
 export interface SearchPatientsParams {

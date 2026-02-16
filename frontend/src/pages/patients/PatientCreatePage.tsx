@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle, User, Phone, MapPin, Heart, Shield } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle, User, Phone, MapPin, Heart, Shield, Smartphone } from "lucide-react";
 import { patientService, CreatePatientRequest, DuplicateCheckResult } from "@/services/patient.service";
 import { useToast } from "@/hooks/use-toast";
 
@@ -38,7 +38,15 @@ const patientSchema = z.object({
   emergencyContactName: z.string().optional(),
   emergencyContactPhone: z.string().optional(),
   emergencyContactRelationship: z.string().optional(),
-});
+  portalAccessEnabled: z.boolean().optional(),
+  portalPassword: z.string().min(6, 'Portal password must be at least 6 characters').optional().or(z.literal('')),
+  portalPasswordConfirm: z.string().optional(),
+}).refine((data) => {
+  if (data.portalAccessEnabled && data.portalPassword) {
+    return data.portalPassword === data.portalPasswordConfirm;
+  }
+  return true;
+}, { message: 'Passwords do not match', path: ['portalPasswordConfirm'] });
 
 type PatientFormData = z.infer<typeof patientSchema>;
 
@@ -46,7 +54,7 @@ const steps = [
   { id: 1, title: "Personal Info", icon: User },
   { id: 2, title: "Contact & Address", icon: MapPin },
   { id: 3, title: "Medical & NHIS", icon: Heart },
-  { id: 4, title: "Emergency Contact", icon: Phone },
+  { id: 4, title: "Emergency & Portal", icon: Phone },
   { id: 5, title: "Review", icon: Check },
 ];
 
@@ -206,6 +214,10 @@ export default function PatientCreatePage() {
           phone: data.emergencyContactPhone || '',
           relationship: data.emergencyContactRelationship || '',
         },
+      }),
+      ...(data.portalAccessEnabled && data.portalPassword && {
+        portalAccessEnabled: true,
+        portalPassword: data.portalPassword,
       }),
     };
     mutation.mutate(patientData);
@@ -499,6 +511,42 @@ export default function PatientCreatePage() {
                     <label style={labelStyle}>Contact Phone</label>
                     <input {...register("emergencyContactPhone")} style={inputStyle} placeholder="0XX XXX XXXX" />
                   </div>
+
+                  {/* Portal Access Section */}
+                  <div style={{ padding: "1rem", backgroundColor: "#eff6ff", borderRadius: "8px", border: "1px solid #bfdbfe", marginTop: "0.5rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+                      <Smartphone style={{ width: "20px", height: "20px", color: "#2563eb" }} />
+                      <span style={{ fontWeight: 600, color: "#1e40af" }}>Patient Portal Access</span>
+                    </div>
+                    <p style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: "1rem" }}>
+                      Enable portal access so the patient can view appointments, lab results, prescriptions, and bills online or via the mobile app. If not enabled here, the patient can self-register later using their MRN and phone number.
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                      <input
+                        type="checkbox"
+                        id="portalAccessEnabled"
+                        {...register("portalAccessEnabled")}
+                        style={{ width: "18px", height: "18px", accentColor: "#2563eb" }}
+                      />
+                      <label htmlFor="portalAccessEnabled" style={{ fontSize: "0.875rem", fontWeight: 500, color: "#374151", cursor: "pointer" }}>
+                        Enable portal access for this patient
+                      </label>
+                    </div>
+                    {watch("portalAccessEnabled") && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                        <div>
+                          <label style={labelStyle}>Portal Password *</label>
+                          <input type="password" {...register("portalPassword")} style={inputStyle} placeholder="Min 6 characters" />
+                          {errors.portalPassword && <p style={{ fontSize: "0.75rem", color: "#dc2626", marginTop: "0.25rem" }}>{errors.portalPassword.message}</p>}
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Confirm Password *</label>
+                          <input type="password" {...register("portalPasswordConfirm")} style={inputStyle} placeholder="Re-enter password" />
+                          {errors.portalPasswordConfirm && <p style={{ fontSize: "0.75rem", color: "#dc2626", marginTop: "0.25rem" }}>{(errors.portalPasswordConfirm as any).message}</p>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
               )}
 
@@ -546,6 +594,12 @@ export default function PatientCreatePage() {
                           <p style={{ fontWeight: 500 }}>{formData.emergencyContactName} ({formData.emergencyContactRelationship}) - {formData.emergencyContactPhone}</p>
                         </div>
                       )}
+                      <div>
+                        <p style={{ color: "#6b7280", fontSize: "0.75rem", textTransform: "uppercase", marginBottom: "0.25rem" }}>Portal Access</p>
+                        <p style={{ fontWeight: 500, color: formData.portalAccessEnabled ? "#16a34a" : "#6b7280" }}>
+                          {formData.portalAccessEnabled ? "Enabled (password set)" : "Not enabled (patient can self-register later)"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
