@@ -104,12 +104,18 @@ importers:
       pdfkit:
         specifier: ^0.17.2
         version: 0.17.2
+      prisma:
+        specifier: ^5.10.0
+        version: 5.22.0
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
       speakeasy:
         specifier: ^2.0.0
         version: 2.0.0
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
       uuid:
         specifier: ^9.0.1
         version: 9.0.1
@@ -177,9 +183,6 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.19.33)
-      prisma:
-        specifier: ^5.10.0
-        version: 5.22.0
       supertest:
         specifier: ^6.3.4
         version: 6.3.4
@@ -189,9 +192,6 @@ importers:
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
-      typescript:
-        specifier: ^5.3.3
-        version: 5.9.3
 
   frontend:
     dependencies:
@@ -12586,7 +12586,6 @@ packages:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
-    dev: true
 
   /ua-parser-js@1.0.41:
     resolution: {integrity: sha512-LbBDqdIC5s8iROCUjMbW1f5dJQTEFB1+KO9ogbvlb3nm9n4YHa5p4KTvFPWvh2Hs8gZMBuiB1/8+pdfe/tDPug==}
