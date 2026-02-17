@@ -22,15 +22,29 @@ const LabDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
-      const [worklistData, statsData, alerts, verificationData] = await Promise.all([
+      const [worklistResult, statsResult, alertsResult, verificationResult] = await Promise.allSettled([
         laboratoryService.getWorklist(),
         laboratoryService.getWorklistStats(),
         laboratoryService.getCriticalAlerts(),
         laboratoryService.getWorklist({ status: 'RESULTED' }),
       ]);
-      setWorklist(worklistData);
-      setStats({ ...statsData, awaitingVerification: verificationData.length });
-      setCriticalAlerts(alerts);
+      
+      if (worklistResult.status === 'fulfilled') setWorklist(worklistResult.value);
+      if (statsResult.status === 'fulfilled' && verificationResult.status === 'fulfilled') {
+        setStats({ ...statsResult.value, awaitingVerification: verificationResult.value.length });
+      } else if (statsResult.status === 'fulfilled') {
+        setStats({ ...statsResult.value, awaitingVerification: 0 });
+      }
+      if (alertsResult.status === 'fulfilled') setCriticalAlerts(alertsResult.value);
+
+      // Show error only if the main worklist call failed
+      if (worklistResult.status === 'rejected') {
+        toast({
+          title: 'Error',
+          description: worklistResult.reason?.message || 'Failed to load worklist',
+          variant: 'destructive',
+        });
+      }
     } catch (error: any) {
       toast({
         title: 'Error',
