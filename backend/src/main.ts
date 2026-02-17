@@ -52,8 +52,19 @@ const app = express();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: config.allowedOrigins,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    const allowed = config.allowedOrigins.map(o => o.trim());
+    if (allowed.includes(origin) || allowed.includes('*')) {
+      return callback(null, true);
+    }
+    logger.warn(`CORS blocked origin: ${origin}. Allowed: ${allowed.join(', ')}`);
+    callback(null, false);
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 // Request parsing
