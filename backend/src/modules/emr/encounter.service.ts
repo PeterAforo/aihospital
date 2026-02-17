@@ -190,9 +190,22 @@ export class EncounterService {
       where: { patientId: encounter.patientId, status: 'active' },
     });
 
+    // Get triage record if linked
+    let triageRecord = null;
+    if (encounter.triageRecordId) {
+      triageRecord = await prisma.triageRecord.findUnique({
+        where: { id: encounter.triageRecordId },
+      });
+    } else if (encounter.appointmentId) {
+      triageRecord = await prisma.triageRecord.findUnique({
+        where: { appointmentId: encounter.appointmentId },
+      });
+    }
+
     return {
       encounter,
       problemList,
+      triageRecord,
     };
   }
 

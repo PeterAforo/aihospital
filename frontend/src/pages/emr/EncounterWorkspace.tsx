@@ -42,6 +42,7 @@ const EncounterWorkspace: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('subjective');
   const [showDiagnosisSearch, setShowDiagnosisSearch] = useState(false);
+  const [triageRecord, setTriageRecord] = useState<any>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -92,6 +93,11 @@ const EncounterWorkspace: React.FC = () => {
             problemList: data.problemList || [],
             recentVitals: (data.encounter as any).vitalSigns?.[0] || undefined,
           });
+        }
+
+        // Set triage record if available
+        if (data.triageRecord) {
+          setTriageRecord(data.triageRecord);
         }
       } catch (error: any) {
         toast({
@@ -657,6 +663,84 @@ const EncounterWorkspace: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Vitals / Triage */}
+            {triageRecord && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Stethoscope className="w-4 h-4 text-green-600" />
+                    Triage Vitals
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-2">
+                  {triageRecord.bpSystolic && triageRecord.bpDiastolic && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">BP:</span>
+                      <span className="font-medium">{triageRecord.bpSystolic}/{triageRecord.bpDiastolic} mmHg</span>
+                    </div>
+                  )}
+                  {triageRecord.temperature && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Temp:</span>
+                      <span className={`font-medium ${triageRecord.temperature >= 38 ? 'text-red-600' : ''}`}>{triageRecord.temperature}°C</span>
+                    </div>
+                  )}
+                  {triageRecord.pulseRate && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Pulse:</span>
+                      <span className="font-medium">{triageRecord.pulseRate} bpm</span>
+                    </div>
+                  )}
+                  {triageRecord.respiratoryRate && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">RR:</span>
+                      <span className="font-medium">{triageRecord.respiratoryRate} /min</span>
+                    </div>
+                  )}
+                  {triageRecord.spo2 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">SpO2:</span>
+                      <span className={`font-medium ${triageRecord.spo2 < 95 ? 'text-red-600' : ''}`}>{triageRecord.spo2}%</span>
+                    </div>
+                  )}
+                  {triageRecord.weight && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Weight:</span>
+                      <span className="font-medium">{triageRecord.weight} kg</span>
+                    </div>
+                  )}
+                  {triageRecord.height && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Height:</span>
+                      <span className="font-medium">{triageRecord.height} cm</span>
+                    </div>
+                  )}
+                  {triageRecord.bmi && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">BMI:</span>
+                      <span className="font-medium">{triageRecord.bmi.toFixed(1)}</span>
+                    </div>
+                  )}
+                  {triageRecord.painScale != null && triageRecord.painScale > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Pain:</span>
+                      <span className={`font-medium ${triageRecord.painScale >= 7 ? 'text-red-600' : triageRecord.painScale >= 4 ? 'text-yellow-600' : ''}`}>{triageRecord.painScale}/10</span>
+                    </div>
+                  )}
+                  <Separator className="my-1" />
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Triage Level:</span>
+                    <Badge
+                      style={{ backgroundColor: triageRecord.triageLevelColor || '#6b7280' }}
+                      className="text-white text-xs"
+                    >
+                      {triageRecord.triageLevelName || `Level ${triageRecord.triageLevel}`}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Allergies */}
             <Card>
