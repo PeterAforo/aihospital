@@ -104,8 +104,8 @@ export const requirePermission = (...requiredPermissions: string[]) => {
         req.userPermissions = userPermissions;
       }
 
-      // SUPER_ADMIN has all permissions
-      if (req.user.role === 'SUPER_ADMIN') {
+      // SUPER_ADMIN and HOSPITAL_ADMIN have all permissions
+      if (req.user.role === 'SUPER_ADMIN' || req.user.role === 'HOSPITAL_ADMIN') {
         next();
         return;
       }
@@ -149,8 +149,8 @@ export const requireAllPermissions = (...requiredPermissions: string[]) => {
         req.userPermissions = userPermissions;
       }
 
-      // SUPER_ADMIN has all permissions
-      if (req.user.role === 'SUPER_ADMIN') {
+      // SUPER_ADMIN and HOSPITAL_ADMIN have all permissions
+      if (req.user.role === 'SUPER_ADMIN' || req.user.role === 'HOSPITAL_ADMIN') {
         next();
         return;
       }
@@ -407,8 +407,8 @@ export const requireBranchPermission = (
     }
 
     try {
-      // SUPER_ADMIN has all permissions
-      if (req.user.role === 'SUPER_ADMIN') {
+      // SUPER_ADMIN and HOSPITAL_ADMIN have all permissions
+      if (req.user.role === 'SUPER_ADMIN' || req.user.role === 'HOSPITAL_ADMIN') {
         next();
         return;
       }

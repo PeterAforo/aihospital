@@ -20,7 +20,7 @@ router.get('/queue', requirePermission('VIEW_PRESCRIPTION_QUEUE', 'DISPENSE_MEDI
     
     const queue = await dispensingService.getPrescriptionQueue(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       status as string
     );
     
@@ -53,7 +53,7 @@ router.post('/dispense', requirePermission('DISPENSE_MEDICATION'), async (req: A
     
     const result = await dispensingService.dispensePrescription(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       { prescriptionId, items, counselingNotes, overrideCdsAlerts, overrideReason }
     );
@@ -78,7 +78,7 @@ router.get('/dispensing-history', requirePermission('VIEW_PRESCRIPTION_QUEUE', '
     
     const history = await dispensingService.getDispensingHistory(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       patientId as string,
       startDate ? new Date(startDate as string) : undefined,
       endDate ? new Date(endDate as string) : undefined,
@@ -101,7 +101,7 @@ router.get('/stock', requirePermission('VIEW_STOCK'), async (req: AuthRequest, r
     
     const stock = await stockService.getStock(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       drugId as string,
       category as string,
       lowStockOnly === 'true',
@@ -120,7 +120,7 @@ router.get('/stock/low', requirePermission('VIEW_STOCK'), async (req: AuthReques
     const user = req.user!;
     const alerts = await stockService.getLowStockAlerts(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId
+      user.branchId
     );
     res.json({ success: true, data: alerts });
   } catch (error: any) {
@@ -136,7 +136,7 @@ router.get('/stock/expiring', requirePermission('VIEW_STOCK'), async (req: AuthR
     
     const stock = await stockService.getExpiringStock(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       days ? parseInt(days as string) : 90
     );
     
@@ -152,7 +152,7 @@ router.get('/stock/expired', requirePermission('VIEW_STOCK'), async (req: AuthRe
     const user = req.user!;
     const stock = await stockService.getExpiredStock(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId
+      user.branchId
     );
     res.json({ success: true, data: stock });
   } catch (error: any) {
@@ -172,7 +172,7 @@ router.post('/stock/adjust', requirePermission('ADJUST_STOCK'), async (req: Auth
     
     const result = await stockService.adjustStock(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       { drugId, batchNumber, adjustmentType, quantity, reason, expiryDate: expiryDate ? new Date(expiryDate) : undefined, costPrice, sellingPrice }
     );
@@ -195,7 +195,7 @@ router.post('/stock/receive', requirePermission('RECEIVE_STOCK'), async (req: Au
     
     const result = await stockService.receiveStock(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       { drugId, batchNumber, quantity, expiryDate: expiryDate ? new Date(expiryDate) : undefined, costPrice, sellingPrice, purchaseOrderId }
     );
@@ -218,7 +218,7 @@ router.post('/stock/write-off', requirePermission('WRITE_OFF_STOCK'), async (req
     
     const result = await stockService.writeOffStock(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       stockId,
       quantity,
@@ -240,7 +240,7 @@ router.get('/stock/movements', requirePermission('VIEW_STOCK'), async (req: Auth
     
     const movements = await stockService.getStockMovements(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       drugId as string,
       startDate ? new Date(startDate as string) : undefined,
       endDate ? new Date(endDate as string) : undefined,
@@ -259,7 +259,7 @@ router.get('/stock/valuation', requirePermission('VIEW_PHARMACY_REPORTS'), async
     const user = req.user!;
     const valuation = await stockService.getStockValuation(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId
+      user.branchId
     );
     res.json({ success: true, data: valuation });
   } catch (error: any) {
@@ -322,7 +322,7 @@ router.get('/purchase-orders', requirePermission('VIEW_PURCHASE_ORDERS'), async 
     
     const orders = await purchaseOrderService.getPurchaseOrders(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       status as string,
       startDate ? new Date(startDate as string) : undefined,
       endDate ? new Date(endDate as string) : undefined
@@ -362,7 +362,7 @@ router.post('/purchase-orders', requirePermission('CREATE_PURCHASE_ORDER'), asyn
     
     const order = await purchaseOrderService.createPurchaseOrder(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       { supplierId, expectedDate: expectedDate ? new Date(expectedDate) : undefined, notes, items }
     );
@@ -446,7 +446,7 @@ router.get('/transfers', requirePermission('VIEW_STOCK'), async (req: AuthReques
     const where: any = { tenantId: user.tenantId };
     if (status) where.status = status;
     // Show transfers from or to user's branch
-    const branchId = user.currentBranchId || user.primaryBranchId;
+    const branchId = user.branchId;
     if (branchId) {
       where.OR = [{ fromBranchId: branchId }, { toBranchId: branchId }];
     }
@@ -474,7 +474,7 @@ router.post('/transfers', requirePermission('TRANSFER_STOCK'), async (req: AuthR
   try {
     const user = req.user!;
     const { toBranchId, items, notes } = req.body;
-    const fromBranchId = user.currentBranchId || user.primaryBranchId;
+    const fromBranchId = user.branchId;
 
     if (!toBranchId || !items || items.length === 0) {
       return res.status(400).json({ success: false, error: 'toBranchId and items are required' });
@@ -635,7 +635,7 @@ router.get('/expiry/summary', requirePermission('VIEW_PHARMACY_STOCK', 'MANAGE_P
     const user = req.user!;
     const summary = await expiryAlertService.getExpirySummary(
       user.tenantId,
-      (req.query.branchId as string) || user.currentBranchId || user.primaryBranchId
+      (req.query.branchId as string) || user.branchId
     );
     res.json({ success: true, data: summary });
   } catch (error: any) {
@@ -649,7 +649,7 @@ router.get('/expiry/fefo', requirePermission('VIEW_PHARMACY_STOCK', 'DISPENSE_ME
     const user = req.user!;
     const recommendations = await expiryAlertService.getFefoRecommendations(
       user.tenantId,
-      (req.query.branchId as string) || user.currentBranchId || user.primaryBranchId,
+      (req.query.branchId as string) || user.branchId,
       req.query.limit ? parseInt(req.query.limit as string) : 20
     );
     res.json({ success: true, data: recommendations });
@@ -670,7 +670,7 @@ router.post('/expiry/dispose', requirePermission('MANAGE_PHARMACY'), async (req:
 
     const result = await expiryAlertService.processDisposal(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       disposals
     );
@@ -688,7 +688,7 @@ router.get('/expiry/disposal-history', requirePermission('VIEW_PHARMACY_STOCK', 
 
     const history = await expiryAlertService.getDisposalHistory(
       user.tenantId,
-      (branchId as string) || user.currentBranchId || user.primaryBranchId,
+      (branchId as string) || user.branchId,
       startDate ? new Date(startDate as string) : undefined,
       endDate ? new Date(endDate as string) : undefined,
       limit ? parseInt(limit as string) : 50

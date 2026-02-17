@@ -138,7 +138,7 @@ router.post('/encounters', requirePermission('CREATE_ENCOUNTER', 'TRIAGE'), asyn
     }
 
     // Ensure we have a branchId - fallback to appointment's branch if user has none
-    let branchId = user.currentBranchId || user.primaryBranchId;
+    let branchId = user.branchId;
     if (!branchId && appointmentId) {
       // Try to get branch from the appointment
       const appointment = await prisma.appointment.findUnique({
@@ -430,7 +430,7 @@ router.post('/encounters/:id/complete', requirePermission('EDIT_ENCOUNTER'), asy
     const result = await encounterService.completeEncounter(
       id, 
       user.tenantId, 
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       user.userId
     );
     return res.json({ success: true, data: result });

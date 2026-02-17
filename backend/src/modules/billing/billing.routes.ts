@@ -59,7 +59,7 @@ router.post('/invoices', requirePermission('CREATE_INVOICE'), async (req: AuthRe
     
     const invoice = await invoiceService.createInvoice(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       { patientId, encounterId, items, paymentMethod, notes }
     );
@@ -77,7 +77,7 @@ router.post('/invoices/from-encounter/:encounterId', requirePermission('CREATE_I
     
     const invoice = await invoiceService.generateFromEncounter(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       encounterId
     );
@@ -155,7 +155,7 @@ router.get('/payments', requirePermission('VIEW_PAYMENTS'), async (req: AuthRequ
     
     const payments = await paymentService.getPayments(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       startDate ? new Date(startDate as string) : undefined,
       endDate ? new Date(endDate as string) : undefined,
       paymentMethod as any,
@@ -194,7 +194,7 @@ router.post('/payments', requirePermission('RECEIVE_PAYMENT'), async (req: AuthR
     
     const result = await paymentService.recordPayment(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       { invoiceId, amount, paymentMethod, transactionRef, notes }
     );
@@ -273,7 +273,7 @@ router.get('/reports/daily-summary', requirePermission('VIEW_BILLING_REPORTS'), 
     
     const summary = await invoiceService.getDailySummary(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       date ? new Date(date as string) : undefined
     );
     

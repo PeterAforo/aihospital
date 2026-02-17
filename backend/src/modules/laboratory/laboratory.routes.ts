@@ -17,7 +17,7 @@ router.get('/worklist', requirePermission('VIEW_LAB_RESULTS', 'ENTER_LAB_RESULTS
     
     const worklist = await sampleService.getLabWorklist(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId,
+      user.branchId,
       status as string,
       priority as string
     );
@@ -33,7 +33,7 @@ router.get('/worklist/stats', requirePermission('VIEW_LAB_RESULTS'), async (req:
     const user = req.user!;
     const stats = await sampleService.getWorklistStats(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId
+      user.branchId
     );
     res.json({ success: true, data: stats });
   } catch (error: any) {
@@ -54,7 +54,7 @@ router.post('/samples/collect', requirePermission('COLLECT_SAMPLE'), async (req:
     
     const sample = await sampleService.collectSample(
       user.tenantId,
-      user.currentBranchId || user.primaryBranchId || '',
+      user.branchId || '',
       user.userId,
       { orderId, orderItemId, patientId, sampleType, collectionSite, volume, notes }
     );
