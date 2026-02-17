@@ -150,47 +150,50 @@ app.use('/api/mobile', mobileRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Start server
+// Start server (only when not running as serverless function)
 const PORT = config.port;
+const isVercel = process.env.VERCEL === '1';
 
-async function bootstrap() {
-  try {
-    // Test database connection
-    await prisma.$connect();
-    logger.info('Database connected successfully');
+if (!isVercel) {
+  async function bootstrap() {
+    try {
+      // Test database connection
+      await prisma.$connect();
+      logger.info('Database connected successfully');
 
-    const server = app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
-      logger.info(`Environment: ${config.nodeEnv}`);
-    });
+      const server = app.listen(PORT, () => {
+        logger.info(`Server running on port ${PORT}`);
+        logger.info(`Environment: ${config.nodeEnv}`);
+      });
 
-    // Initialize WebSocket for queue updates
-    queueWebSocketService.init(server);
-    erWebSocketService.init(server);
-    logger.info('WebSocket servers initialized (queue + ER board)');
+      // Initialize WebSocket for queue updates
+      queueWebSocketService.init(server);
+      erWebSocketService.init(server);
+      logger.info('WebSocket servers initialized (queue + ER board)');
 
-    // Start reminder scheduler
-    reminderScheduler.start();
-    logger.info('Reminder scheduler started');
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
+      // Start reminder scheduler
+      reminderScheduler.start();
+      logger.info('Reminder scheduler started');
+    } catch (error) {
+      logger.error('Failed to start server:', error);
+      process.exit(1);
+    }
   }
+
+  // Graceful shutdown
+  process.on('SIGTERM', async () => {
+    logger.info('SIGTERM received, shutting down...');
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+
+  process.on('SIGINT', async () => {
+    logger.info('SIGINT received, shutting down...');
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+
+  bootstrap();
 }
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-bootstrap();
 
 export default app;
