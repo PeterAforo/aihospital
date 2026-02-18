@@ -67,30 +67,40 @@ const LabResultsDashboard: React.FC = () => {
   const loadLabResults = async () => {
     try {
       setIsLoading(true);
-      // Get all lab orders with results
-      const worklist = await laboratoryService.getWorklist();
+      // Fetch orders across all result-bearing statuses
+      const [processing, resulted, verified, completed] = await Promise.allSettled([
+        laboratoryService.getWorklist({ status: 'PROCESSING' }),
+        laboratoryService.getWorklist({ status: 'RESULTED' }),
+        laboratoryService.getWorklist({ status: 'VERIFIED' }),
+        laboratoryService.getWorklist({ status: 'COMPLETED' }),
+      ]);
+
+      const allOrders = [
+        ...(processing.status === 'fulfilled' ? processing.value : []),
+        ...(resulted.status === 'fulfilled' ? resulted.value : []),
+        ...(verified.status === 'fulfilled' ? verified.value : []),
+        ...(completed.status === 'fulfilled' ? completed.value : []),
+      ];
       
       const allResults: LabResult[] = [];
-      worklist.forEach(order => {
+      allOrders.forEach(order => {
         order.items.forEach(item => {
-          if (item.status !== 'PENDING' && item.status !== 'SAMPLE_COLLECTED') {
-            allResults.push({
-              id: item.id,
-              orderNumber: order.id,
-              patient: order.patient,
-              test: item.test,
-              status: item.status,
-              priority: order.priority,
-              orderDate: order.orderDate,
-              result: item.result,
-              resultValue: item.resultValue,
-              unit: item.unit,
-              normalRange: item.normalRange,
-              isAbnormal: item.isAbnormal,
-              isCritical: item.isCritical,
-              parameters: (item as any).parameters,
-            });
-          }
+          allResults.push({
+            id: item.id,
+            orderNumber: order.id,
+            patient: order.patient,
+            test: item.test,
+            status: item.status || order.status,
+            priority: order.priority,
+            orderDate: order.orderDate,
+            result: item.result,
+            resultValue: item.resultValue,
+            unit: item.unit,
+            normalRange: item.normalRange,
+            isAbnormal: item.isAbnormal,
+            isCritical: item.isCritical,
+            parameters: (item as any).parameters,
+          });
         });
       });
       
