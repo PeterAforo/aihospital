@@ -68,7 +68,7 @@ test.describe.serial('Complete Patient Journey', () => {
   test('1.2 Create appointment', async ({ request }) => {
     const r = await request.post(`${API}/appointments`, {
       headers: h(ctx.recToken),
-      data: { patientId: ctx.patientId, doctorId: ctx.docId, branchId: ctx.branchId, appointmentDate: new Date().toISOString().split('T')[0], appointmentTime: '10:00', type: 'CONSULTATION', reason: 'Fever' },
+      data: { patientId: ctx.patientId, doctorId: ctx.docId, branchId: ctx.branchId, appointmentDate: new Date().toISOString().split('T')[0], appointmentTime: `${String(8 + Math.floor(Math.random() * 9)).padStart(2, '0')}:${String(Math.floor(Math.random() * 4) * 15).padStart(2, '0')}`, type: 'CONSULTATION', reason: 'Fever', isWalkIn: true },
     });
     const ab = await r.json();
     expect(r.ok(), `Create appointment: ${r.status()} ${JSON.stringify(ab).slice(0, 500)}`).toBeTruthy();
@@ -84,7 +84,13 @@ test.describe.serial('Complete Patient Journey', () => {
   test('2.1 Record triage', async ({ request }) => {
     const r = await request.post(`${API}/triage`, {
       headers: h(ctx.nurseToken),
-      data: { patientId: ctx.patientId, appointmentId: ctx.apptId, chiefComplaint: 'Fever 3 days', triageCategory: 'URGENT', vitalSigns: { temperature: 37.2, bloodPressureSystolic: 120, bloodPressureDiastolic: 80, heartRate: 78, respiratoryRate: 18, oxygenSaturation: 98, weight: 75, height: 175 } },
+      data: {
+        patientId: ctx.patientId,
+        appointmentId: ctx.apptId,
+        triageLevel: 2,
+        assessment: { chiefComplaint: 'Fever 3 days', symptomDuration: '3 days', symptomSeverity: 'moderate' },
+        vitalSigns: { temperature: 37.2, bpSystolic: 120, bpDiastolic: 80, pulseRate: 78, respiratoryRate: 18, spo2: 98, weight: 75, height: 175 },
+      },
     });
     const tb = await r.json();
     expect(r.ok(), `Triage: ${r.status()} ${JSON.stringify(tb).slice(0, 500)}`).toBeTruthy();
@@ -97,8 +103,12 @@ test.describe.serial('Complete Patient Journey', () => {
       headers: h(ctx.docToken),
       data: { patientId: ctx.patientId, appointmentId: ctx.apptId, encounterType: 'OUTPATIENT' },
     });
-    expect(r.ok()).toBeTruthy();
-    ctx.encId = (await r.json()).data?.id;
+    const eb = await r.json();
+    console.log('Start encounter:', r.status(), JSON.stringify(eb).slice(0, 500));
+    expect(r.ok(), `Start encounter: ${r.status()} ${JSON.stringify(eb).slice(0, 500)}`).toBeTruthy();
+    ctx.encId = eb.data?.id || eb.data?.encounter?.id;
+    console.log('Encounter ID:', ctx.encId);
+    expect(ctx.encId, `No encounter ID: ${JSON.stringify(eb).slice(0, 300)}`).toBeTruthy();
   });
 
   test('3.2 Document SOAP notes', async ({ request }) => {
@@ -106,48 +116,56 @@ test.describe.serial('Complete Patient Journey', () => {
       headers: h(ctx.docToken),
       data: { chiefComplaint: 'Fever 3 days', historyOfPresentIllness: 'Fever 38.5C, body pains', physicalExamination: 'Alert, febrile', assessment: 'Suspected dengue', plan: 'Admit, IV fluids, paracetamol' },
     });
-    expect(r.ok()).toBeTruthy();
+    const sb = await r.json();
+    expect(r.ok(), `SOAP: ${r.status()} ${JSON.stringify(sb).slice(0, 500)}`).toBeTruthy();
   });
 
   test('3.3 Add diagnosis', async ({ request }) => {
     const r = await request.post(`${API}/emr/encounters/${ctx.encId}/diagnoses`, {
       headers: h(ctx.docToken),
-      data: { code: 'A90', description: 'Dengue fever', type: 'PRIMARY' },
+      data: { icd10Code: 'A90', icd10Description: 'Dengue fever', diagnosisType: 'PRIMARY' },
     });
-    expect(r.ok()).toBeTruthy();
+    const db = await r.json();
+    expect(r.ok(), `Diagnosis: ${r.status()} ${JSON.stringify(db).slice(0, 500)}`).toBeTruthy();
   });
 
   test('3.4 Complete encounter', async ({ request }) => {
     const r = await request.post(`${API}/emr/encounters/${ctx.encId}/complete`, { headers: h(ctx.docToken) });
-    expect(r.ok()).toBeTruthy();
+    const cb = await r.json();
+    expect(r.ok(), `Complete: ${r.status()} ${JSON.stringify(cb).slice(0, 500)}`).toBeTruthy();
   });
 
   // STEP 4: Lab Tech
   test('4.1 Lab worklist', async ({ request }) => {
     const r = await request.get(`${API}/lab/worklist`, { headers: h(ctx.labToken) });
-    expect(r.ok()).toBeTruthy();
+    const lb = await r.json();
+    expect(r.ok(), `Lab: ${r.status()} ${JSON.stringify(lb).slice(0, 500)}`).toBeTruthy();
   });
 
   // STEP 5: Pharmacist
   test('5.1 Pharmacy queue', async ({ request }) => {
     const r = await request.get(`${API}/pharmacy/queue`, { headers: h(ctx.pharmToken) });
-    expect(r.ok()).toBeTruthy();
+    const pb = await r.json();
+    expect(r.ok(), `Pharmacy: ${r.status()} ${JSON.stringify(pb).slice(0, 500)}`).toBeTruthy();
   });
 
   // STEP 6: Billing
   test('6.1 Invoices list', async ({ request }) => {
     const r = await request.get(`${API}/billing/invoices`, { headers: h(ctx.billToken) });
-    expect(r.ok()).toBeTruthy();
+    const ib = await r.json();
+    expect(r.ok(), `Invoices: ${r.status()} ${JSON.stringify(ib).slice(0, 500)}`).toBeTruthy();
   });
 
   test('6.2 Daily summary', async ({ request }) => {
     const r = await request.get(`${API}/billing/reports/daily-summary`, { headers: h(ctx.billToken) });
-    expect(r.ok()).toBeTruthy();
+    const ds = await r.json();
+    expect(r.ok(), `Summary: ${r.status()} ${JSON.stringify(ds).slice(0, 500)}`).toBeTruthy();
   });
 
   // STEP 7: IPD Nurse
   test('7.1 IPD dashboard', async ({ request }) => {
     const r = await request.get(`${API}/inpatient/dashboard`, { headers: h(ctx.ipdToken) });
-    expect(r.ok()).toBeTruthy();
+    const ipb = await r.json();
+    expect(r.ok(), `IPD: ${r.status()} ${JSON.stringify(ipb).slice(0, 500)}`).toBeTruthy();
   });
 });
