@@ -65,8 +65,16 @@ router.post('/dispense', requirePermission('DISPENSE_MEDICATION'), async (req: A
     
     res.json({ success: true, data: result });
   } catch (error: any) {
-    console.error('[DISPENSE_ERROR]', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('[DISPENSE_ERROR]', error.message);
+    const isValidationError = [
+      'Insufficient stock',
+      'Prescription not found',
+      'Prescription is already',
+      'Prescription item',
+      'Cannot dispense',
+    ].some(msg => error.message?.startsWith(msg));
+    const status = isValidationError ? 422 : 500;
+    res.status(status).json({ success: false, error: error.message });
   }
 });
 

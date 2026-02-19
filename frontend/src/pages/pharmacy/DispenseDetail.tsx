@@ -95,6 +95,21 @@ const DispenseDetail: React.FC = () => {
       return;
     }
 
+    // Check stock availability before sending to backend
+    if (prescription) {
+      for (const dispItem of itemsToDispense) {
+        const prescItem = prescription.items.find(i => i.id === dispItem.prescriptionItemId);
+        if (prescItem && prescItem.stockAvailable !== undefined && prescItem.stockAvailable < dispItem.quantityToDispense) {
+          toast({
+            title: 'Insufficient Stock',
+            description: `${prescItem.drug.genericName}: only ${prescItem.stockAvailable} in stock, but ${dispItem.quantityToDispense} requested. Please add stock first.`,
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+    }
+
     try {
       setIsDispensing(true);
       await pharmacyService.dispensePrescription({
@@ -110,9 +125,10 @@ const DispenseDetail: React.FC = () => {
 
       navigate('/pharmacy/queue');
     } catch (error: any) {
+      const msg = error.response?.data?.error || error.message || 'Failed to dispense medications';
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to dispense medications',
+        title: 'Dispensing Failed',
+        description: msg,
         variant: 'destructive',
       });
     } finally {
