@@ -38,6 +38,7 @@ import equipmentRoutes from './modules/equipment/equipment.routes.js';
 import hrRoutes from './modules/hr/hr.routes.js';
 import portalRoutes from './modules/portal/portal.routes.js';
 import mobileRoutes from './modules/mobile/mobile.routes.js';
+import setupRoutes from './modules/setup/setup.routes.js';
 
 // Import services
 import { queueWebSocketService } from './common/services/queue-websocket.service.js';
@@ -156,6 +157,7 @@ app.use('/api/equipment', equipmentRoutes);
 app.use('/api/hr', hrRoutes);
 app.use('/api/portal', portalRoutes);
 app.use('/api/mobile', mobileRoutes);
+app.use('/api/setup', setupRoutes);
 
 // Error handling
 app.use(notFoundHandler);

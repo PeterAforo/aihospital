@@ -1,0 +1,802 @@
+{
+  "feature_name": "Complete Inventory Management & Finance Integration",
+  "problem_identified": "Drugs appear directly in pharmacy stock without proper procurement flow through central inventory",
+  "correct_flow": "Supplier → Purchase Order → Goods Receipt → Central Inventory → Department Requisition → Department Stock → Dispensing/Usage → Finance Tracking",
+  
+  "business_rationale": {
+    "why_central_inventory_matters": [
+      "Single source of truth for all hospital stock",
+      "Prevents theft and stock discrepancies",
+      "Proper authorization required for departments to get stock",
+      "Finance can track: Cost → Stock Value → Departmental Usage → Revenue",
+      "Enables proper cost accounting (FIFO/LIFO)",
+      "Audit trail for all stock movements",
+      "Better inventory control and planning"
+    ],
+    
+    "current_problem": {
+      "issue": "Drugs appear directly in pharmacy stock",
+      "consequences": [
+        "No record of who purchased",
+        "No record of purchase price",
+        "No approval workflow",
+        "No central inventory tracking",
+        "Finance cannot calculate true cost of goods sold (COGS)",
+        "Cannot track stock value accurately",
+        "Difficult to audit",
+        "Departments can't requisition from central store"
+      ]
+    }
+  },
+
+  "correct_architecture": {
+    "modules_and_relationships": {
+      
+      "1_supplier_management": {
+        "module": "Supplier Management",
+        "purpose": "Maintain list of approved suppliers",
+        "database_table": "suppliers",
+        "fields": [
+          "id",
+          "organization_id",
+          "supplier_name",
+          "supplier_code (e.g., SUP-001)",
+          "contact_person",
+          "phone",
+          "email",
+          "address",
+          "supplier_type (drugs, medical_supplies, equipment, reagents, food)",
+          "payment_terms (e.g., Net 30, Cash on Delivery)",
+          "tax_id",
+          "bank_account_details",
+          "is_approved (boolean - only approved suppliers can receive POs)",
+          "rating (1-5 stars)",
+          "notes",
+          "is_active"
+        ],
+        "relationships": {
+          "has_many": ["purchase_orders", "supplier_invoices"]
+        }
+      },
+
+      "2_purchase_orders": {
+        "module": "Purchase Orders (PO)",
+        "purpose": "Formal request to buy items from supplier",
+        "database_table": "purchase_orders",
+        "fields": [
+          "id",
+          "organization_id",
+          "branch_id",
+          "po_number (auto-generated: PO-2024-001)",
+          "supplier_id (FK to suppliers)",
+          "order_date",
+          "expected_delivery_date",
+          "requested_by (FK to users - Pharmacist, Lab Manager, etc.)",
+          "approved_by (FK to users - Pharmacy Manager, Finance)",
+          "status (draft, submitted, approved, rejected, partially_received, fully_received, cancelled)",
+          "payment_terms",
+          "delivery_location (address)",
+          "notes",
+          "subtotal",
+          "tax_amount",
+          "discount_amount",
+          "total_amount",
+          "created_at",
+          "updated_at"
+        ],
+        "relationships": {
+          "belongs_to": "supplier",
+          "has_many": "purchase_order_items",
+          "has_many": "goods_received_notes"
+        }
+      },
+
+      "3_purchase_order_items": {
+        "database_table": "purchase_order_items",
+        "fields": [
+          "id",
+          "purchase_order_id (FK)",
+          "item_type (drug, medical_supply, reagent, equipment)",
+          "item_id (FK to drug_formulary or inventory_items)",
+          "item_name",
+          "quantity_ordered",
+          "unit_of_measure (tablets, vials, boxes, units)",
+          "unit_cost",
+          "line_total",
+          "tax_rate",
+          "notes"
+        ]
+      },
+
+      "4_goods_received_notes": {
+        "module": "Goods Received Notes (GRN)",
+        "purpose": "Record physical receipt of goods into central inventory",
+        "database_table": "goods_received_notes",
+        "fields": [
+          "id",
+          "organization_id",
+          "branch_id",
+          "grn_number (auto-generated: GRN-2024-001)",
+          "purchase_order_id (FK - optional, can receive without PO)",
+          "supplier_id (FK)",
+          "supplier_invoice_number",
+          "supplier_invoice_date",
+          "received_date",
+          "received_by (FK to users - Store Keeper)",
+          "verified_by (FK to users - Pharmacy Manager, Lab Manager)",
+          "status (pending_verification, verified, rejected)",
+          "notes",
+          "created_at"
+        ],
+        "relationships": {
+          "belongs_to": "purchase_order",
+          "belongs_to": "supplier",
+          "has_many": "goods_received_items"
+        }
+      },
+
+      "5_goods_received_items": {
+        "database_table": "goods_received_items",
+        "fields": [
+          "id",
+          "grn_id (FK)",
+          "purchase_order_item_id (FK - optional)",
+          "item_type (drug, medical_supply, reagent)",
+          "item_id (FK)",
+          "item_name",
+          "quantity_received",
+          "quantity_ordered",
+          "batch_number",
+          "expiry_date",
+          "unit_cost (actual price paid)",
+          "line_total",
+          "discrepancy (if quantity_received != quantity_ordered)",
+          "quality_check_passed (boolean)",
+          "notes"
+        ]
+      },
+
+      "6_central_inventory": {
+        "module": "Central Inventory/Store",
+        "purpose": "Central store where ALL items are kept before issuing to departments",
+        "database_table": "central_inventory",
+        "fields": [
+          "id",
+          "organization_id",
+          "branch_id",
+          "item_type (drug, medical_supply, lab_reagent, equipment, stationary)",
+          "item_id (FK to drug_formulary or inventory_items_catalog)",
+          "item_name",
+          "item_code",
+          "category",
+          "unit_of_measure",
+          "quantity_on_hand (current stock in central store)",
+          "reorder_level",
+          "reorder_quantity",
+          "location_in_store (shelf/bin number)",
+          "average_cost (weighted average)",
+          "total_value (quantity × average_cost)",
+          "last_restocked_date",
+          "updated_at"
+        ],
+        "note": "This is the MASTER inventory. All stock movements must update this table.",
+        "relationships": {
+          "has_many": "central_inventory_batches",
+          "has_many": "stock_movements"
+        }
+      },
+
+      "7_central_inventory_batches": {
+        "database_table": "central_inventory_batches",
+        "purpose": "Track individual batches in central store (for expiry tracking)",
+        "fields": [
+          "id",
+          "central_inventory_id (FK)",
+          "batch_number",
+          "expiry_date",
+          "quantity",
+          "unit_cost",
+          "supplier_id (FK)",
+          "received_date (from GRN)",
+          "grn_id (FK)"
+        ]
+      },
+
+      "8_department_requisitions": {
+        "module": "Department Requisitions",
+        "purpose": "Departments request items from central store",
+        "database_table": "department_requisitions",
+        "fields": [
+          "id",
+          "organization_id",
+          "branch_id",
+          "requisition_number (REQ-2024-001)",
+          "requesting_department (Pharmacy, Laboratory, Nursing, etc.)",
+          "requested_by (FK to users - Pharmacist, Lab Manager, Nurse Manager)",
+          "request_date",
+          "approved_by (FK to users - Store Manager, Finance)",
+          "issued_by (FK to users - Store Keeper)",
+          "status (pending, approved, rejected, partially_issued, fully_issued)",
+          "priority (routine, urgent, emergency)",
+          "notes",
+          "created_at",
+          "updated_at"
+        ],
+        "relationships": {
+          "has_many": "requisition_items"
+        }
+      },
+
+      "9_requisition_items": {
+        "database_table": "requisition_items",
+        "fields": [
+          "id",
+          "requisition_id (FK)",
+          "item_type",
+          "item_id (FK)",
+          "item_name",
+          "quantity_requested",
+          "quantity_approved",
+          "quantity_issued",
+          "unit_of_measure",
+          "notes"
+        ]
+      },
+
+      "10_stock_issues": {
+        "module": "Stock Issues (from Central to Department)",
+        "purpose": "Record transfer of items from central store to department",
+        "database_table": "stock_issues",
+        "fields": [
+          "id",
+          "organization_id",
+          "branch_id",
+          "issue_number (ISS-2024-001)",
+          "requisition_id (FK)",
+          "issued_to_department",
+          "issued_by (FK to users - Store Keeper)",
+          "received_by (FK to users - Department staff)",
+          "issue_date",
+          "notes",
+          "created_at"
+        ],
+        "relationships": {
+          "belongs_to": "requisition",
+          "has_many": "stock_issue_items"
+        }
+      },
+
+      "11_stock_issue_items": {
+        "database_table": "stock_issue_items",
+        "fields": [
+          "id",
+          "stock_issue_id (FK)",
+          "requisition_item_id (FK)",
+          "item_type",
+          "item_id (FK)",
+          "item_name",
+          "quantity_issued",
+          "batch_number",
+          "expiry_date",
+          "unit_cost (from central_inventory_batches)",
+          "line_total (quantity × unit_cost)"
+        ],
+        "note": "Unit cost is crucial for finance to calculate COGS"
+      },
+
+      "12_department_stock": {
+        "module": "Department Stock (Pharmacy, Lab, Nursing, etc.)",
+        "purpose": "Track stock in each department after receiving from central store",
+        "database_table": "department_stock",
+        "fields": [
+          "id",
+          "organization_id",
+          "branch_id",
+          "department (Pharmacy, Laboratory, Nursing, etc.)",
+          "item_type",
+          "item_id (FK)",
+          "item_name",
+          "quantity_on_hand",
+          "reorder_level",
+          "location_in_department",
+          "average_cost",
+          "total_value",
+          "last_updated"
+        ],
+        "note": "This is what you currently call 'pharmacy stock' or 'drug inventory'",
+        "relationships": {
+          "has_many": "department_stock_batches"
+        }
+      },
+
+      "13_department_stock_batches": {
+        "database_table": "department_stock_batches",
+        "fields": [
+          "id",
+          "department_stock_id (FK)",
+          "batch_number",
+          "expiry_date",
+          "quantity",
+          "unit_cost",
+          "stock_issue_id (FK - where did this batch come from)"
+        ]
+      },
+
+      "14_stock_movements": {
+        "module": "Stock Movements (Audit Trail)",
+        "purpose": "Log ALL stock movements for audit and finance tracking",
+        "database_table": "stock_movements",
+        "fields": [
+          "id",
+          "organization_id",
+          "branch_id",
+          "movement_date",
+          "movement_type (purchase, grn, issue_to_department, transfer, adjustment, dispensing, expired, damaged, return)",
+          "item_type",
+          "item_id (FK)",
+          "item_name",
+          "batch_number",
+          "quantity",
+          "unit_cost",
+          "from_location (central_store, pharmacy, laboratory, etc.)",
+          "to_location (pharmacy, laboratory, patient, waste)",
+          "reference_type (grn_id, stock_issue_id, prescription_id, etc.)",
+          "reference_id",
+          "performed_by (FK to users)",
+          "notes",
+          "created_at"
+        ],
+        "note": "EVERY stock movement must create a record here for audit trail"
+      }
+    }
+  },
+
+  "complete_workflow": {
+    "end_to_end_flow": {
+      
+      "step_1_purchase_requisition": {
+        "actor": "Pharmacist / Lab Manager",
+        "action": "Creates Purchase Requisition",
+        "when": "Stock running low",
+        "outcome": "Purchase requisition awaiting approval",
+        "optional": "Some hospitals skip this, go directly to PO"
+      },
+
+      "step_2_create_purchase_order": {
+        "actor": "Pharmacy Manager / Procurement Officer",
+        "action": "Create Purchase Order (PO)",
+        "details": {
+          "select_supplier": "Choose from approved suppliers list",
+          "add_items": "Add drugs/supplies to PO",
+          "quantities": "Specify quantities and unit costs",
+          "total": "System calculates total"
+        },
+        "approvals": [
+          "Pharmacy Manager approves (if <GHS 10,000)",
+          "Finance Manager approves (if >GHS 10,000)",
+          "Hospital Administrator approves (if >GHS 50,000)"
+        ],
+        "outcome": "PO sent to supplier",
+        "database": "purchase_orders table"
+      },
+
+      "step_3_supplier_delivers": {
+        "actor": "Supplier",
+        "action": "Delivers goods to hospital",
+        "includes": [
+          "Physical goods",
+          "Supplier invoice",
+          "Delivery note"
+        ]
+      },
+
+      "step_4_goods_received_note": {
+        "actor": "Store Keeper / Receiving Officer",
+        "action": "Create Goods Received Note (GRN)",
+        "process": [
+          "1. Physical verification (count items)",
+          "2. Quality check (check expiry dates, packaging)",
+          "3. Match against PO (quantities, items)",
+          "4. Record any discrepancies",
+          "5. Enter batch numbers and expiry dates",
+          "6. Create GRN in system"
+        ],
+        "validation": [
+          "Pharmacy Manager or Lab Manager verifies GRN",
+          "If approved → Stock goes to central inventory",
+          "If rejected → Return to supplier"
+        ],
+        "outcome": "Stock added to CENTRAL INVENTORY",
+        "database": [
+          "goods_received_notes",
+          "goods_received_items",
+          "central_inventory (quantity updated)",
+          "central_inventory_batches (new batch added)",
+          "stock_movements (type: 'grn', from: null, to: 'central_store')"
+        ]
+      },
+
+      "step_5_central_inventory_updated": {
+        "system_action": "Auto-update central inventory",
+        "calculations": {
+          "new_quantity": "old_quantity + received_quantity",
+          "weighted_average_cost": "((old_qty × old_cost) + (new_qty × new_cost)) / (old_qty + new_qty)",
+          "total_value": "new_quantity × weighted_average_cost"
+        },
+        "example": {
+          "before_grn": {
+            "item": "Paracetamol 500mg",
+            "quantity": 100,
+            "unit_cost": 0.30,
+            "total_value": 30.00
+          },
+          "grn_received": {
+            "quantity": 200,
+            "unit_cost": 0.35
+          },
+          "after_grn": {
+            "quantity": 300,
+            "weighted_avg_cost": "((100 × 0.30) + (200 × 0.35)) / 300 = 0.333",
+            "total_value": "300 × 0.333 = 99.90"
+          }
+        }
+      },
+
+      "step_6_department_requisition": {
+        "actor": "Pharmacist / Lab Tech / Nurse",
+        "action": "Create requisition to request items from central store",
+        "details": {
+          "department": "Pharmacy, Laboratory, Nursing, etc.",
+          "items_needed": "List of items and quantities",
+          "priority": "Routine, Urgent, Emergency",
+          "reason": "Restock, new service, etc."
+        },
+        "approval_workflow": [
+          "Store Manager approves",
+          "Finance approves (if high value)"
+        ],
+        "outcome": "Approved requisition ready for issuing",
+        "database": "department_requisitions, requisition_items"
+      },
+
+      "step_7_stock_issue": {
+        "actor": "Store Keeper",
+        "action": "Issue stock from central store to department",
+        "process": [
+          "1. Pull items from central store shelves",
+          "2. Select batches (FIFO - First In First Out OR FEFO - First Expiry First Out)",
+          "3. Record batch numbers and expiry dates",
+          "4. Update quantities in system",
+          "5. Department staff signs for receipt"
+        ],
+        "outcome": "Stock moved from central store to department",
+        "database_updates": [
+          "stock_issues, stock_issue_items created",
+          "central_inventory (quantity reduced)",
+          "central_inventory_batches (quantity reduced)",
+          "department_stock (quantity increased)",
+          "department_stock_batches (batches added)",
+          "stock_movements (type: 'issue_to_department', from: 'central_store', to: 'pharmacy')"
+        ]
+      },
+
+      "step_8_department_stock": {
+        "location": "Pharmacy, Laboratory, Nursing department",
+        "status": "Stock now available in department",
+        "can_now": [
+          "Pharmacist can dispense medications",
+          "Lab tech can use reagents",
+          "Nurse can use medical supplies"
+        ],
+        "tracking": "Each department tracks their own stock"
+      },
+
+      "step_9_dispensing_usage": {
+        "actor": "Pharmacist / Lab Tech / Nurse",
+        "action": "Dispense/use items",
+        "examples": [
+          "Pharmacist dispenses Paracetamol to patient",
+          "Lab tech uses reagent for CBC test",
+          "Nurse uses dressing materials"
+        ],
+        "database_updates": [
+          "prescription_dispensing (for drugs)",
+          "department_stock (quantity reduced)",
+          "department_stock_batches (quantity reduced)",
+          "stock_movements (type: 'dispensing', from: 'pharmacy', to: 'patient')"
+        ]
+      },
+
+      "step_10_finance_integration": {
+        "system": "Finance Module",
+        "calculates": {
+          "cost_of_goods_sold": "Unit cost from stock_issue_items when item dispensed",
+          "revenue": "Selling price from service_catalog",
+          "gross_profit": "Revenue - COGS",
+          "stock_value": "Sum of (quantity × unit_cost) across all inventory"
+        },
+        "journal_entries": [
+          {
+            "event": "Purchase (GRN created)",
+            "entry": "DR Inventory (Asset), CR Accounts Payable (Liability)"
+          },
+          {
+            "event": "Issue to Department",
+            "entry": "DR Department Expense, CR Central Inventory"
+          },
+          {
+            "event": "Dispensing to Patient",
+            "entry": "DR Cost of Goods Sold (COGS), CR Department Stock"
+          },
+          {
+            "event": "Patient Payment",
+            "entry": "DR Cash/Accounts Receivable, CR Revenue"
+          }
+        ]
+      }
+    }
+  },
+
+  "data_flow_diagram": {
+    "visual_representation": "
+    SUPPLIER
+       ↓
+    [PURCHASE ORDER] → Approval
+       ↓
+    SUPPLIER DELIVERS
+       ↓
+    [GOODS RECEIVED NOTE (GRN)] → Quality Check → Verification
+       ↓
+    CENTRAL INVENTORY/STORE ← [All items stored here first]
+       ↓
+    [REQUISITION] ← Department requests items
+       ↓ Approval
+    [STOCK ISSUE] → Items transferred
+       ↓
+    DEPARTMENT STOCK (Pharmacy, Lab, Nursing)
+       ↓
+    [DISPENSING/USAGE] → To patients or used in service
+       ↓
+    FINANCE TRACKING → COGS, Revenue, Profit
+    "
+  },
+
+  "finance_integration": {
+    "cost_tracking": {
+      "when_purchased": {
+        "action": "GRN created",
+        "finance_impact": "Asset (Inventory) increases, Liability (Accounts Payable) increases",
+        "journal_entry": "DR Inventory ₵10,000 | CR Accounts Payable ₵10,000"
+      },
+      "when_issued_to_department": {
+        "action": "Stock issued from central store to pharmacy",
+        "finance_impact": "Central inventory decreases, Department expense/stock increases",
+        "note": "Some hospitals treat this as expense, others keep as asset until dispensed"
+      },
+      "when_dispensed_to_patient": {
+        "action": "Pharmacist dispenses drug to patient",
+        "finance_impact": "COGS recognized, Revenue recognized",
+        "journal_entry": "DR COGS ₵0.33 | CR Pharmacy Stock ₵0.33 AND DR Cash ₵0.45 | CR Pharmacy Revenue ₵0.45",
+        "profit": "₵0.45 - ₵0.33 = ₵0.12 profit"
+      }
+    },
+
+    "reports_enabled": {
+      "inventory_valuation_report": {
+        "shows": "Total value of inventory on hand",
+        "calculation": "Sum of (quantity × unit_cost) for all items in central_inventory",
+        "used_for": "Balance sheet (Current Assets)"
+      },
+      "cost_of_goods_sold_report": {
+        "shows": "Cost of items dispensed/used in period",
+        "calculation": "Sum of (quantity_dispensed × unit_cost) from stock_movements where type='dispensing'",
+        "used_for": "P&L Statement (COGS)"
+      },
+      "gross_profit_report": {
+        "shows": "Revenue - COGS",
+        "calculation": "Total revenue from dispensing - Total COGS",
+        "used_for": "P&L Statement"
+      },
+      "stock_movement_report": {
+        "shows": "All stock movements in period",
+        "used_for": "Audit trail, reconciliation"
+      },
+      "slow_moving_stock": {
+        "shows": "Items with low turnover",
+        "helps": "Identify excess inventory, reduce wastage"
+      },
+      "expiry_report": {
+        "shows": "Items expiring in next 30/60/90 days",
+        "value": "Total value of expiring stock",
+        "helps": "Reduce wastage, financial loss"
+      }
+    }
+  },
+
+  "api_endpoints": {
+    "purchase_orders": [
+      "POST /api/procurement/purchase-orders",
+      "GET /api/procurement/purchase-orders",
+      "GET /api/procurement/purchase-orders/:id",
+      "PATCH /api/procurement/purchase-orders/:id/approve",
+      "PATCH /api/procurement/purchase-orders/:id/reject"
+    ],
+    "goods_received": [
+      "POST /api/procurement/grn",
+      "GET /api/procurement/grn",
+      "POST /api/procurement/grn/:id/verify",
+      "POST /api/procurement/grn/:id/reject"
+    ],
+    "central_inventory": [
+      "GET /api/inventory/central",
+      "GET /api/inventory/central/:id",
+      "GET /api/inventory/central/valuation",
+      "GET /api/inventory/central/low-stock"
+    ],
+    "requisitions": [
+      "POST /api/inventory/requisitions",
+      "GET /api/inventory/requisitions",
+      "PATCH /api/inventory/requisitions/:id/approve",
+      "PATCH /api/inventory/requisitions/:id/reject"
+    ],
+    "stock_issues": [
+      "POST /api/inventory/stock-issues",
+      "GET /api/inventory/stock-issues",
+      "GET /api/inventory/stock-issues/:id"
+    ],
+    "department_stock": [
+      "GET /api/inventory/department/:department",
+      "GET /api/pharmacy/stock (alias to department/pharmacy)",
+      "GET /api/laboratory/stock (alias to department/laboratory)"
+    ],
+    "stock_movements": [
+      "GET /api/inventory/movements",
+      "GET /api/inventory/movements/audit-trail"
+    ]
+  },
+
+  "migration_strategy": {
+    "current_state": "Drugs appear directly in pharmacy stock (drug_inventory table)",
+    "target_state": "Proper flow through central inventory",
+    
+    "migration_steps": [
+      {
+        "step": 1,
+        "action": "Create new tables",
+        "tables": [
+          "suppliers",
+          "purchase_orders",
+          "purchase_order_items",
+          "goods_received_notes",
+          "goods_received_items",
+          "central_inventory",
+          "central_inventory_batches",
+          "department_requisitions",
+          "requisition_items",
+          "stock_issues",
+          "stock_issue_items",
+          "department_stock (rename drug_inventory to this)",
+          "department_stock_batches",
+          "stock_movements"
+        ]
+      },
+      {
+        "step": 2,
+        "action": "Migrate existing drug_inventory data",
+        "process": [
+          "Copy drug_inventory → department_stock (department = 'Pharmacy')",
+          "Create initial stock movement records (type='opening_balance')",
+          "Set unit_cost to current cost_price from drug_formulary"
+        ]
+      },
+      {
+        "step": 3,
+        "action": "Update pharmacy dispensing flow",
+        "changes": [
+          "When dispensing, deduct from department_stock (not drug_inventory)",
+          "Create stock_movement record",
+          "Pass unit_cost to billing for COGS calculation"
+        ]
+      },
+      {
+        "step": 4,
+        "action": "Implement new procurement flow",
+        "for_new_purchases": [
+          "Create PO → GRN → Central Inventory → Requisition → Stock Issue → Department Stock"
+        ]
+      },
+      {
+        "step": 5,
+        "action": "Train users",
+        "roles": [
+          "Store Keeper - Receiving goods, issuing to departments",
+          "Pharmacist - Creating requisitions",
+          "Procurement Officer - Creating POs"
+        ]
+      }
+    ]
+  },
+
+  "ui_components_needed": [
+    {
+      "component": "Purchase Order Management",
+      "route": "/procurement/purchase-orders",
+      "features": ["Create PO", "List POs", "Approve/Reject", "Send to supplier"]
+    },
+    {
+      "component": "Goods Receiving",
+      "route": "/procurement/grn",
+      "features": ["Create GRN", "Match to PO", "Quality check", "Verify"]
+    },
+    {
+      "component": "Central Inventory Dashboard",
+      "route": "/inventory/central",
+      "features": ["View all stock", "Stock levels", "Valuation", "Low stock alerts"]
+    },
+    {
+      "component": "Department Requisition",
+      "route": "/inventory/requisitions",
+      "features": ["Create requisition", "Approve", "Issue stock"]
+    },
+    {
+      "component": "Stock Issue",
+      "route": "/inventory/issues",
+      "features": ["Issue stock to department", "Select batches (FIFO)", "Department signature"]
+    },
+    {
+      "component": "Department Stock View",
+      "route": "/pharmacy/stock (or /laboratory/stock)",
+      "features": ["View department stock", "Request restock", "Usage history"]
+    },
+    {
+      "component": "Stock Movement Report",
+      "route": "/reports/stock-movements",
+      "features": ["Audit trail", "Filter by date/type/item", "Export"]
+    }
+  ],
+
+  "benefits_of_correct_flow": {
+    "operational": [
+      "Single source of truth for all stock",
+      "Proper authorization and approval workflow",
+      "Better stock control and reduction in theft",
+      "Clear audit trail for all movements",
+      "FIFO/FEFO ensures older stock used first",
+      "Expiry tracking from receipt to usage"
+    ],
+    "financial": [
+      "Accurate COGS calculation (Finance knows exact cost of each item sold)",
+      "Proper inventory valuation for Balance Sheet",
+      "Track Accounts Payable to suppliers",
+      "Calculate true gross profit per service",
+      "Identify slow-moving stock (capital tied up)",
+      "Reduce wastage from expired stock"
+    ],
+    "compliance": [
+      "Regulatory requirement in many jurisdictions",
+      "Audit-ready (can trace any item from purchase to usage)",
+      "Controlled substances tracking",
+      "Supplier performance tracking"
+    ]
+  },
+
+  "example_scenario": {
+    "purchase_paracetamol": {
+      "step_1": "Pharmacist notices Paracetamol running low",
+      "step_2": "Pharmacy Manager creates PO for 1000 tablets @ ₵0.35 each = ₵350",
+      "step_3": "Finance approves PO",
+      "step_4": "PO sent to supplier",
+      "step_5": "Supplier delivers 1000 tablets",
+      "step_6": "Store Keeper creates GRN, verifies quantity, checks expiry (2026-12-31), batch PAR-2024-A",
+      "step_7": "Pharmacy Manager verifies GRN → Approved",
+      "step_8": "System updates: central_inventory.quantity += 1000, average_cost recalculated, batch added",
+      "step_9": "Pharmacist creates requisition for 200 tablets",
+      "step_10": "Store Manager approves requisition",
+      "step_11": "Store Keeper issues 200 tablets from batch PAR-2024-A to Pharmacy",
+      "step_12": "System updates: central_inventory -= 200, department_stock (Pharmacy) += 200",
+      "step_13": "Patient comes, pharmacist dispenses 21 tablets",
+      "step_14": "System updates: department_stock -= 21, COGS = 21 × ₵0.35 = ₵7.35, Revenue = 21 × ₵0.45 = ₵9.45, Profit = ₵2.10",
+      "step_15": "Finance P&L shows: Revenue ₵9.45, COGS ₵7.35, Gross Profit ₵2.10 (30% margin)"
+    }
+  }
+}

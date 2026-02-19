@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { Toaster } from "@/components/ui/toaster";
+import SetupReminderBanner from "../setup/SetupReminderBanner";
 
 export default function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -15,6 +16,7 @@ export default function MainLayout() {
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <Header sidebarCollapsed={sidebarCollapsed} />
+      <SetupReminderBanner />
       <motion.main
         initial={false}
         animate={{ marginLeft: sidebarCollapsed ? 80 : 280 }}

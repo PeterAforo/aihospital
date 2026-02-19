@@ -106,6 +106,9 @@ import NewAdmission from './pages/inpatient/NewAdmission';
 // Registration
 import RegistrationWizard from './pages/registration/RegistrationWizard';
 
+// Setup Wizard
+import SetupWizard from './pages/setup/SetupWizard';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -228,6 +231,9 @@ function App() {
         <Route path="/inpatient/admissions" element={<AdmissionsPage />} />
         <Route path="/inpatient/admissions/:admissionId" element={<AdmissionDetailPage />} />
         <Route path="/inpatient/admit" element={<NewAdmission />} />
+
+        {/* Setup Wizard */}
+        <Route path="/setup" element={<SetupWizard isModal={false} />} />
       </Route>
 
       {/* 404 */}

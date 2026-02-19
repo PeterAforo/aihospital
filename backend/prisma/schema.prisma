@@ -46,6 +46,28 @@ model Tenant {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
+  // Onboarding wizard setup tracking
+  setupCompleted      Boolean   @default(false)
+  setupCompletedAt    DateTime?
+  setupProgress       Json?     // { step_1: { completed, completed_at }, ... }
+  setupStep1Completed Boolean   @default(false) // Hospital Profile
+  setupStep2Completed Boolean   @default(false) // Branches
+  setupStep3Completed Boolean   @default(false) // Departments
+  setupStep4Completed Boolean   @default(false) // Staff & Users
+  setupStep5Completed Boolean   @default(false) // Service Pricing
+  setupStep6Completed Boolean   @default(false) // Drug Formulary
+  setupStep7Completed Boolean   @default(false) // Lab Test Catalog
+  setupStep8Completed Boolean   @default(false) // Wards & Beds (optional)
+  setupStep9Completed Boolean   @default(false) // Integrations (optional)
+  setupStep10Completed Boolean  @default(false) // Review & Complete
+
+  // Hospital profile fields (step 1)
+  hospitalType     String?
+  hospitalCategory String?
+  bedCapacity      Int?
+  nhisAccredited   Boolean  @default(false)
+  nhisProviderCode String?
+
   // Data sharing settings for multi-branch
   sharedEmr       Boolean @default(true)
   sharedBilling   Boolean @default(true)
