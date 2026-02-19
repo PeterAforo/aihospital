@@ -1,0 +1,1876 @@
+{
+  "test_name": "Complete Patient Journey - End-to-End Workflow Verification",
+  "description": "Comprehensive workflow test covering patient registration through discharge, testing all modules and role-based workflows",
+  "test_type": "E2E Integration Test",
+  "estimated_duration": "30-45 minutes (manual) | 5-10 minutes (automated)",
+  
+  "test_users": {
+    "receptionist": {
+      "username": "receptionist@hospital.com",
+      "password": "Test123!",
+      "role": "RECEPTIONIST",
+      "permissions": ["REGISTER_PATIENT", "CREATE_APPOINTMENT", "CHECK_IN_PATIENT"]
+    },
+    "nurse_triage": {
+      "username": "nurse.triage@hospital.com",
+      "password": "Test123!",
+      "role": "NURSE",
+      "permissions": ["TRIAGE", "RECORD_VITALS", "VIEW_PATIENT"]
+    },
+    "doctor": {
+      "username": "doctor@hospital.com",
+      "password": "Test123!",
+      "role": "DOCTOR",
+      "permissions": ["VIEW_PATIENT", "CREATE_ENCOUNTER", "PRESCRIBE", "ORDER_LAB", "VIEW_LAB_RESULTS", "ADMIT_PATIENT"]
+    },
+    "lab_technician": {
+      "username": "lab.tech@hospital.com",
+      "password": "Test123!",
+      "role": "LAB_TECHNICIAN",
+      "permissions": ["VIEW_LAB_ORDER", "COLLECT_LAB_SAMPLE", "UPLOAD_LAB_RESULT", "APPROVE_LAB_RESULT"]
+    },
+    "pharmacist": {
+      "username": "pharmacist@hospital.com",
+      "password": "Test123!",
+      "role": "PHARMACIST",
+      "permissions": ["VIEW_PRESCRIPTION", "DISPENSE_MEDICATION", "VIEW_STOCK_LEVELS"]
+    },
+    "nurse_ipd": {
+      "username": "nurse.ipd@hospital.com",
+      "password": "Test123!",
+      "role": "NURSE",
+      "permissions": ["VIEW_PATIENT", "MANAGE_IPD", "RECORD_VITALS", "DOCUMENT_NURSING_NOTES", "DISCHARGE_PATIENT"]
+    },
+    "billing_officer": {
+      "username": "billing@hospital.com",
+      "password": "Test123!",
+      "role": "BILLING_OFFICER",
+      "permissions": ["VIEW_INVOICE", "CREATE_INVOICE", "PROCESS_PAYMENT"]
+    }
+  },
+
+  "test_data": {
+    "patient": {
+      "first_name": "Kwame",
+      "last_name": "Mensah",
+      "date_of_birth": "1985-05-15",
+      "gender": "M",
+      "phone": "+233244123456",
+      "ghana_card": "GHA-123456789-1",
+      "nhis_number": "NHIS-2024-001234",
+      "insurance_type": "NHIS",
+      "address": "123 Accra Road, Tema",
+      "emergency_contact": {
+        "name": "Ama Mensah",
+        "phone": "+233244987654",
+        "relationship": "Spouse"
+      }
+    },
+    "vitals": {
+      "temperature": 37.2,
+      "blood_pressure_systolic": 120,
+      "blood_pressure_diastolic": 80,
+      "heart_rate": 78,
+      "respiratory_rate": 18,
+      "oxygen_saturation": 98,
+      "weight": 75,
+      "height": 175
+    },
+    "consultation": {
+      "chief_complaint": "Fever and body pains for 3 days",
+      "history": "Patient reports fever up to 38.5°C, generalized body pains, headache. No cough, no vomiting. Denies recent travel.",
+      "examination": "Alert and oriented. Mildly febrile. No pallor, no jaundice. Chest clear. Abdomen soft, non-tender.",
+      "diagnosis": {
+        "code": "A90",
+        "description": "Dengue fever [classical dengue]",
+        "type": "primary"
+      },
+      "plan": "Admit for observation and IV fluids. Paracetamol for fever. Monitor platelet count daily."
+    },
+    "lab_orders": [
+      {
+        "test_code": "LAB-CBC",
+        "test_name": "Complete Blood Count (CBC)",
+        "priority": "STAT"
+      },
+      {
+        "test_code": "LAB-MAL-RDT",
+        "test_name": "Malaria Rapid Diagnostic Test",
+        "priority": "STAT"
+      }
+    ],
+    "prescription": [
+      {
+        "drug_name": "Paracetamol 500mg",
+        "dosage": "500mg",
+        "frequency": "TID (3 times daily)",
+        "route": "Oral",
+        "duration": "5 days",
+        "quantity": 15,
+        "instructions": "Take after meals"
+      },
+      {
+        "drug_name": "IV Normal Saline 1L",
+        "dosage": "1000ml",
+        "frequency": "BD (2 times daily)",
+        "route": "IV",
+        "duration": "3 days",
+        "quantity": 6,
+        "instructions": "Infuse over 8 hours"
+      }
+    ],
+    "lab_results": {
+      "cbc": {
+        "hemoglobin": 13.5,
+        "wbc": 4.5,
+        "platelets": 120,
+        "hematocrit": 40.5,
+        "is_abnormal": true,
+        "notes": "Thrombocytopenia noted. Consistent with viral infection."
+      },
+      "malaria_rdt": {
+        "result": "Negative",
+        "is_abnormal": false
+      }
+    },
+    "admission": {
+      "ward": "General Ward",
+      "room": "GW-101",
+      "bed": "Bed 3",
+      "admission_reason": "Dengue fever - requires IV fluids and monitoring"
+    },
+    "nursing_notes": [
+      {
+        "time": "14:00",
+        "note": "Patient admitted to GW-101 Bed 3. Vitals stable. IV line inserted. Normal saline infusion started."
+      },
+      {
+        "time": "18:00",
+        "note": "Patient resting comfortably. Vitals stable. IV fluids running well. No complaints."
+      }
+    ]
+  },
+
+  "workflow_steps": [
+    {
+      "step": 1,
+      "step_name": "Patient Registration by Receptionist",
+      "role": "RECEPTIONIST",
+      "user": "receptionist@hospital.com",
+      "module": "Patient Registration",
+      
+      "actions": [
+        {
+          "action": "LOGIN",
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "request_body": {
+            "email": "receptionist@hospital.com",
+            "password": "Test123!"
+          },
+          "expected_response": {
+            "status": 200,
+            "contains": ["token", "user", "permissions"]
+          },
+          "save_to_context": {
+            "receptionist_token": "response.token",
+            "receptionist_user": "response.user"
+          },
+          "validation": [
+            "Token is present",
+            "User role is RECEPTIONIST",
+            "Permissions include REGISTER_PATIENT"
+          ]
+        },
+        {
+          "action": "REGISTER_PATIENT",
+          "method": "POST",
+          "endpoint": "/api/patients",
+          "headers": {
+            "Authorization": "Bearer {{receptionist_token}}"
+          },
+          "request_body": "{{test_data.patient}}",
+          "expected_response": {
+            "status": 201,
+            "contains": ["id", "mrn", "first_name", "last_name"]
+          },
+          "save_to_context": {
+            "patient_id": "response.id",
+            "patient_mrn": "response.mrn"
+          },
+          "validation": [
+            "Patient created successfully",
+            "MRN generated automatically",
+            "Ghana Card number saved",
+            "NHIS number saved"
+          ]
+        },
+        {
+          "action": "CREATE_APPOINTMENT",
+          "method": "POST",
+          "endpoint": "/api/appointments",
+          "headers": {
+            "Authorization": "Bearer {{receptionist_token}}"
+          },
+          "request_body": {
+            "patient_id": "{{patient_id}}",
+            "appointment_type": "consultation",
+            "appointment_date": "{{today}}",
+            "appointment_time": "{{now + 15min}}",
+            "doctor_id": "{{doctor.id}}",
+            "reason": "Fever and body pains"
+          },
+          "expected_response": {
+            "status": 201,
+            "contains": ["id", "appointment_number", "status"]
+          },
+          "save_to_context": {
+            "appointment_id": "response.id",
+            "appointment_number": "response.appointment_number"
+          },
+          "validation": [
+            "Appointment created",
+            "Status is SCHEDULED"
+          ]
+        },
+        {
+          "action": "CHECK_IN_PATIENT",
+          "method": "PATCH",
+          "endpoint": "/api/appointments/{{appointment_id}}/check-in",
+          "headers": {
+            "Authorization": "Bearer {{receptionist_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "status": "CHECKED_IN"
+            }
+          },
+          "validation": [
+            "Appointment status changed to CHECKED_IN",
+            "Patient appears in triage queue"
+          ]
+        },
+        {
+          "action": "VERIFY_TRIAGE_QUEUE",
+          "method": "GET",
+          "endpoint": "/api/triage/queue",
+          "headers": {
+            "Authorization": "Bearer {{receptionist_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "patient_id": "{{patient_id}}",
+              "status": "WAITING_FOR_TRIAGE"
+            }
+          },
+          "validation": [
+            "Patient appears in triage queue",
+            "Status is WAITING_FOR_TRIAGE"
+          ]
+        }
+      ],
+      
+      "success_criteria": [
+        "✅ Receptionist can login",
+        "✅ Receptionist can register patient",
+        "✅ MRN auto-generated",
+        "✅ Appointment created",
+        "✅ Patient checked in",
+        "✅ Patient in triage queue"
+      ],
+      
+      "manual_test_instructions": {
+        "1": "Login as receptionist@hospital.com",
+        "2": "Navigate to Patient Registration",
+        "3": "Fill form with test patient data",
+        "4": "Submit - Note MRN generated",
+        "5": "Create appointment for today",
+        "6": "Check-in patient",
+        "7": "Verify patient appears in Triage Queue",
+        "8": "LOGOUT"
+      }
+    },
+
+    {
+      "step": 2,
+      "step_name": "Triage Assessment by Nurse",
+      "role": "NURSE",
+      "user": "nurse.triage@hospital.com",
+      "module": "Triage & Vitals",
+      
+      "actions": [
+        {
+          "action": "LOGIN",
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "request_body": {
+            "email": "nurse.triage@hospital.com",
+            "password": "Test123!"
+          },
+          "save_to_context": {
+            "nurse_token": "response.token"
+          }
+        },
+        {
+          "action": "VIEW_TRIAGE_QUEUE",
+          "method": "GET",
+          "endpoint": "/api/triage/queue",
+          "headers": {
+            "Authorization": "Bearer {{nurse_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains_patient": "{{patient_id}}"
+          },
+          "validation": [
+            "Patient {{patient_mrn}} visible in queue",
+            "Patient status is WAITING_FOR_TRIAGE"
+          ]
+        },
+        {
+          "action": "RECORD_VITALS_AND_TRIAGE",
+          "method": "POST",
+          "endpoint": "/api/triage",
+          "headers": {
+            "Authorization": "Bearer {{nurse_token}}"
+          },
+          "request_body": {
+            "patient_id": "{{patient_id}}",
+            "appointment_id": "{{appointment_id}}",
+            "vitals": "{{test_data.vitals}}",
+            "chief_complaint": "{{test_data.consultation.chief_complaint}}",
+            "triage_category": "URGENT",
+            "manchester_triage_color": "ORANGE",
+            "notes": "Febrile patient, needs urgent assessment"
+          },
+          "expected_response": {
+            "status": 201,
+            "contains": ["id", "triage_category", "priority_score"]
+          },
+          "save_to_context": {
+            "triage_id": "response.id"
+          },
+          "validation": [
+            "Triage record created",
+            "Vitals saved",
+            "Triage category set to URGENT",
+            "Patient moves to doctor queue"
+          ]
+        },
+        {
+          "action": "VERIFY_DOCTOR_QUEUE",
+          "method": "GET",
+          "endpoint": "/api/encounters/queue",
+          "headers": {
+            "Authorization": "Bearer {{nurse_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "patient_id": "{{patient_id}}",
+              "triage_category": "URGENT"
+            }
+          },
+          "validation": [
+            "Patient appears in doctor's queue",
+            "Sorted by priority (URGENT should be near top)"
+          ]
+        }
+      ],
+      
+      "success_criteria": [
+        "✅ Nurse can login",
+        "✅ Nurse can see patient in triage queue",
+        "✅ Nurse can record vitals",
+        "✅ Triage assessment saved",
+        "✅ Patient moves to doctor queue",
+        "✅ Priority correctly assigned"
+      ],
+      
+      "manual_test_instructions": {
+        "1": "Login as nurse.triage@hospital.com",
+        "2": "Navigate to Triage Queue",
+        "3": "Verify patient 'Kwame Mensah' appears",
+        "4": "Click on patient to start triage",
+        "5": "Record all vital signs",
+        "6": "Set triage category to URGENT (Orange)",
+        "7": "Save triage",
+        "8": "Verify patient moved to Doctor Queue",
+        "9": "LOGOUT"
+      }
+    },
+
+    {
+      "step": 3,
+      "step_name": "Consultation by Doctor (with Lab Orders, Prescription, and Admission)",
+      "role": "DOCTOR",
+      "user": "doctor@hospital.com",
+      "module": "EMR / Clinical Consultation",
+      
+      "actions": [
+        {
+          "action": "LOGIN",
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "request_body": {
+            "email": "doctor@hospital.com",
+            "password": "Test123!"
+          },
+          "save_to_context": {
+            "doctor_token": "response.token",
+            "doctor_id": "response.user.id"
+          }
+        },
+        {
+          "action": "VIEW_PATIENT_QUEUE",
+          "method": "GET",
+          "endpoint": "/api/encounters/queue",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains_patient": "{{patient_id}}"
+          },
+          "validation": [
+            "Patient visible in queue",
+            "Triage data visible (vitals, category)"
+          ]
+        },
+        {
+          "action": "START_ENCOUNTER",
+          "method": "POST",
+          "endpoint": "/api/encounters",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "request_body": {
+            "patient_id": "{{patient_id}}",
+            "appointment_id": "{{appointment_id}}",
+            "encounter_type": "OUTPATIENT",
+            "chief_complaint": "{{test_data.consultation.chief_complaint}}"
+          },
+          "expected_response": {
+            "status": 201,
+            "contains": ["id", "encounter_number", "status"]
+          },
+          "save_to_context": {
+            "encounter_id": "response.id",
+            "encounter_number": "response.encounter_number"
+          },
+          "validation": [
+            "Encounter created",
+            "Status is IN_PROGRESS",
+            "Vitals from triage auto-populated"
+          ]
+        },
+        {
+          "action": "DOCUMENT_HISTORY_AND_EXAMINATION",
+          "method": "PATCH",
+          "endpoint": "/api/encounters/{{encounter_id}}",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "request_body": {
+            "history_of_present_illness": "{{test_data.consultation.history}}",
+            "physical_examination": "{{test_data.consultation.examination}}",
+            "assessment": "Suspected viral fever, possibly dengue. Requires investigation."
+          },
+          "expected_response": {
+            "status": 200
+          }
+        },
+        {
+          "action": "ADD_DIAGNOSIS",
+          "method": "POST",
+          "endpoint": "/api/encounters/{{encounter_id}}/diagnoses",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "request_body": {
+            "icd10_code": "{{test_data.consultation.diagnosis.code}}",
+            "diagnosis_name": "{{test_data.consultation.diagnosis.description}}",
+            "diagnosis_type": "{{test_data.consultation.diagnosis.type}}"
+          },
+          "expected_response": {
+            "status": 201
+          },
+          "save_to_context": {
+            "diagnosis_id": "response.id"
+          },
+          "validation": [
+            "Diagnosis added",
+            "ICD-10 code validated"
+          ]
+        },
+        {
+          "action": "ORDER_LAB_TESTS",
+          "method": "POST",
+          "endpoint": "/api/lab/orders",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "request_body": {
+            "patient_id": "{{patient_id}}",
+            "encounter_id": "{{encounter_id}}",
+            "tests": "{{test_data.lab_orders}}"
+          },
+          "expected_response": {
+            "status": 201,
+            "body": {
+              "orders": [
+                {"test_code": "LAB-CBC"},
+                {"test_code": "LAB-MAL-RDT"}
+              ]
+            }
+          },
+          "save_to_context": {
+            "lab_order_ids": "response.orders.map(o => o.id)"
+          },
+          "validation": [
+            "Lab orders created",
+            "Status is PENDING_COLLECTION",
+            "Orders appear in lab queue"
+          ]
+        },
+        {
+          "action": "CREATE_PRESCRIPTION",
+          "method": "POST",
+          "endpoint": "/api/prescriptions",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "request_body": {
+            "patient_id": "{{patient_id}}",
+            "encounter_id": "{{encounter_id}}",
+            "medications": "{{test_data.prescription}}"
+          },
+          "expected_response": {
+            "status": 201,
+            "contains": ["id", "prescription_number", "status"]
+          },
+          "save_to_context": {
+            "prescription_id": "response.id",
+            "prescription_number": "response.prescription_number"
+          },
+          "validation": [
+            "Prescription created",
+            "Status is PENDING_PHARMACY",
+            "Drug interaction checks ran",
+            "Allergy checks ran",
+            "Prescription appears in pharmacy queue"
+          ]
+        },
+        {
+          "action": "ADMIT_PATIENT_TO_IPD",
+          "method": "POST",
+          "endpoint": "/api/inpatient/admissions",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "request_body": {
+            "patient_id": "{{patient_id}}",
+            "encounter_id": "{{encounter_id}}",
+            "ward": "{{test_data.admission.ward}}",
+            "admission_reason": "{{test_data.admission.admission_reason}}",
+            "admitting_doctor_id": "{{doctor_id}}"
+          },
+          "expected_response": {
+            "status": 201,
+            "contains": ["id", "admission_number", "status"]
+          },
+          "save_to_context": {
+            "admission_id": "response.id",
+            "admission_number": "response.admission_number"
+          },
+          "validation": [
+            "Admission record created",
+            "Status is ADMITTED",
+            "Patient appears in IPD ward list"
+          ]
+        },
+        {
+          "action": "COMPLETE_ENCOUNTER",
+          "method": "PATCH",
+          "endpoint": "/api/encounters/{{encounter_id}}/complete",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "status": "COMPLETED"
+            }
+          },
+          "validation": [
+            "Encounter status is COMPLETED",
+            "Encounter locked for editing"
+          ]
+        }
+      ],
+      
+      "success_criteria": [
+        "✅ Doctor can login",
+        "✅ Doctor can see patient in queue with triage data",
+        "✅ Doctor can start encounter",
+        "✅ Doctor can document SOAP notes",
+        "✅ Doctor can add diagnosis (ICD-10)",
+        "✅ Doctor can order lab tests",
+        "✅ Doctor can create prescription",
+        "✅ Prescription appears in pharmacy queue",
+        "✅ Doctor can admit patient to IPD",
+        "✅ Patient appears in ward list",
+        "✅ Encounter can be completed"
+      ],
+      
+      "manual_test_instructions": {
+        "1": "Login as doctor@hospital.com",
+        "2": "Navigate to Patient Queue",
+        "3": "Verify patient 'Kwame Mensah' appears with URGENT priority",
+        "4": "Click to start encounter",
+        "5": "Verify vitals auto-populated from triage",
+        "6": "Document History: 'Fever and body pains for 3 days...'",
+        "7": "Document Examination findings",
+        "8": "Add Diagnosis: Search 'dengue' → Select A90",
+        "9": "Order Labs: CBC (STAT), Malaria RDT (STAT)",
+        "10": "Create Prescription: Paracetamol 500mg TID × 5 days, IV Normal Saline",
+        "11": "Admit Patient: Ward = General Ward, Reason = Dengue fever",
+        "12": "Complete Encounter",
+        "13": "Verify patient moved to IPD",
+        "14": "Verify lab orders in Lab Queue",
+        "15": "Verify prescription in Pharmacy Queue",
+        "16": "LOGOUT"
+      }
+    },
+
+    {
+      "step": 4,
+      "step_name": "Lab Test Processing by Lab Technician",
+      "role": "LAB_TECHNICIAN",
+      "user": "lab.tech@hospital.com",
+      "module": "Laboratory",
+      
+      "actions": [
+        {
+          "action": "LOGIN",
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "request_body": {
+            "email": "lab.tech@hospital.com",
+            "password": "Test123!"
+          },
+          "save_to_context": {
+            "lab_tech_token": "response.token",
+            "lab_tech_id": "response.user.id"
+          }
+        },
+        {
+          "action": "VIEW_LAB_QUEUE",
+          "method": "GET",
+          "endpoint": "/api/lab/queue",
+          "headers": {
+            "Authorization": "Bearer {{lab_tech_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "patient_mrn": "{{patient_mrn}}",
+              "tests": [
+                {"test_code": "LAB-CBC", "priority": "STAT"},
+                {"test_code": "LAB-MAL-RDT", "priority": "STAT"}
+              ]
+            }
+          },
+          "validation": [
+            "Lab orders visible in queue",
+            "STAT orders at top of queue",
+            "Patient details visible"
+          ]
+        },
+        {
+          "action": "COLLECT_SAMPLE_CBC",
+          "method": "PATCH",
+          "endpoint": "/api/lab/orders/{{lab_order_ids[0]}}/collect",
+          "headers": {
+            "Authorization": "Bearer {{lab_tech_token}}"
+          },
+          "request_body": {
+            "collected_by": "{{lab_tech_id}}",
+            "sample_type": "Blood (EDTA)",
+            "collection_time": "{{now}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "status": "SAMPLE_COLLECTED"
+            }
+          }
+        },
+        {
+          "action": "COLLECT_SAMPLE_MALARIA",
+          "method": "PATCH",
+          "endpoint": "/api/lab/orders/{{lab_order_ids[1]}}/collect",
+          "headers": {
+            "Authorization": "Bearer {{lab_tech_token}}"
+          },
+          "request_body": {
+            "collected_by": "{{lab_tech_id}}",
+            "sample_type": "Blood (Capillary)",
+            "collection_time": "{{now}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "status": "SAMPLE_COLLECTED"
+            }
+          }
+        },
+        {
+          "action": "ENTER_RESULTS_CBC",
+          "method": "POST",
+          "endpoint": "/api/lab/orders/{{lab_order_ids[0]}}/results",
+          "headers": {
+            "Authorization": "Bearer {{lab_tech_token}}"
+          },
+          "request_body": {
+            "results": [
+              {
+                "parameter": "Hemoglobin",
+                "value": "{{test_data.lab_results.cbc.hemoglobin}}",
+                "unit": "g/dL",
+                "reference_range": "13.0-17.0",
+                "is_abnormal": false
+              },
+              {
+                "parameter": "WBC",
+                "value": "{{test_data.lab_results.cbc.wbc}}",
+                "unit": "×10^9/L",
+                "reference_range": "4.0-11.0",
+                "is_abnormal": false
+              },
+              {
+                "parameter": "Platelets",
+                "value": "{{test_data.lab_results.cbc.platelets}}",
+                "unit": "×10^9/L",
+                "reference_range": "150-400",
+                "is_abnormal": true,
+                "flag": "LOW"
+              }
+            ],
+            "interpretation": "{{test_data.lab_results.cbc.notes}}",
+            "entered_by": "{{lab_tech_id}}"
+          },
+          "expected_response": {
+            "status": 201,
+            "body": {
+              "status": "RESULTS_ENTERED"
+            }
+          },
+          "save_to_context": {
+            "cbc_result_id": "response.id"
+          }
+        },
+        {
+          "action": "ENTER_RESULTS_MALARIA",
+          "method": "POST",
+          "endpoint": "/api/lab/orders/{{lab_order_ids[1]}}/results",
+          "headers": {
+            "Authorization": "Bearer {{lab_tech_token}}"
+          },
+          "request_body": {
+            "results": [
+              {
+                "parameter": "Malaria RDT",
+                "value": "{{test_data.lab_results.malaria_rdt.result}}",
+                "is_abnormal": false
+              }
+            ],
+            "entered_by": "{{lab_tech_id}}"
+          },
+          "expected_response": {
+            "status": 201
+          }
+        },
+        {
+          "action": "APPROVE_RESULTS",
+          "method": "PATCH",
+          "endpoint": "/api/lab/orders/{{lab_order_ids[0]}}/approve",
+          "headers": {
+            "Authorization": "Bearer {{lab_tech_token}}"
+          },
+          "request_body": {
+            "approved_by": "{{lab_tech_id}}",
+            "approval_notes": "Results reviewed and approved"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "status": "COMPLETED"
+            }
+          },
+          "side_effects": [
+            "Notification sent to ordering doctor",
+            "Results visible in EMR",
+            "Lab order status changed to COMPLETED"
+          ]
+        },
+        {
+          "action": "APPROVE_MALARIA_RESULTS",
+          "method": "PATCH",
+          "endpoint": "/api/lab/orders/{{lab_order_ids[1]}}/approve",
+          "headers": {
+            "Authorization": "Bearer {{lab_tech_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "status": "COMPLETED"
+            }
+          }
+        }
+      ],
+      
+      "success_criteria": [
+        "✅ Lab tech can login",
+        "✅ Lab tech can see pending orders in queue",
+        "✅ STAT orders appear at top",
+        "✅ Lab tech can mark sample as collected",
+        "✅ Lab tech can enter results",
+        "✅ Abnormal results flagged automatically",
+        "✅ Lab tech can approve results",
+        "✅ Results status changes to COMPLETED",
+        "✅ Notification sent to doctor"
+      ],
+      
+      "manual_test_instructions": {
+        "1": "Login as lab.tech@hospital.com",
+        "2": "Navigate to Lab Queue",
+        "3": "Verify 2 STAT orders for patient 'Kwame Mensah'",
+        "4": "Click CBC order → Mark sample collected",
+        "5": "Click Malaria RDT order → Mark sample collected",
+        "6": "Enter CBC results:",
+        "   - Hemoglobin: 13.5 g/dL (Normal)",
+        "   - WBC: 4.5 ×10^9/L (Normal)",
+        "   - Platelets: 120 ×10^9/L (LOW - should flag as abnormal)",
+        "7": "Enter interpretation notes",
+        "8": "Approve CBC results",
+        "9": "Enter Malaria RDT: Negative",
+        "10": "Approve Malaria results",
+        "11": "Verify both orders status = COMPLETED",
+        "12": "LOGOUT"
+      }
+    },
+
+    {
+      "step": 5,
+      "step_name": "Doctor Reviews Lab Results and Updates Encounter",
+      "role": "DOCTOR",
+      "user": "doctor@hospital.com",
+      "module": "EMR + Lab Results",
+      
+      "actions": [
+        {
+          "action": "LOGIN",
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "request_body": {
+            "email": "doctor@hospital.com",
+            "password": "Test123!"
+          },
+          "save_to_context": {
+            "doctor_token": "response.token"
+          }
+        },
+        {
+          "action": "CHECK_NOTIFICATIONS",
+          "method": "GET",
+          "endpoint": "/api/notifications",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "type": "LAB_RESULTS_READY",
+              "patient_id": "{{patient_id}}",
+              "message": "Lab results ready for Kwame Mensah"
+            }
+          },
+          "validation": [
+            "Notification received for lab results",
+            "Notification shows patient name and MRN",
+            "Notification has link to results"
+          ]
+        },
+        {
+          "action": "VIEW_LAB_RESULTS",
+          "method": "GET",
+          "endpoint": "/api/lab/orders/{{lab_order_ids[0]}}/results",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "test_name": "Complete Blood Count",
+              "status": "COMPLETED",
+              "results": [
+                {"parameter": "Hemoglobin", "value": 13.5},
+                {"parameter": "Platelets", "value": 120, "is_abnormal": true}
+              ]
+            }
+          },
+          "validation": [
+            "CBC results visible",
+            "Platelet count flagged as abnormal (LOW)",
+            "Reference ranges shown",
+            "Interpretation notes visible"
+          ]
+        },
+        {
+          "action": "VIEW_MALARIA_RESULTS",
+          "method": "GET",
+          "endpoint": "/api/lab/orders/{{lab_order_ids[1]}}/results",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "test_name": "Malaria Rapid Diagnostic Test",
+              "result": "Negative"
+            }
+          }
+        },
+        {
+          "action": "REOPEN_ENCOUNTER_FOR_ADDENDUM",
+          "method": "PATCH",
+          "endpoint": "/api/encounters/{{encounter_id}}/reopen",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "status": "IN_PROGRESS"
+            }
+          }
+        },
+        {
+          "action": "ADD_LAB_COMMENT_TO_ASSESSMENT",
+          "method": "PATCH",
+          "endpoint": "/api/encounters/{{encounter_id}}",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "request_body": {
+            "assessment_addendum": "Lab results reviewed. CBC shows thrombocytopenia (120×10^9/L) consistent with dengue fever. Malaria RDT negative. Continue current management with close monitoring of platelet count."
+          },
+          "expected_response": {
+            "status": 200
+          }
+        },
+        {
+          "action": "CLOSE_ENCOUNTER_AGAIN",
+          "method": "PATCH",
+          "endpoint": "/api/encounters/{{encounter_id}}/complete",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "expected_response": {
+            "status": 200
+          }
+        }
+      ],
+      
+      "success_criteria": [
+        "✅ Doctor receives notification when lab results ready",
+        "✅ Doctor can view lab results",
+        "✅ Abnormal values highlighted",
+        "✅ Doctor can reopen completed encounter to add addendum",
+        "✅ Doctor can add comments based on lab results",
+        "✅ Encounter can be closed again"
+      ],
+      
+      "manual_test_instructions": {
+        "1": "Login as doctor@hospital.com",
+        "2": "Check Notifications bell icon",
+        "3": "Verify notification: 'Lab results ready for Kwame Mensah'",
+        "4": "Click notification → Navigate to lab results",
+        "5": "Review CBC results:",
+        "   - Verify Platelet count 120 is flagged as LOW/Abnormal",
+        "6": "Review Malaria RDT: Negative",
+        "7": "Navigate to Patient's Encounter",
+        "8": "Click 'Add Addendum' or 'Reopen Encounter'",
+        "9": "Add to Assessment: 'Lab results reviewed. CBC shows thrombocytopenia...'",
+        "10": "Save and complete encounter again",
+        "11": "LOGOUT"
+      }
+    },
+
+    {
+      "step": 6,
+      "step_name": "Pharmacy Dispensing by Pharmacist",
+      "role": "PHARMACIST",
+      "user": "pharmacist@hospital.com",
+      "module": "Pharmacy",
+      
+      "actions": [
+        {
+          "action": "LOGIN",
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "request_body": {
+            "email": "pharmacist@hospital.com",
+            "password": "Test123!"
+          },
+          "save_to_context": {
+            "pharmacist_token": "response.token",
+            "pharmacist_id": "response.user.id"
+          }
+        },
+        {
+          "action": "VIEW_PRESCRIPTION_QUEUE",
+          "method": "GET",
+          "endpoint": "/api/pharmacy/queue",
+          "headers": {
+            "Authorization": "Bearer {{pharmacist_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "patient_mrn": "{{patient_mrn}}",
+              "prescription_number": "{{prescription_number}}",
+              "status": "PENDING_PHARMACY"
+            }
+          },
+          "validation": [
+            "Prescription appears in queue",
+            "Patient details visible",
+            "Prescribed medications listed"
+          ]
+        },
+        {
+          "action": "VIEW_PRESCRIPTION_DETAILS",
+          "method": "GET",
+          "endpoint": "/api/prescriptions/{{prescription_id}}",
+          "headers": {
+            "Authorization": "Bearer {{pharmacist_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "medications": [
+                {"drug_name": "Paracetamol 500mg", "quantity": 15},
+                {"drug_name": "IV Normal Saline 1L", "quantity": 6}
+              ]
+            }
+          }
+        },
+        {
+          "action": "CHECK_DRUG_AVAILABILITY",
+          "method": "POST",
+          "endpoint": "/api/pharmacy/check-availability",
+          "headers": {
+            "Authorization": "Bearer {{pharmacist_token}}"
+          },
+          "request_body": {
+            "prescription_id": "{{prescription_id}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "availability": [
+                {"drug": "Paracetamol 500mg", "in_stock": true, "available_quantity": 500},
+                {"drug": "IV Normal Saline 1L", "in_stock": true, "available_quantity": 50}
+              ]
+            }
+          },
+          "validation": [
+            "All drugs in stock",
+            "Stock levels sufficient"
+          ]
+        },
+        {
+          "action": "DISPENSE_PARACETAMOL",
+          "method": "POST",
+          "endpoint": "/api/pharmacy/dispense",
+          "headers": {
+            "Authorization": "Bearer {{pharmacist_token}}"
+          },
+          "request_body": {
+            "prescription_id": "{{prescription_id}}",
+            "prescription_item_id": "{{prescription_items[0].id}}",
+            "drug_id": "{{paracetamol_drug_id}}",
+            "quantity_dispensed": 15,
+            "batch_number": "BATCH-2024-PCM-001",
+            "expiry_date": "2025-12-31",
+            "dispensed_by": "{{pharmacist_id}}",
+            "patient_counseled": true,
+            "counseling_notes": "Take 1 tablet 3 times daily after meals. Complete the full course."
+          },
+          "expected_response": {
+            "status": 201
+          },
+          "side_effects": [
+            "Stock deducted (Paracetamol: 500 - 15 = 485)",
+            "Stock movement logged",
+            "Prescription item status = DISPENSED"
+          ]
+        },
+        {
+          "action": "DISPENSE_IV_SALINE",
+          "method": "POST",
+          "endpoint": "/api/pharmacy/dispense",
+          "headers": {
+            "Authorization": "Bearer {{pharmacist_token}}"
+          },
+          "request_body": {
+            "prescription_id": "{{prescription_id}}",
+            "prescription_item_id": "{{prescription_items[1].id}}",
+            "quantity_dispensed": 6,
+            "batch_number": "BATCH-2024-NS-002",
+            "dispensed_by": "{{pharmacist_id}}",
+            "patient_counseled": true
+          },
+          "expected_response": {
+            "status": 201
+          }
+        },
+        {
+          "action": "COMPLETE_PRESCRIPTION",
+          "method": "PATCH",
+          "endpoint": "/api/prescriptions/{{prescription_id}}/complete",
+          "headers": {
+            "Authorization": "Bearer {{pharmacist_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "status": "DISPENSED"
+            }
+          },
+          "side_effects": [
+            "Prescription status changed to DISPENSED",
+            "Invoice line items created for dispensed drugs",
+            "Patient notified (SMS: 'Your prescription is ready')"
+          ]
+        }
+      ],
+      
+      "success_criteria": [
+        "✅ Pharmacist can login",
+        "✅ Pharmacist can see prescription in queue",
+        "✅ Pharmacist can view prescription details",
+        "✅ System checks drug availability",
+        "✅ Pharmacist can dispense medications",
+        "✅ Stock levels updated automatically",
+        "✅ Batch numbers recorded",
+        "✅ Patient counseling documented",
+        "✅ Prescription status changes to DISPENSED",
+        "✅ Invoice items created for billing"
+      ],
+      
+      "manual_test_instructions": {
+        "1": "Login as pharmacist@hospital.com",
+        "2": "Navigate to Prescription Queue",
+        "3": "Verify prescription for 'Kwame Mensah' appears",
+        "4": "Click prescription to view details",
+        "5": "Verify 2 medications: Paracetamol, IV Normal Saline",
+        "6": "Click 'Check Availability' → Verify both in stock",
+        "7": "Dispense Paracetamol:",
+        "   - Quantity: 15 tablets",
+        "   - Batch: BATCH-2024-PCM-001",
+        "   - Expiry: 2025-12-31",
+        "   - Patient counseled: YES",
+        "   - Counseling notes: 'Take 1 tablet 3 times daily...'",
+        "8": "Dispense IV Normal Saline:",
+        "   - Quantity: 6 bags",
+        "   - Batch: BATCH-2024-NS-002",
+        "9": "Complete dispensing",
+        "10": "Verify prescription status = DISPENSED",
+        "11": "Check drug inventory → Verify stock deducted",
+        "12": "LOGOUT"
+      }
+    },
+
+    {
+      "step": 7,
+      "step_name": "Verify Invoice Creation and Process Payment",
+      "role": "BILLING_OFFICER",
+      "user": "billing@hospital.com",
+      "module": "Billing & Invoicing",
+      
+      "actions": [
+        {
+          "action": "LOGIN",
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "request_body": {
+            "email": "billing@hospital.com",
+            "password": "Test123!"
+          },
+          "save_to_context": {
+            "billing_token": "response.token"
+          }
+        },
+        {
+          "action": "SEARCH_PATIENT_INVOICES",
+          "method": "GET",
+          "endpoint": "/api/billing/invoices",
+          "headers": {
+            "Authorization": "Bearer {{billing_token}}"
+          },
+          "query_params": {
+            "patient_id": "{{patient_id}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "patient_mrn": "{{patient_mrn}}",
+              "invoices": [
+                {
+                  "status": "UNPAID",
+                  "line_items": [
+                    {"description": "Consultation - General Doctor", "amount": 50.00},
+                    {"description": "Triage", "amount": 10.00},
+                    {"description": "Complete Blood Count (CBC)", "amount": 40.00},
+                    {"description": "Malaria Rapid Diagnostic Test", "amount": 15.00},
+                    {"description": "Paracetamol 500mg × 15", "amount": 6.75},
+                    {"description": "IV Normal Saline 1L × 6", "amount": 60.00}
+                  ]
+                }
+              ]
+            }
+          },
+          "save_to_context": {
+            "invoice_id": "response.invoices[0].id",
+            "invoice_total": "response.invoices[0].total_amount"
+          },
+          "validation": [
+            "Invoice auto-generated",
+            "Consultation fee included",
+            "Triage fee included",
+            "Lab tests included (CBC, Malaria RDT)",
+            "Dispensed drugs included (Paracetamol, IV Saline)",
+            "Prices match Finance module pricing",
+            "NHIS prices applied (patient has NHIS)",
+            "Total calculated correctly"
+          ]
+        },
+        {
+          "action": "VIEW_INVOICE_DETAILS",
+          "method": "GET",
+          "endpoint": "/api/billing/invoices/{{invoice_id}}",
+          "headers": {
+            "Authorization": "Bearer {{billing_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "invoice_number": "string",
+              "patient_name": "Kwame Mensah",
+              "subtotal": "number",
+              "discount": 0,
+              "tax": 0,
+              "total_amount": "{{invoice_total}}",
+              "status": "UNPAID"
+            }
+          },
+          "validation": [
+            "All line items visible with prices",
+            "Subtotal correct",
+            "Total amount correct",
+            "Invoice number generated"
+          ]
+        },
+        {
+          "action": "PROCESS_PAYMENT",
+          "method": "POST",
+          "endpoint": "/api/billing/payments",
+          "headers": {
+            "Authorization": "Bearer {{billing_token}}"
+          },
+          "request_body": {
+            "invoice_id": "{{invoice_id}}",
+            "amount": "{{invoice_total}}",
+            "payment_method": "CASH",
+            "payment_reference": "CASH-{{timestamp}}",
+            "notes": "Full payment received in cash"
+          },
+          "expected_response": {
+            "status": 201,
+            "body": {
+              "payment_id": "string",
+              "receipt_number": "string",
+              "status": "PAID"
+            }
+          },
+          "save_to_context": {
+            "payment_id": "response.payment_id",
+            "receipt_number": "response.receipt_number"
+          },
+          "side_effects": [
+            "Invoice status changed to PAID",
+            "Receipt generated",
+            "Payment logged",
+            "Journal entry created (DR Cash, CR Revenue)"
+          ]
+        },
+        {
+          "action": "PRINT_RECEIPT",
+          "method": "GET",
+          "endpoint": "/api/billing/receipts/{{receipt_number}}/pdf",
+          "headers": {
+            "Authorization": "Bearer {{billing_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "content_type": "application/pdf"
+          },
+          "validation": [
+            "Receipt PDF generated",
+            "Contains hospital letterhead",
+            "Contains patient details",
+            "Contains payment details",
+            "Contains receipt number"
+          ]
+        }
+      ],
+      
+      "success_criteria": [
+        "✅ Invoice auto-created from encounter activities",
+        "✅ All services included (consultation, triage, labs, drugs)",
+        "✅ NHIS prices applied correctly",
+        "✅ Total calculated correctly",
+        "✅ Billing officer can view invoice",
+        "✅ Billing officer can process payment",
+        "✅ Receipt generated and printable",
+        "✅ Invoice status updates to PAID",
+        "✅ Payment recorded in system"
+      ],
+      
+      "manual_test_instructions": {
+        "1": "Login as billing@hospital.com",
+        "2": "Navigate to Billing → Invoices",
+        "3": "Search for patient 'Kwame Mensah' or MRN",
+        "4": "Verify invoice exists with status UNPAID",
+        "5": "Open invoice to view details",
+        "6": "Verify line items:",
+        "   ✓ Consultation: ₵30 (NHIS price)",
+        "   ✓ Triage: ₵10",
+        "   ✓ CBC: ₵35 (NHIS price)",
+        "   ✓ Malaria RDT: ₵12 (NHIS price)",
+        "   ✓ Paracetamol: ₵6.00 (15 tablets × ₵0.40)",
+        "   ✓ IV Saline: ₵54.00 (6 bags × ₵9.00)",
+        "7": "Note Total Amount",
+        "8": "Click 'Process Payment'",
+        "9": "Select Payment Method: CASH",
+        "10": "Enter Amount: (full total)",
+        "11": "Submit Payment",
+        "12": "Verify invoice status changes to PAID",
+        "13": "Click 'Print Receipt'",
+        "14": "Verify receipt PDF downloads",
+        "15": "LOGOUT"
+      }
+    },
+
+    {
+      "step": 8,
+      "step_name": "Inpatient Ward Management by IPD Nurse",
+      "role": "NURSE (IPD)",
+      "user": "nurse.ipd@hospital.com",
+      "module": "Inpatient / Ward Management",
+      
+      "actions": [
+        {
+          "action": "LOGIN",
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "request_body": {
+            "email": "nurse.ipd@hospital.com",
+            "password": "Test123!"
+          },
+          "save_to_context": {
+            "ipd_nurse_token": "response.token",
+            "ipd_nurse_id": "response.user.id"
+          }
+        },
+        {
+          "action": "VIEW_IPD_WARD_LIST",
+          "method": "GET",
+          "endpoint": "/api/inpatient/wards",
+          "headers": {
+            "Authorization": "Bearer {{ipd_nurse_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "wards": [
+                {
+                  "name": "General Ward",
+                  "total_beds": 20,
+                  "occupied_beds": "number",
+                  "available_beds": "number"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "action": "VIEW_PATIENTS_IN_GENERAL_WARD",
+          "method": "GET",
+          "endpoint": "/api/inpatient/wards/general-ward/patients",
+          "headers": {
+            "Authorization": "Bearer {{ipd_nurse_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "patient_mrn": "{{patient_mrn}}",
+              "patient_name": "Kwame Mensah",
+              "admission_status": "ADMITTED"
+            }
+          },
+          "validation": [
+            "Patient appears in General Ward list",
+            "Admission status is ADMITTED",
+            "Admission date/time visible"
+          ]
+        },
+        {
+          "action": "ALLOCATE_BED",
+          "method": "PATCH",
+          "endpoint": "/api/inpatient/admissions/{{admission_id}}/allocate-bed",
+          "headers": {
+            "Authorization": "Bearer {{ipd_nurse_token}}"
+          },
+          "request_body": {
+            "ward": "{{test_data.admission.ward}}",
+            "room": "{{test_data.admission.room}}",
+            "bed_number": "{{test_data.admission.bed}}",
+            "allocated_by": "{{ipd_nurse_id}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "bed_allocated": true,
+              "bed_location": "General Ward / GW-101 / Bed 3"
+            }
+          },
+          "side_effects": [
+            "Bed status changed to OCCUPIED",
+            "Bed allocation logged",
+            "Ward occupancy updated"
+          ]
+        },
+        {
+          "action": "RECORD_VITALS",
+          "method": "POST",
+          "endpoint": "/api/inpatient/vitals",
+          "headers": {
+            "Authorization": "Bearer {{ipd_nurse_token}}"
+          },
+          "request_body": {
+            "patient_id": "{{patient_id}}",
+            "admission_id": "{{admission_id}}",
+            "vitals": {
+              "temperature": 37.8,
+              "blood_pressure_systolic": 118,
+              "blood_pressure_diastolic": 78,
+              "heart_rate": 82,
+              "respiratory_rate": 18,
+              "oxygen_saturation": 98
+            },
+            "recorded_by": "{{ipd_nurse_id}}",
+            "recorded_at": "{{now}}"
+          },
+          "expected_response": {
+            "status": 201
+          },
+          "validation": [
+            "Vitals recorded",
+            "Timestamp captured",
+            "Vitals visible in patient chart"
+          ]
+        },
+        {
+          "action": "ADD_NURSING_NOTE",
+          "method": "POST",
+          "endpoint": "/api/inpatient/nursing-notes",
+          "headers": {
+            "Authorization": "Bearer {{ipd_nurse_token}}"
+          },
+          "request_body": {
+            "patient_id": "{{patient_id}}",
+            "admission_id": "{{admission_id}}",
+            "note_type": "SHIFT_NOTE",
+            "note": "{{test_data.nursing_notes[0].note}}",
+            "shift": "DAY",
+            "recorded_by": "{{ipd_nurse_id}}"
+          },
+          "expected_response": {
+            "status": 201
+          }
+        },
+        {
+          "action": "ADD_SECOND_NURSING_NOTE",
+          "method": "POST",
+          "endpoint": "/api/inpatient/nursing-notes",
+          "headers": {
+            "Authorization": "Bearer {{ipd_nurse_token}}"
+          },
+          "request_body": {
+            "patient_id": "{{patient_id}}",
+            "admission_id": "{{admission_id}}",
+            "note": "{{test_data.nursing_notes[1].note}}",
+            "shift": "EVENING",
+            "recorded_by": "{{ipd_nurse_id}}"
+          },
+          "expected_response": {
+            "status": 201
+          }
+        },
+        {
+          "action": "VIEW_TREATMENT_CHART",
+          "method": "GET",
+          "endpoint": "/api/inpatient/admissions/{{admission_id}}/treatment-chart",
+          "headers": {
+            "Authorization": "Bearer {{ipd_nurse_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "medications": [
+                {"drug": "Paracetamol 500mg", "frequency": "TID"},
+                {"drug": "IV Normal Saline 1L", "frequency": "BD"}
+              ],
+              "vitals_history": "array",
+              "nursing_notes": "array"
+            }
+          },
+          "validation": [
+            "Medications from prescription visible",
+            "Vitals history displayed",
+            "Nursing notes visible",
+            "Treatment timeline clear"
+          ]
+        }
+      ],
+      
+      "success_criteria": [
+        "✅ IPD nurse can login",
+        "✅ IPD nurse can see ward list and occupancy",
+        "✅ Patient visible in ward patient list",
+        "✅ Nurse can allocate bed to patient",
+        "✅ Bed status updates to OCCUPIED",
+        "✅ Nurse can record vitals",
+        "✅ Nurse can add nursing notes",
+        "✅ Treatment chart displays medications and vitals",
+        "✅ All activities logged with timestamps"
+      ],
+      
+      "manual_test_instructions": {
+        "1": "Login as nurse.ipd@hospital.com",
+        "2": "Navigate to Inpatient → Ward Management",
+        "3": "Verify patient 'Kwame Mensah' in General Ward",
+        "4": "Verify admission status: ADMITTED",
+        "5": "Click patient → Allocate Bed",
+        "6": "Select:",
+        "   - Ward: General Ward",
+        "   - Room: GW-101",
+        "   - Bed: Bed 3",
+        "7": "Save bed allocation",
+        "8": "Record Vitals:",
+        "   - Temp: 37.8°C",
+        "   - BP: 118/78",
+        "   - HR: 82",
+        "   - RR: 18",
+        "   - SpO2: 98%",
+        "9": "Add Nursing Note:",
+        "   'Patient admitted to GW-101 Bed 3. Vitals stable. IV line inserted...'",
+        "10": "View Treatment Chart",
+        "11": "Verify medications, vitals, notes all visible",
+        "12": "LOGOUT"
+      }
+    },
+
+    {
+      "step": 9,
+      "step_name": "Patient Discharge",
+      "role": "DOCTOR or NURSE",
+      "user": "doctor@hospital.com",
+      "module": "Inpatient / Discharge",
+      
+      "actions": [
+        {
+          "action": "LOGIN",
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "request_body": {
+            "email": "doctor@hospital.com",
+            "password": "Test123!"
+          },
+          "save_to_context": {
+            "doctor_token": "response.token"
+          }
+        },
+        {
+          "action": "INITIATE_DISCHARGE",
+          "method": "POST",
+          "endpoint": "/api/inpatient/admissions/{{admission_id}}/discharge",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "request_body": {
+            "discharge_type": "IMPROVED",
+            "discharge_date": "{{today}}",
+            "discharge_time": "{{now}}",
+            "discharge_diagnosis": "Dengue fever - resolved",
+            "discharge_summary": "Patient admitted with dengue fever. Received IV fluids and supportive care. Platelet count improved from 120 to 180. Patient afebrile for 24 hours. Discharged in stable condition.",
+            "discharge_medications": [
+              {
+                "drug": "Paracetamol 500mg",
+                "dosage": "500mg",
+                "frequency": "TID PRN (as needed for fever/pain)",
+                "duration": "3 days",
+                "quantity": 9
+              }
+            ],
+            "follow_up_instructions": "Follow up in OPD in 1 week. Return immediately if fever recurs or bleeding occurs.",
+            "discharged_by": "{{doctor_id}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "admission_status": "DISCHARGED",
+              "discharge_summary_id": "string"
+            }
+          },
+          "save_to_context": {
+            "discharge_summary_id": "response.discharge_summary_id"
+          },
+          "side_effects": [
+            "Admission status changed to DISCHARGED",
+            "Bed status changed to AVAILABLE",
+            "Ward occupancy updated",
+            "Discharge summary generated",
+            "Discharge medications prescription created",
+            "Final invoice updated with inpatient charges"
+          ]
+        },
+        {
+          "action": "GENERATE_DISCHARGE_SUMMARY_PDF",
+          "method": "GET",
+          "endpoint": "/api/inpatient/discharge-summaries/{{discharge_summary_id}}/pdf",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "content_type": "application/pdf"
+          },
+          "validation": [
+            "PDF generated",
+            "Contains patient details",
+            "Contains admission and discharge dates",
+            "Contains diagnoses",
+            "Contains treatment summary",
+            "Contains discharge medications",
+            "Contains follow-up instructions",
+            "Contains doctor's signature"
+          ]
+        },
+        {
+          "action": "VERIFY_BED_AVAILABLE",
+          "method": "GET",
+          "endpoint": "/api/inpatient/beds/{{bed_id}}",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body": {
+              "status": "AVAILABLE",
+              "occupied_by": null
+            }
+          },
+          "validation": [
+            "Bed status changed to AVAILABLE",
+            "Bed is free for next patient"
+          ]
+        },
+        {
+          "action": "VERIFY_FINAL_INVOICE",
+          "method": "GET",
+          "endpoint": "/api/billing/invoices",
+          "headers": {
+            "Authorization": "Bearer {{doctor_token}}"
+          },
+          "query_params": {
+            "patient_id": "{{patient_id}}"
+          },
+          "expected_response": {
+            "status": 200,
+            "body_contains": {
+              "line_items_includes": [
+                {"description": "Bed - General Ward (3 nights)"}
+              ]
+            }
+          },
+          "validation": [
+            "Inpatient bed charges added to invoice",
+            "Number of nights calculated correctly"
+          ]
+        }
+      ],
+      
+      "success_criteria": [
+        "✅ Doctor can initiate discharge",
+        "✅ Discharge summary auto-generated",
+        "✅ Discharge medications prescribed",
+        "✅ Follow-up instructions documented",
+        "✅ Admission status changes to DISCHARGED",
+        "✅ Bed becomes available",
+        "✅ Ward occupancy updated",
+        "✅ Discharge summary PDF generated and printable",
+        "✅ Final invoice includes inpatient charges"
+      ],
+      
+      "manual_test_instructions": {
+        "1": "Login as doctor@hospital.com",
+        "2": "Navigate to Inpatient → Admitted Patients",
+        "3": "Find patient 'Kwame Mensah'",
+        "4": "Click 'Discharge Patient'",
+        "5": "Fill discharge form:",
+        "   - Discharge Type: Improved",
+        "   - Discharge Diagnosis: Dengue fever - resolved",
+        "   - Summary: Patient admitted with dengue fever. Received IV fluids...",
+        "   - Discharge Medications: Paracetamol 500mg TID PRN × 3 days",
+        "   - Follow-up: Follow up in OPD in 1 week",
+        "6": "Submit Discharge",
+        "7": "Verify admission status: DISCHARGED",
+        "8": "Download Discharge Summary PDF",
+        "9": "Verify PDF contains all details",
+        "10": "Check Ward Management:",
+        "    - Verify Bed 3 in GW-101 is now AVAILABLE",
+        "11": "Check Billing:",
+        "    - Verify invoice includes 'Bed - General Ward (3 nights)'",
+        "12": "LOGOUT"
+      }
+    }
+  ],
+
+  "final_verification": {
+    "name": "End-to-End Workflow Verification",
+    "checks": [
+      {
+        "check": "Data Consistency",
+        "validations": [
+          "Patient MRN consistent across all modules",
+          "Encounter ID links correctly to prescriptions, lab orders, invoices",
+          "Admission ID links correctly to bed allocation, vitals, nursing notes",
+          "All timestamps are sequential and logical"
+        ]
+      },
+      {
+        "check": "Role-Based Access Control",
+        "validations": [
+          "Receptionist cannot access clinical data (encounters, prescriptions)",
+          "Nurse cannot create prescriptions",
+          "Doctor cannot dispense medications",
+          "Pharmacist cannot approve lab results",
+          "Lab tech cannot access financial data"
+        ]
+      },
+      {
+        "check": "Workflow State Transitions",
+        "validations": [
+          "Appointment: SCHEDULED → CHECKED_IN",
+          "Triage: WAITING_FOR_TRIAGE → TRIAGED",
+          "Encounter: IN_PROGRESS → COMPLETED",
+          "Lab Order: PENDING_COLLECTION → SAMPLE_COLLECTED → RESULTS_ENTERED → COMPLETED",
+          "Prescription: PENDING_PHARMACY → DISPENSED",
+          "Invoice: UNPAID → PAID",
+          "Admission: ADMITTED → DISCHARGED",
+          "Bed: AVAILABLE → OCCUPIED → AVAILABLE"
+        ]
+      },
+      {
+        "check": "Notifications",
+        "validations": [
+          "Doctor receives notification when lab results ready",
+          "Patient receives SMS when prescription ready (if enabled)",
+          "Pharmacist notified of STAT prescriptions (if enabled)"
+        ]
+      },
+      {
+        "check": "Billing Integration",
+        "validations": [
+          "All services auto-create invoice line items",
+          "Prices fetched from Finance module",
+          "NHIS prices applied for NHIS patients",
+          "Total calculated correctly",
+          "Payment updates invoice status"
+        ]
+      },
+      {
+        "check": "Data Integrity",
+        "validations": [
+          "No orphaned records (all foreign keys valid)",
+          "All required fields populated",
+          "No duplicate prescriptions, lab orders, or invoices",
+          "Timestamps logical (created_at < updated_at)"
+        ]
+      }
+    ]
+  },
+
+  "automation_notes": {
+    "tools": "This JSON can be used with:",
+    "options": [
+      "Postman/Newman - Import as collection, run automated tests",
+      "Cypress - Convert to E2E test suite",
+      "Playwright - Convert to E2E test suite",
+      "REST Client (VS Code) - Manual API testing",
+      "Custom test script - Node.js with Axios/Fetch"
+    ],
+    "variables_to_replace": [
+      "{{today}} - Current date",
+      "{{now}} - Current timestamp",
+      "{{timestamp}} - Unix timestamp",
+      "{{token}} - JWT token from login",
+      "{{patient_id}} - Generated patient ID",
+      "{{doctor.id}} - Seed doctor user ID",
+      "All other {{variable}} placeholders"
+    ]
+  },
+
+  "expected_duration": {
+    "manual_testing": "30-45 minutes (step-by-step)",
+    "automated_testing": "5-10 minutes (once set up)",
+    "recommended_frequency": [
+      "Run before each deployment",
+      "Run after major feature changes",
+      "Run daily (automated CI/CD)",
+      "Run before client demos"
+    ]
+  },
+
+  "success_report_template": {
+    "format": "Generate report after test completion",
+    "sections": {
+      "summary": {
+        "total_steps": 9,
+        "passed": "X/9",
+        "failed": "X/9",
+        "duration": "X minutes"
+      },
+      "detailed_results": "Step-by-step pass/fail with error messages",
+      "screenshots": "Capture screenshots for manual testing",
+      "recommendations": "List any issues found and suggested fixes"
+    }
+  }
+}

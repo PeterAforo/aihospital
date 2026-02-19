@@ -61,6 +61,7 @@ import LabReport from './pages/laboratory/LabReport';
 import BillingDashboard from './pages/billing/BillingDashboard';
 import InvoiceList from './pages/billing/InvoiceList';
 import InvoiceDetail from './pages/billing/InvoiceDetail';
+import NewInvoice from './pages/billing/NewInvoice';
 import OutstandingInvoices from './pages/billing/OutstandingInvoices';
 import NHISClaimsManager from './pages/billing/NHISClaimsManager';
 
@@ -185,6 +186,7 @@ function App() {
         {/* Billing */}
         <Route path="/billing" element={<BillingDashboard />} />
         <Route path="/billing/invoices" element={<InvoiceList />} />
+        <Route path="/billing/invoices/new" element={<NewInvoice />} />
         <Route path="/billing/invoices/:invoiceId" element={<InvoiceDetail />} />
         <Route path="/billing/outstanding" element={<OutstandingInvoices />} />
         <Route path="/billing/nhis" element={<NHISClaimsManager />} />
