@@ -37,15 +37,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     
     try {
       setIsLoading(true);
-      const [notificationsData, countData] = await Promise.all([
+      const [notificationsResult, countResult] = await Promise.allSettled([
         notificationService.getNotifications(user.id),
         notificationService.getNotificationCount(user.id),
       ]);
       
-      setNotifications(notificationsData);
-      setNotificationCount(countData);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
+      if (notificationsResult.status === 'fulfilled') setNotifications(notificationsResult.value);
+      if (countResult.status === 'fulfilled') setNotificationCount(countResult.value);
+    } catch {
+      // Silently ignore — auth errors are handled by the API interceptor
     } finally {
       setIsLoading(false);
     }
