@@ -235,7 +235,7 @@
         },
         {
           "action": "CHECK_IN_PATIENT",
-          "method": "PATCH",
+          "method": "POST",
           "endpoint": "/api/appointments/{{appointment_id}}/check-in",
           "headers": {
             "Authorization": "Bearer {{receptionist_token}}"
@@ -362,7 +362,7 @@
         {
           "action": "VERIFY_DOCTOR_QUEUE",
           "method": "GET",
-          "endpoint": "/api/encounters/queue",
+          "endpoint": "/api/appointments/queue/current",
           "headers": {
             "Authorization": "Bearer {{nurse_token}}"
           },
@@ -426,7 +426,7 @@
         {
           "action": "VIEW_PATIENT_QUEUE",
           "method": "GET",
-          "endpoint": "/api/encounters/queue",
+          "endpoint": "/api/appointments/queue/current",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -442,7 +442,7 @@
         {
           "action": "START_ENCOUNTER",
           "method": "POST",
-          "endpoint": "/api/encounters",
+          "endpoint": "/api/emr/encounters",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -468,8 +468,8 @@
         },
         {
           "action": "DOCUMENT_HISTORY_AND_EXAMINATION",
-          "method": "PATCH",
-          "endpoint": "/api/encounters/{{encounter_id}}",
+          "method": "PUT",
+          "endpoint": "/api/emr/encounters/{{encounter_id}}",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -485,7 +485,7 @@
         {
           "action": "ADD_DIAGNOSIS",
           "method": "POST",
-          "endpoint": "/api/encounters/{{encounter_id}}/diagnoses",
+          "endpoint": "/api/emr/encounters/{{encounter_id}}/diagnoses",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -508,7 +508,7 @@
         {
           "action": "ORDER_LAB_TESTS",
           "method": "POST",
-          "endpoint": "/api/lab/orders",
+          "endpoint": "/api/emr/lab-orders",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -538,7 +538,7 @@
         {
           "action": "CREATE_PRESCRIPTION",
           "method": "POST",
-          "endpoint": "/api/prescriptions",
+          "endpoint": "/api/emr/prescriptions",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -593,8 +593,8 @@
         },
         {
           "action": "COMPLETE_ENCOUNTER",
-          "method": "PATCH",
-          "endpoint": "/api/encounters/{{encounter_id}}/complete",
+          "method": "POST",
+          "endpoint": "/api/emr/encounters/{{encounter_id}}/complete",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -669,7 +669,7 @@
         {
           "action": "VIEW_LAB_QUEUE",
           "method": "GET",
-          "endpoint": "/api/lab/queue",
+          "endpoint": "/api/lab/worklist",
           "headers": {
             "Authorization": "Bearer {{lab_tech_token}}"
           },
@@ -691,8 +691,8 @@
         },
         {
           "action": "COLLECT_SAMPLE_CBC",
-          "method": "PATCH",
-          "endpoint": "/api/lab/orders/{{lab_order_ids[0]}}/collect",
+          "method": "POST",
+          "endpoint": "/api/lab/samples/collect",
           "headers": {
             "Authorization": "Bearer {{lab_tech_token}}"
           },
@@ -710,8 +710,8 @@
         },
         {
           "action": "COLLECT_SAMPLE_MALARIA",
-          "method": "PATCH",
-          "endpoint": "/api/lab/orders/{{lab_order_ids[1]}}/collect",
+          "method": "POST",
+          "endpoint": "/api/lab/samples/collect",
           "headers": {
             "Authorization": "Bearer {{lab_tech_token}}"
           },
@@ -730,7 +730,7 @@
         {
           "action": "ENTER_RESULTS_CBC",
           "method": "POST",
-          "endpoint": "/api/lab/orders/{{lab_order_ids[0]}}/results",
+          "endpoint": "/api/lab/results/panel",
           "headers": {
             "Authorization": "Bearer {{lab_tech_token}}"
           },
@@ -775,7 +775,7 @@
         {
           "action": "ENTER_RESULTS_MALARIA",
           "method": "POST",
-          "endpoint": "/api/lab/orders/{{lab_order_ids[1]}}/results",
+          "endpoint": "/api/lab/results",
           "headers": {
             "Authorization": "Bearer {{lab_tech_token}}"
           },
@@ -795,8 +795,8 @@
         },
         {
           "action": "APPROVE_RESULTS",
-          "method": "PATCH",
-          "endpoint": "/api/lab/orders/{{lab_order_ids[0]}}/approve",
+          "method": "POST",
+          "endpoint": "/api/lab/results/{{cbc_order_item_id}}/verify",
           "headers": {
             "Authorization": "Bearer {{lab_tech_token}}"
           },
@@ -818,8 +818,8 @@
         },
         {
           "action": "APPROVE_MALARIA_RESULTS",
-          "method": "PATCH",
-          "endpoint": "/api/lab/orders/{{lab_order_ids[1]}}/approve",
+          "method": "POST",
+          "endpoint": "/api/lab/results/{{malaria_order_item_id}}/verify",
           "headers": {
             "Authorization": "Bearer {{lab_tech_token}}"
           },
@@ -946,8 +946,9 @@
         },
         {
           "action": "REOPEN_ENCOUNTER_FOR_ADDENDUM",
-          "method": "PATCH",
-          "endpoint": "/api/encounters/{{encounter_id}}/reopen",
+          "method": "PUT",
+          "endpoint": "/api/emr/encounters/{{encounter_id}}",
+          "_note": "No dedicated reopen endpoint; re-updating the encounter adds an addendum",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -960,8 +961,8 @@
         },
         {
           "action": "ADD_LAB_COMMENT_TO_ASSESSMENT",
-          "method": "PATCH",
-          "endpoint": "/api/encounters/{{encounter_id}}",
+          "method": "PUT",
+          "endpoint": "/api/emr/encounters/{{encounter_id}}",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -974,8 +975,8 @@
         },
         {
           "action": "CLOSE_ENCOUNTER_AGAIN",
-          "method": "PATCH",
-          "endpoint": "/api/encounters/{{encounter_id}}/complete",
+          "method": "POST",
+          "endpoint": "/api/emr/encounters/{{encounter_id}}/complete",
           "headers": {
             "Authorization": "Bearer {{doctor_token}}"
           },
@@ -1469,7 +1470,7 @@
         {
           "action": "RECORD_VITALS",
           "method": "POST",
-          "endpoint": "/api/inpatient/vitals",
+          "endpoint": "/api/inpatient/admissions/{{admission_id}}/vitals",
           "headers": {
             "Authorization": "Bearer {{ipd_nurse_token}}"
           },
@@ -1499,7 +1500,7 @@
         {
           "action": "ADD_NURSING_NOTE",
           "method": "POST",
-          "endpoint": "/api/inpatient/nursing-notes",
+          "endpoint": "/api/inpatient/admissions/{{admission_id}}/nursing-notes",
           "headers": {
             "Authorization": "Bearer {{ipd_nurse_token}}"
           },
@@ -1518,7 +1519,7 @@
         {
           "action": "ADD_SECOND_NURSING_NOTE",
           "method": "POST",
-          "endpoint": "/api/inpatient/nursing-notes",
+          "endpoint": "/api/inpatient/admissions/{{admission_id}}/nursing-notes",
           "headers": {
             "Authorization": "Bearer {{ipd_nurse_token}}"
           },
