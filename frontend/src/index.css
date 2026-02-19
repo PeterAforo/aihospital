@@ -87,3 +87,38 @@ html, body {
 input, button, textarea, select {
   font-family: inherit;
 }
+
+/* Print styles — only show invoice content */
+@media print {
+  /* Hide sidebar, header, toaster, and elements marked no-print */
+  nav, aside, header,
+  .no-print,
+  [data-sonner-toaster],
+  .Toaster {
+    display: none !important;
+  }
+
+  /* Reset main content area to fill the page */
+  body, #root, #root > div {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  /* Override framer-motion inline margin-left on main */
+  main, [style*="margin-left"] {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Clean up shadows and borders for print */
+  .shadow, .shadow-lg, .shadow-xl {
+    box-shadow: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .bg-white {
+    break-inside: avoid;
+  }
+}
