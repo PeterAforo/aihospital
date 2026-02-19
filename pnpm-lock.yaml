@@ -302,7 +302,7 @@ importers:
         specifier: ^1.58.2
         version: 1.58.2
       '@types/node':
-        specifier: ^20.11.16
+        specifier: ^20.19.33
         version: 20.19.33
       '@types/react':
         specifier: ^18.2.55

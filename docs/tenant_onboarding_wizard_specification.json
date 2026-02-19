@@ -1,0 +1,1220 @@
+{
+  "feature_name": "Tenant Onboarding Wizard (Starter Pack)",
+  "description": "Comprehensive guided setup wizard for new tenants to configure all required settings before using the system",
+  "priority": "CRITICAL - Essential for SaaS onboarding",
+  "user_experience": "First-time login presents wizard, returning users see completion status and reminders",
+  
+  "business_goals": [
+    "Reduce time to first value (from sign-up to first patient)",
+    "Reduce support tickets from misconfigured systems",
+    "Ensure data quality from day one",
+    "Improve user satisfaction and retention",
+    "Standardize hospital setup process"
+  ],
+
+  "wizard_trigger_conditions": {
+    "new_tenant": {
+      "condition": "First login by HOSPITAL_ADMIN or organization.setup_completed = false",
+      "behavior": "Show full wizard modal (cannot skip)",
+      "message": "Welcome! Let's set up your hospital in 10 easy steps."
+    },
+    "existing_tenant_incomplete": {
+      "condition": "setup_completed = false AND login_count > 1",
+      "behavior": "Show completion status banner + wizard button",
+      "message": "Your setup is 70% complete. Finish setup to unlock all features."
+    },
+    "existing_tenant_complete": {
+      "condition": "setup_completed = true",
+      "behavior": "No wizard, but accessible from Settings",
+      "message": null
+    }
+  },
+
+  "wizard_steps": [
+    {
+      "step": 1,
+      "step_id": "hospital_profile",
+      "title": "Hospital Profile",
+      "subtitle": "Tell us about your hospital",
+      "icon": "🏥",
+      "required": true,
+      "estimated_time": "3 minutes",
+      
+      "fields": [
+        {
+          "field": "hospital_name",
+          "label": "Hospital Name",
+          "type": "text",
+          "required": true,
+          "placeholder": "e.g., Korle Bu Teaching Hospital",
+          "validation": "min 3 characters"
+        },
+        {
+          "field": "hospital_type",
+          "label": "Hospital Type",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Teaching Hospital",
+            "District Hospital",
+            "Polyclinic",
+            "Health Centre",
+            "Specialist Hospital",
+            "Private Clinic"
+          ]
+        },
+        {
+          "field": "hospital_category",
+          "label": "Category",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Public (Government)",
+            "Private",
+            "Mission/Faith-based",
+            "Quasi-government"
+          ]
+        },
+        {
+          "field": "bed_capacity",
+          "label": "Total Bed Capacity",
+          "type": "number",
+          "required": true,
+          "placeholder": "e.g., 50",
+          "validation": "min 1, max 10000"
+        },
+        {
+          "field": "address",
+          "label": "Physical Address",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "Street address, city, region"
+        },
+        {
+          "field": "region",
+          "label": "Region",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Greater Accra", "Ashanti", "Western", "Eastern", "Central",
+            "Northern", "Upper East", "Upper West", "Volta", "Brong-Ahafo",
+            "Bono", "Bono East", "Ahafo", "Oti", "Savannah", "North East", "Western North"
+          ]
+        },
+        {
+          "field": "phone",
+          "label": "Phone Number",
+          "type": "tel",
+          "required": true,
+          "placeholder": "+233 XX XXX XXXX"
+        },
+        {
+          "field": "email",
+          "label": "Official Email",
+          "type": "email",
+          "required": true,
+          "placeholder": "info@hospital.com"
+        },
+        {
+          "field": "license_number",
+          "label": "Medical License Number",
+          "type": "text",
+          "required": false,
+          "placeholder": "Ghana Health Service registration number"
+        },
+        {
+          "field": "nhis_accreditation",
+          "label": "NHIS Accredited?",
+          "type": "radio",
+          "required": true,
+          "options": ["Yes", "No"]
+        },
+        {
+          "field": "nhis_provider_code",
+          "label": "NHIS Provider Code",
+          "type": "text",
+          "required": false,
+          "show_if": "nhis_accreditation == 'Yes'",
+          "placeholder": "e.g., MID-GH-ACC-001"
+        }
+      ],
+      
+      "completion_check": {
+        "database_field": "organizations.profile_completed",
+        "validation": "All required fields filled"
+      }
+    },
+
+    {
+      "step": 2,
+      "step_id": "branches_setup",
+      "title": "Branches & Locations",
+      "subtitle": "Add your hospital branches or departments",
+      "icon": "🏢",
+      "required": true,
+      "estimated_time": "5 minutes",
+      
+      "description": "If you have multiple locations (e.g., main hospital + satellite clinics), add them here. If single location, add one branch with your hospital name.",
+      
+      "ui_component": "Branch Builder",
+      "fields": [
+        {
+          "field": "branches",
+          "type": "array",
+          "min_items": 1,
+          "item_fields": [
+            {
+              "field": "branch_name",
+              "label": "Branch Name",
+              "type": "text",
+              "required": true,
+              "placeholder": "e.g., Main Hospital, Tema Clinic"
+            },
+            {
+              "field": "branch_code",
+              "label": "Branch Code",
+              "type": "text",
+              "required": true,
+              "placeholder": "e.g., MH, TC",
+              "validation": "Unique, 2-5 characters"
+            },
+            {
+              "field": "is_primary",
+              "label": "Primary Branch?",
+              "type": "checkbox",
+              "default": false,
+              "note": "At least one branch must be primary"
+            },
+            {
+              "field": "address",
+              "label": "Branch Address",
+              "type": "text",
+              "required": true
+            },
+            {
+              "field": "phone",
+              "label": "Phone",
+              "type": "tel",
+              "required": false
+            },
+            {
+              "field": "services_offered",
+              "label": "Services Offered",
+              "type": "multi-select",
+              "options": [
+                "Outpatient", "Inpatient", "Emergency", "Laboratory",
+                "Radiology", "Pharmacy", "Maternity", "Surgery", "Dental"
+              ]
+            }
+          ]
+        }
+      ],
+      
+      "default_data": {
+        "auto_create_main_branch": true,
+        "main_branch_name": "{{hospital_name}} - Main",
+        "main_branch_code": "MAIN"
+      },
+      
+      "completion_check": {
+        "database_field": "organizations.branches_completed",
+        "validation": "At least 1 branch created, 1 marked as primary"
+      }
+    },
+
+    {
+      "step": 3,
+      "step_id": "departments_setup",
+      "title": "Departments",
+      "subtitle": "Organize your hospital departments",
+      "icon": "🏛️",
+      "required": true,
+      "estimated_time": "3 minutes",
+      
+      "description": "Select the departments your hospital has. You can add more later.",
+      
+      "preset_departments": [
+        {
+          "name": "Outpatient Department (OPD)",
+          "code": "OPD",
+          "category": "Clinical",
+          "default_selected": true
+        },
+        {
+          "name": "Emergency Department",
+          "code": "ER",
+          "category": "Clinical",
+          "default_selected": true
+        },
+        {
+          "name": "Inpatient Department (IPD)",
+          "code": "IPD",
+          "category": "Clinical",
+          "default_selected": true
+        },
+        {
+          "name": "Pharmacy",
+          "code": "PHARM",
+          "category": "Support Services",
+          "default_selected": true
+        },
+        {
+          "name": "Laboratory",
+          "code": "LAB",
+          "category": "Diagnostics",
+          "default_selected": true
+        },
+        {
+          "name": "Radiology",
+          "code": "RAD",
+          "category": "Diagnostics",
+          "default_selected": false
+        },
+        {
+          "name": "Maternity/Obstetrics",
+          "code": "MAT",
+          "category": "Clinical",
+          "default_selected": false
+        },
+        {
+          "name": "Surgery/Theatre",
+          "code": "SURG",
+          "category": "Clinical",
+          "default_selected": false
+        },
+        {
+          "name": "Nursing",
+          "code": "NURS",
+          "category": "Clinical",
+          "default_selected": true
+        },
+        {
+          "name": "Administration",
+          "code": "ADMIN",
+          "category": "Administrative",
+          "default_selected": true
+        },
+        {
+          "name": "Finance/Billing",
+          "code": "FIN",
+          "category": "Administrative",
+          "default_selected": true
+        },
+        {
+          "name": "Records/Medical Records",
+          "code": "MR",
+          "category": "Support Services",
+          "default_selected": false
+        }
+      ],
+      
+      "ui": {
+        "display": "Grid of department cards with checkboxes",
+        "allow_custom": true,
+        "custom_button": "+ Add Custom Department"
+      },
+      
+      "completion_check": {
+        "database_field": "organizations.departments_completed",
+        "validation": "At least 3 departments selected (OPD, Pharmacy, Laboratory)"
+      }
+    },
+
+    {
+      "step": 4,
+      "step_id": "staff_users",
+      "title": "Staff & Users",
+      "subtitle": "Add your key staff members",
+      "icon": "👥",
+      "required": true,
+      "estimated_time": "10 minutes",
+      
+      "description": "Add at least one user for each key role. You can add more staff later.",
+      
+      "minimum_required_users": [
+        {
+          "role": "DOCTOR",
+          "min_count": 1,
+          "reason": "At least 1 doctor needed to consult patients"
+        },
+        {
+          "role": "NURSE",
+          "min_count": 1,
+          "reason": "At least 1 nurse needed for triage"
+        },
+        {
+          "role": "PHARMACIST",
+          "min_count": 1,
+          "reason": "At least 1 pharmacist needed to dispense medications"
+        },
+        {
+          "role": "RECEPTIONIST",
+          "min_count": 1,
+          "reason": "At least 1 receptionist needed to register patients"
+        }
+      ],
+      
+      "user_form_fields": [
+        {
+          "field": "first_name",
+          "label": "First Name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "field": "last_name",
+          "label": "Last Name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "field": "email",
+          "label": "Email Address",
+          "type": "email",
+          "required": true,
+          "note": "User will receive login credentials via email"
+        },
+        {
+          "field": "phone",
+          "label": "Phone Number",
+          "type": "tel",
+          "required": true,
+          "placeholder": "+233 XX XXX XXXX"
+        },
+        {
+          "field": "role",
+          "label": "Role",
+          "type": "select",
+          "required": true,
+          "options": [
+            "DOCTOR",
+            "NURSE",
+            "PHARMACIST",
+            "LAB_TECHNICIAN",
+            "RADIOLOGIST",
+            "RECEPTIONIST",
+            "BILLING_OFFICER",
+            "RECORDS_OFFICER"
+          ]
+        },
+        {
+          "field": "department",
+          "label": "Department",
+          "type": "select",
+          "required": true,
+          "options": "{{departments_from_step_3}}"
+        },
+        {
+          "field": "branch",
+          "label": "Primary Branch",
+          "type": "select",
+          "required": true,
+          "options": "{{branches_from_step_2}}"
+        },
+        {
+          "field": "license_number",
+          "label": "Medical License Number",
+          "type": "text",
+          "required": false,
+          "show_if": "role == 'DOCTOR' OR role == 'NURSE' OR role == 'PHARMACIST'"
+        }
+      ],
+      
+      "bulk_import": {
+        "enabled": true,
+        "button_text": "Or import from Excel/CSV",
+        "template_download": "/templates/staff-import-template.xlsx",
+        "fields": ["first_name", "last_name", "email", "phone", "role", "department", "branch"]
+      },
+      
+      "completion_check": {
+        "database_field": "organizations.staff_completed",
+        "validation": "At least 1 DOCTOR, 1 NURSE, 1 PHARMACIST, 1 RECEPTIONIST added"
+      }
+    },
+
+    {
+      "step": 5,
+      "step_id": "service_pricing",
+      "title": "Service Pricing",
+      "subtitle": "Set prices for your hospital services",
+      "icon": "💰",
+      "required": true,
+      "estimated_time": "15 minutes",
+      
+      "description": "Set prices for common services. These will be used for billing patients.",
+      
+      "pricing_categories": [
+        {
+          "category": "Clinical Services",
+          "services": [
+            {
+              "service": "Consultation - General Doctor",
+              "code": "CONS-GEN",
+              "suggested_cash_price": 50.00,
+              "suggested_nhis_price": 30.00,
+              "unit": "per visit"
+            },
+            {
+              "service": "Consultation - Specialist",
+              "code": "CONS-SPEC",
+              "suggested_cash_price": 100.00,
+              "suggested_nhis_price": 60.00,
+              "unit": "per visit"
+            },
+            {
+              "service": "Triage",
+              "code": "TRIAGE",
+              "suggested_cash_price": 10.00,
+              "suggested_nhis_price": 10.00,
+              "unit": "per patient"
+            },
+            {
+              "service": "Emergency Consultation",
+              "code": "CONS-EMER",
+              "suggested_cash_price": 150.00,
+              "suggested_nhis_price": 100.00,
+              "unit": "per visit"
+            }
+          ]
+        },
+        {
+          "category": "Laboratory",
+          "services": [
+            {
+              "service": "Complete Blood Count (CBC)",
+              "code": "LAB-CBC",
+              "suggested_cash_price": 40.00,
+              "suggested_nhis_price": 35.00
+            },
+            {
+              "service": "Malaria Rapid Test",
+              "code": "LAB-MAL-RDT",
+              "suggested_cash_price": 15.00,
+              "suggested_nhis_price": 12.00
+            },
+            {
+              "service": "Blood Sugar (Fasting)",
+              "code": "LAB-BS-F",
+              "suggested_cash_price": 20.00,
+              "suggested_nhis_price": 18.00
+            },
+            {
+              "service": "Urinalysis",
+              "code": "LAB-URINE",
+              "suggested_cash_price": 15.00,
+              "suggested_nhis_price": 12.00
+            }
+          ]
+        },
+        {
+          "category": "Radiology",
+          "services": [
+            {
+              "service": "X-Ray - Chest",
+              "code": "RAD-XRAY-CHEST",
+              "suggested_cash_price": 80.00,
+              "suggested_nhis_price": 60.00
+            },
+            {
+              "service": "Ultrasound - Abdominal",
+              "code": "RAD-US-ABD",
+              "suggested_cash_price": 120.00,
+              "suggested_nhis_price": 100.00
+            }
+          ]
+        },
+        {
+          "category": "Inpatient",
+          "services": [
+            {
+              "service": "Bed - General Ward",
+              "code": "BED-GEN",
+              "suggested_cash_price": 100.00,
+              "suggested_nhis_price": 80.00,
+              "unit": "per night"
+            },
+            {
+              "service": "Bed - Private Room",
+              "code": "BED-PRIV",
+              "suggested_cash_price": 250.00,
+              "suggested_nhis_price": null,
+              "unit": "per night",
+              "note": "Not covered by NHIS"
+            }
+          ]
+        }
+      ],
+      
+      "ui": {
+        "display": "Table with editable price fields",
+        "columns": ["Service", "Cash Price (GHS)", "NHIS Price (GHS)", "Actions"],
+        "features": [
+          "Bulk edit by percentage (e.g., increase all by 10%)",
+          "Copy prices from another hospital (if available)",
+          "Skip and use suggested prices"
+        ]
+      },
+      
+      "pricing_strategy_options": [
+        {
+          "option": "Use suggested prices",
+          "description": "Standard prices based on Ghana market rates",
+          "action": "Auto-fill all services with suggested prices"
+        },
+        {
+          "option": "Set custom prices",
+          "description": "Enter your own prices for each service",
+          "action": "Show editable table"
+        },
+        {
+          "option": "Import from Excel",
+          "description": "Upload your existing price list",
+          "action": "Show file upload"
+        }
+      ],
+      
+      "completion_check": {
+        "database_field": "organizations.pricing_completed",
+        "validation": "At least 10 core services have prices set"
+      }
+    },
+
+    {
+      "step": 6,
+      "step_id": "drug_formulary",
+      "title": "Drug Formulary",
+      "subtitle": "Add medications to your pharmacy inventory",
+      "icon": "💊",
+      "required": true,
+      "estimated_time": "10 minutes",
+      
+      "description": "Select common drugs your pharmacy stocks. You can add more later.",
+      
+      "preset_options": [
+        {
+          "option": "Ghana National Formulary (Recommended)",
+          "description": "~300 essential medicines approved by Ghana Health Service",
+          "action": "Import all Ghana National Formulary drugs"
+        },
+        {
+          "option": "WHO Essential Medicines",
+          "description": "~400 WHO-recommended essential medicines",
+          "action": "Import WHO essential medicines list"
+        },
+        {
+          "option": "Select manually",
+          "description": "Choose specific drugs from our database",
+          "action": "Show drug selector"
+        },
+        {
+          "option": "Import from Excel",
+          "description": "Upload your existing drug list",
+          "action": "Show file upload"
+        }
+      ],
+      
+      "if_manual_selection": {
+        "categories": [
+          "Analgesics (Pain relievers)",
+          "Antibiotics",
+          "Antimalarials",
+          "Antihypertensives",
+          "Antidiabetics",
+          "IV Fluids",
+          "Vitamins & Supplements"
+        ],
+        "top_drugs_per_category": "Show 10 most common",
+        "search": "Allow search for specific drugs"
+      },
+      
+      "minimum_required": {
+        "count": 20,
+        "reason": "At least 20 common drugs needed for basic operations"
+      },
+      
+      "completion_check": {
+        "database_field": "organizations.formulary_completed",
+        "validation": "At least 20 drugs added to formulary"
+      }
+    },
+
+    {
+      "step": 7,
+      "step_id": "lab_test_catalog",
+      "title": "Laboratory Test Catalog",
+      "subtitle": "Configure available lab tests",
+      "icon": "🔬",
+      "required": true,
+      "estimated_time": "5 minutes",
+      
+      "description": "Select lab tests your facility offers.",
+      
+      "preset_test_packages": [
+        {
+          "package": "Basic Lab Package",
+          "tests": [
+            "Complete Blood Count (CBC)",
+            "Malaria Rapid Test",
+            "Blood Sugar (Fasting)",
+            "Blood Sugar (Random)",
+            "Urinalysis",
+            "Stool Examination",
+            "Blood Group & Rh",
+            "Pregnancy Test (Urine)"
+          ],
+          "recommended": true
+        },
+        {
+          "package": "Advanced Lab Package",
+          "tests": [
+            "All Basic tests +",
+            "Liver Function Test (LFT)",
+            "Renal Function Test (RFT)",
+            "Lipid Profile",
+            "Electrolytes",
+            "HIV Test",
+            "Hepatitis B Surface Antigen",
+            "Blood Culture",
+            "Sputum for AFB (TB test)"
+          ]
+        },
+        {
+          "package": "Custom Selection",
+          "description": "Choose specific tests"
+        }
+      ],
+      
+      "minimum_required": {
+        "count": 5,
+        "reason": "At least 5 basic tests needed"
+      },
+      
+      "completion_check": {
+        "database_field": "organizations.lab_tests_completed",
+        "validation": "At least 5 lab tests configured"
+      }
+    },
+
+    {
+      "step": 8,
+      "step_id": "wards_beds",
+      "title": "Wards & Beds (Optional)",
+      "subtitle": "Set up inpatient wards and beds",
+      "icon": "🛏️",
+      "required": false,
+      "estimated_time": "10 minutes",
+      "show_if": "hospital has inpatient services",
+      
+      "description": "Configure your wards and beds for inpatient management. Skip if you don't offer inpatient services.",
+      
+      "ward_setup": {
+        "fields": [
+          {
+            "field": "ward_name",
+            "label": "Ward Name",
+            "placeholder": "e.g., General Ward, Male Ward, Female Ward, Pediatric Ward"
+          },
+          {
+            "field": "ward_type",
+            "label": "Ward Type",
+            "type": "select",
+            "options": ["General", "Male", "Female", "Pediatric", "Maternity", "ICU"]
+          },
+          {
+            "field": "total_beds",
+            "label": "Number of Beds",
+            "type": "number"
+          }
+        ],
+        "auto_generate_beds": true,
+        "bed_naming": "Bed 1, Bed 2, Bed 3, ... (editable)"
+      },
+      
+      "quick_setup_templates": [
+        {
+          "template": "Small Hospital (20 beds)",
+          "wards": [
+            {"name": "General Ward", "beds": 15},
+            {"name": "Maternity Ward", "beds": 5}
+          ]
+        },
+        {
+          "template": "Medium Hospital (50 beds)",
+          "wards": [
+            {"name": "Male Ward", "beds": 15},
+            {"name": "Female Ward", "beds": 15},
+            {"name": "Pediatric Ward", "beds": 10},
+            {"name": "Maternity Ward", "beds": 10}
+          ]
+        }
+      ],
+      
+      "completion_check": {
+        "database_field": "organizations.wards_completed",
+        "validation": "Either skipped OR at least 1 ward with beds created"
+      }
+    },
+
+    {
+      "step": 9,
+      "step_id": "integrations",
+      "title": "Integrations (Optional)",
+      "subtitle": "Connect external services",
+      "icon": "🔌",
+      "required": false,
+      "estimated_time": "10 minutes",
+      
+      "description": "Connect payment gateways, SMS provider, and other services. You can set these up later.",
+      
+      "integrations": [
+        {
+          "integration": "NHIS Claims Portal",
+          "description": "Submit claims electronically to NHIA",
+          "required_for_nhis": true,
+          "setup_fields": [
+            {
+              "field": "nhis_provider_code",
+              "label": "NHIS Provider Code",
+              "type": "text"
+            },
+            {
+              "field": "nhis_api_key",
+              "label": "NHIS API Key",
+              "type": "password",
+              "note": "Obtain from NHIA"
+            }
+          ]
+        },
+        {
+          "integration": "Mobile Money (MTN/Vodafone)",
+          "description": "Accept mobile money payments",
+          "provider_options": ["Paystack", "Flutterwave"],
+          "setup_fields": [
+            {
+              "field": "provider",
+              "label": "Payment Gateway Provider",
+              "type": "select",
+              "options": ["Paystack", "Flutterwave"]
+            },
+            {
+              "field": "public_key",
+              "label": "Public Key",
+              "type": "text"
+            },
+            {
+              "field": "secret_key",
+              "label": "Secret Key",
+              "type": "password"
+            }
+          ]
+        },
+        {
+          "integration": "SMS Gateway (Hubtel)",
+          "description": "Send appointment reminders and notifications",
+          "setup_fields": [
+            {
+              "field": "hubtel_client_id",
+              "label": "Client ID",
+              "type": "text"
+            },
+            {
+              "field": "hubtel_client_secret",
+              "label": "Client Secret",
+              "type": "password"
+            },
+            {
+              "field": "sender_id",
+              "label": "Sender ID",
+              "type": "text",
+              "placeholder": "e.g., HospitalName",
+              "note": "Max 11 characters"
+            }
+          ]
+        },
+        {
+          "integration": "Email Service",
+          "description": "Send email notifications",
+          "provider_options": ["SendGrid", "Mailgun", "SMTP"],
+          "setup_fields": [
+            {
+              "field": "provider",
+              "label": "Email Provider",
+              "type": "select",
+              "options": ["SendGrid", "Mailgun", "Custom SMTP"]
+            },
+            {
+              "field": "api_key",
+              "label": "API Key",
+              "type": "password"
+            }
+          ]
+        }
+      ],
+      
+      "skip_option": {
+        "enabled": true,
+        "button_text": "Skip for now",
+        "note": "You can configure integrations later in Settings"
+      },
+      
+      "completion_check": {
+        "database_field": "organizations.integrations_completed",
+        "validation": "Optional - can be skipped"
+      }
+    },
+
+    {
+      "step": 10,
+      "step_id": "review_complete",
+      "title": "Review & Complete Setup",
+      "subtitle": "You're almost ready!",
+      "icon": "✅",
+      "required": true,
+      "estimated_time": "2 minutes",
+      
+      "display": {
+        "type": "Summary cards showing all completed steps",
+        "show_completion_percentage": true,
+        "show_missing_items": true
+      },
+      
+      "summary_sections": [
+        {
+          "section": "Hospital Profile",
+          "status": "{{step_1_status}}",
+          "details": "{{hospital_name}}, {{hospital_type}}, {{region}}"
+        },
+        {
+          "section": "Branches",
+          "status": "{{step_2_status}}",
+          "details": "{{branch_count}} branch(es) configured"
+        },
+        {
+          "section": "Departments",
+          "status": "{{step_3_status}}",
+          "details": "{{department_count}} departments"
+        },
+        {
+          "section": "Staff",
+          "status": "{{step_4_status}}",
+          "details": "{{user_count}} staff members added"
+        },
+        {
+          "section": "Service Pricing",
+          "status": "{{step_5_status}}",
+          "details": "{{service_count}} services priced"
+        },
+        {
+          "section": "Drug Formulary",
+          "status": "{{step_6_status}}",
+          "details": "{{drug_count}} drugs in formulary"
+        },
+        {
+          "section": "Lab Tests",
+          "status": "{{step_7_status}}",
+          "details": "{{test_count}} tests available"
+        },
+        {
+          "section": "Wards & Beds",
+          "status": "{{step_8_status}}",
+          "details": "{{ward_count}} wards, {{bed_count}} beds"
+        },
+        {
+          "section": "Integrations",
+          "status": "{{step_9_status}}",
+          "details": "{{integration_count}} integrations configured"
+        }
+      ],
+      
+      "completion_actions": [
+        {
+          "action": "mark_setup_complete",
+          "database_update": "organizations.setup_completed = true, organizations.setup_completed_at = NOW()"
+        },
+        {
+          "action": "send_welcome_email",
+          "to": "hospital_admin_email",
+          "template": "setup_complete_email"
+        },
+        {
+          "action": "create_audit_log",
+          "event": "SETUP_COMPLETED"
+        },
+        {
+          "action": "redirect_to_dashboard"
+        }
+      ],
+      
+      "final_message": {
+        "title": "🎉 Congratulations! Your hospital is ready!",
+        "message": "You've successfully completed the setup. You can now start registering patients and managing your hospital operations.",
+        "cta_button": "Go to Dashboard",
+        "additional_resources": [
+          "📚 User Guide",
+          "🎥 Video Tutorials",
+          "💬 Contact Support"
+        ]
+      }
+    }
+  ],
+
+  "database_schema": {
+    "organizations_table_additions": {
+      "columns_to_add": [
+        "setup_completed BOOLEAN DEFAULT FALSE",
+        "setup_completed_at TIMESTAMP NULL",
+        "setup_progress_json JSONB DEFAULT '{}'",
+        "setup_step_1_completed BOOLEAN DEFAULT FALSE",
+        "setup_step_2_completed BOOLEAN DEFAULT FALSE",
+        "setup_step_3_completed BOOLEAN DEFAULT FALSE",
+        "setup_step_4_completed BOOLEAN DEFAULT FALSE",
+        "setup_step_5_completed BOOLEAN DEFAULT FALSE",
+        "setup_step_6_completed BOOLEAN DEFAULT FALSE",
+        "setup_step_7_completed BOOLEAN DEFAULT FALSE",
+        "setup_step_8_completed BOOLEAN DEFAULT FALSE",
+        "setup_step_9_completed BOOLEAN DEFAULT FALSE",
+        "setup_step_10_completed BOOLEAN DEFAULT FALSE"
+      ]
+    },
+    
+    "setup_progress_json_structure": {
+      "step_1": {"completed": true, "completed_at": "2024-02-15T10:00:00Z"},
+      "step_2": {"completed": true, "completed_at": "2024-02-15T10:05:00Z"},
+      "step_3": {"completed": false, "skipped": false},
+      "overall_percentage": 70
+    }
+  },
+
+  "backend_apis": {
+    "check_setup_status": {
+      "endpoint": "GET /api/setup/status",
+      "description": "Check if setup is complete and get progress",
+      "response": {
+        "setup_completed": false,
+        "overall_percentage": 70,
+        "steps": [
+          {"step": 1, "title": "Hospital Profile", "completed": true, "required": true},
+          {"step": 2, "title": "Branches", "completed": true, "required": true},
+          {"step": 3, "title": "Departments", "completed": false, "required": true},
+          {"step": 4, "title": "Staff", "completed": true, "required": true},
+          {"step": 5, "title": "Pricing", "completed": false, "required": true}
+        ],
+        "missing_required_steps": [3, 5],
+        "show_wizard": true
+      }
+    },
+    
+    "save_step_progress": {
+      "endpoint": "POST /api/setup/steps/:stepId",
+      "description": "Save progress for a specific step",
+      "request_body": {
+        "stepId": "hospital_profile",
+        "data": {
+          "hospital_name": "Korle Bu Teaching Hospital",
+          "hospital_type": "Teaching Hospital"
+        }
+      },
+      "response": {
+        "success": true,
+        "step_completed": true,
+        "overall_percentage": 10
+      }
+    },
+    
+    "complete_setup": {
+      "endpoint": "POST /api/setup/complete",
+      "description": "Mark setup as complete",
+      "side_effects": [
+        "Update organizations.setup_completed = true",
+        "Send welcome email",
+        "Create audit log",
+        "Enable all features"
+      ]
+    },
+    
+    "skip_optional_step": {
+      "endpoint": "POST /api/setup/steps/:stepId/skip",
+      "description": "Skip optional step",
+      "request_body": {
+        "stepId": "wards_beds",
+        "skip_reason": "No inpatient services"
+      }
+    }
+  },
+
+  "ui_components": {
+    "WizardModal": {
+      "component": "SetupWizardModal",
+      "props": {
+        "closeable": false,
+        "steps": "array of step objects",
+        "currentStep": 1,
+        "onStepComplete": "callback",
+        "onWizardComplete": "callback"
+      },
+      "features": [
+        "Progress bar showing X/10 steps",
+        "Step indicators (1, 2, 3...)",
+        "Previous/Next navigation",
+        "Save & Continue Later button",
+        "Skip button (for optional steps)",
+        "Validation before allowing next step"
+      ]
+    },
+    
+    "SetupReminderBanner": {
+      "component": "SetupReminderBanner",
+      "display_condition": "setup_completed = false AND login_count > 1",
+      "props": {
+        "percentage": 70,
+        "missingSteps": ["Departments", "Pricing"],
+        "onContinueSetup": "callback",
+        "onDismiss": "callback"
+      },
+      "ui": "Top banner with warning icon, progress bar, and 'Continue Setup' button"
+    },
+    
+    "SetupDashboardWidget": {
+      "component": "SetupProgressWidget",
+      "display_location": "Dashboard (if setup incomplete)",
+      "shows": [
+        "Completion percentage (circular progress)",
+        "List of completed vs pending steps",
+        "'Complete Setup' button"
+      ]
+    }
+  },
+
+  "user_experience_flow": {
+    "scenario_1_new_tenant_first_login": {
+      "steps": [
+        "1. Hospital Admin completes registration",
+        "2. Confirms email",
+        "3. Logs in for first time",
+        "4. → WIZARD MODAL APPEARS (cannot close)",
+        "5. Admin completes all 10 steps",
+        "6. Wizard shows success message",
+        "7. Redirects to dashboard"
+      ]
+    },
+    
+    "scenario_2_incomplete_setup_returning": {
+      "steps": [
+        "1. Admin logs in (setup 70% complete)",
+        "2. → REMINDER BANNER appears at top",
+        "3. Banner shows: 'Setup 70% complete. 3 steps remaining.'",
+        "4. Admin clicks 'Continue Setup'",
+        "5. → WIZARD MODAL OPENS at last incomplete step",
+        "6. Admin completes remaining steps",
+        "7. Setup marked complete"
+      ]
+    },
+    
+    "scenario_3_admin_wants_to_review_setup": {
+      "steps": [
+        "1. Admin goes to Settings → Hospital Setup",
+        "2. Sees all setup steps with ✓ or ✗",
+        "3. Can click 'Edit' on any step to modify",
+        "4. Changes saved without reopening full wizard"
+      ]
+    }
+  },
+
+  "email_templates": {
+    "setup_complete_email": {
+      "subject": "Welcome to MediCare Ghana! Your hospital is ready 🎉",
+      "body": "Dear {{hospital_admin_name}},\n\nCongratulations! You've successfully completed the setup for {{hospital_name}}.\n\nYour system is now ready for:\n✅ Patient Registration\n✅ Appointment Scheduling\n✅ Clinical Consultations\n✅ Pharmacy Dispensing\n✅ Laboratory Testing\n✅ Billing & Payments\n\nNext Steps:\n1. Log in and explore the dashboard\n2. Invite your staff to join\n3. Register your first patient\n\nNeed help? Check out our:\n📚 User Guide: [link]\n🎥 Video Tutorials: [link]\n💬 Support: support@medicare.com\n\nBest regards,\nThe MediCare Ghana Team"
+    }
+  },
+
+  "validation_rules": {
+    "step_1": {
+      "required_fields": ["hospital_name", "hospital_type", "address", "phone", "email"],
+      "can_proceed": "All required fields filled"
+    },
+    "step_2": {
+      "required": "At least 1 branch",
+      "validation": "At least 1 branch must be marked as primary",
+      "can_proceed": "Branch requirements met"
+    },
+    "step_3": {
+      "required": "At least 3 departments",
+      "mandatory_departments": ["OPD", "Pharmacy", "Laboratory"],
+      "can_proceed": "Minimum departments selected"
+    },
+    "step_4": {
+      "required": "At least 4 users",
+      "mandatory_roles": ["DOCTOR", "NURSE", "PHARMACIST", "RECEPTIONIST"],
+      "validation": "Each role has at least 1 user",
+      "can_proceed": "Minimum users added"
+    },
+    "step_5": {
+      "required": "At least 10 services priced",
+      "can_proceed": "Minimum pricing set"
+    },
+    "step_6": {
+      "required": "At least 20 drugs in formulary",
+      "can_proceed": "Minimum drugs added"
+    },
+    "step_7": {
+      "required": "At least 5 lab tests",
+      "can_proceed": "Minimum tests configured"
+    },
+    "step_8": {
+      "optional": true,
+      "can_proceed": "Always (can skip)"
+    },
+    "step_9": {
+      "optional": true,
+      "can_proceed": "Always (can skip)"
+    },
+    "step_10": {
+      "validation": "All required steps (1-7) must be completed",
+      "can_complete": "All required validations pass"
+    }
+  },
+
+  "reminder_system": {
+    "banner_display_rules": {
+      "show_if": "setup_completed = false AND days_since_registration > 1",
+      "dismiss": "Temporary (shows again next login until setup complete)",
+      "color": "warning (yellow/orange)"
+    },
+    
+    "email_reminders": {
+      "day_3": {
+        "subject": "Complete your hospital setup",
+        "message": "You're {{percentage}}% done! Finish setup to unlock all features."
+      },
+      "day_7": {
+        "subject": "Need help with setup?",
+        "message": "We noticed you haven't completed setup. Can we help?"
+      }
+    },
+    
+    "dashboard_widget": {
+      "display": "Card on dashboard showing setup progress",
+      "dismissible": false,
+      "hides_when": "setup_completed = true"
+    }
+  },
+
+  "progressive_enhancement": {
+    "minimum_viable_setup": {
+      "steps": [1, 2, 3, 4, 5, 6, 7],
+      "allows": "Register patients, basic consultations, prescriptions, lab orders, billing"
+    },
+    "full_setup": {
+      "steps": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      "allows": "All features including inpatient, integrations"
+    }
+  },
+
+  "success_metrics": {
+    "time_to_first_patient": "< 30 minutes from sign-up",
+    "setup_completion_rate": "> 85%",
+    "setup_abandonment_rate": "< 15%",
+    "support_tickets_reduced": "40% reduction in misconfiguration issues"
+  }
+}
