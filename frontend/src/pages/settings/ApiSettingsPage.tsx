@@ -16,15 +16,16 @@ const API_TYPES = [
 const PROVIDERS: Record<string, { name: string; fields: string[] }[]> = {
   PAYMENT: [
     { name: 'Paystack', fields: ['publicKey', 'secretKey', 'webhookSecret'] },
-    { name: 'MTN Mobile Money', fields: ['merchantId', 'apiKey', 'callbackUrl'] },
-    { name: 'Vodafone Cash', fields: ['merchantId', 'apiKey'] },
-    { name: 'Flutterwave', fields: ['publicKey', 'secretKey'] },
+    { name: 'Flutterwave', fields: ['publicKey', 'secretKey', 'secretHash'] },
     { name: 'Stripe', fields: ['publishableKey', 'secretKey', 'webhookSecret'] },
+    { name: 'MTN Mobile Money', fields: ['merchantId', 'apiKey', 'apiSecret', 'callbackUrl'] },
+    { name: 'Vodafone Cash', fields: ['merchantId', 'apiKey', 'apiSecret'] },
+    { name: 'AirtelTigo', fields: ['merchantId', 'apiKey', 'apiSecret'] },
   ],
   SMS: [
     { name: 'Hubtel', fields: ['clientId', 'clientSecret', 'senderId'] },
-    { name: 'Twilio', fields: ['accountSid', 'authToken', 'fromNumber'] },
-    { name: 'mNotify', fields: ['apiKey', 'senderId'] },
+    { name: 'mNotifier', fields: ['apiKey', 'senderId'] },
+    { name: 'Twilio', fields: ['accountSid', 'authToken', 'fromNumber', 'whatsappNumber'] },
     { name: "Africa's Talking", fields: ['username', 'apiKey', 'senderId'] },
   ],
   EMAIL: [

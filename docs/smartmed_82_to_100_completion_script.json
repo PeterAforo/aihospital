@@ -1,0 +1,1363 @@
+{
+  "project_name": "SmartMed Ultimate - 82% to 100% Completion Plan",
+  "current_status": {
+    "overall_completion": "82%",
+    "core_modules": "89% (M1-M20)",
+    "advanced_modules": "81% (M21-M28)",
+    "infrastructure": "78%",
+    "testing": "60%"
+  },
+  
+  "target_status": {
+    "overall_completion": "100%",
+    "all_modules": "100%",
+    "infrastructure": "100%",
+    "testing": "95%+",
+    "production_ready": true
+  },
+
+  "total_estimated_time": "12-16 weeks (3-4 months)",
+  
+  "completion_roadmap": {
+    
+    "PHASE_1_CORE_MODULES_TO_100": {
+      "name": "Complete Core Modules (M1-M20)",
+      "current": "89%",
+      "target": "100%",
+      "duration": "4 weeks",
+      "priority": "CRITICAL",
+      
+      "gaps_to_complete": {
+        
+        "M1_USER_MANAGEMENT_RBAC": {
+          "current": "93%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Audit Log UI",
+              "status": "MISSING",
+              "requirements": [
+                "Create audit_logs page (/admin/audit-logs)",
+                "Show all user actions (login, create, update, delete)",
+                "Filter by: User, Action type, Date range, Module",
+                "Export to CSV/Excel",
+                "Real-time updates (WebSocket)"
+              ],
+              "files_to_create": [
+                "frontend/src/pages/admin/audit-logs/index.tsx",
+                "frontend/src/pages/admin/audit-logs/components/AuditLogTable.tsx",
+                "frontend/src/pages/admin/audit-logs/components/AuditLogFilters.tsx"
+              ],
+              "backend_endpoints": [
+                "GET /api/audit-logs",
+                "GET /api/audit-logs/export"
+              ],
+              "estimated_time": "2 days"
+            }
+          ]
+        },
+
+        "M3_APPOINTMENT_SCHEDULING": {
+          "current": "93%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "SMS Reminders Integration",
+              "status": "MISSING",
+              "requirements": [
+                "Integrate Hubtel SMS API",
+                "Send SMS 24 hours before appointment",
+                "Send SMS 2 hours before appointment",
+                "SMS template with patient name, doctor, time, location",
+                "SMS delivery status tracking",
+                "SMS opt-out functionality"
+              ],
+              "implementation": {
+                "step_1": "Add Hubtel SMS service (backend/src/services/sms/hubtel.service.ts)",
+                "step_2": "Create appointment reminder job (cron)",
+                "step_3": "SMS template management",
+                "step_4": "Delivery tracking"
+              },
+              "code_example": {
+                "file": "backend/src/services/sms/hubtel.service.ts",
+                "code": "
+import axios from 'axios';
+
+export class HubtelSMSService {
+  async sendAppointmentReminder(patient, appointment) {
+    const message = `Hi ${patient.firstName}, reminder: Your appointment with Dr. ${appointment.doctor.name} is tomorrow at ${appointment.time}. Location: ${appointment.branch.name}. Call ${appointment.branch.phone} to reschedule.`;
+    
+    const response = await axios.post('https://sms.hubtel.com/v1/messages/send', {
+      From: process.env.HUBTEL_SENDER_ID,
+      To: patient.phone,
+      Content: message
+    }, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(process.env.HUBTEL_CLIENT_ID + ':' + process.env.HUBTEL_CLIENT_SECRET).toString('base64')}`
+      }
+    });
+    
+    return response.data;
+  }
+}
+                "
+              },
+              "estimated_time": "3 days"
+            }
+          ]
+        },
+
+        "M4_TRIAGE": {
+          "current": "93%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Triage History View",
+              "status": "MISSING",
+              "requirements": [
+                "Show patient's triage history timeline",
+                "Compare vitals across visits",
+                "Trend charts (BP, temp, HR over time)",
+                "Previous triage categories",
+                "Access from patient profile"
+              ],
+              "files_to_create": [
+                "frontend/src/pages/patients/[id]/triage-history.tsx",
+                "frontend/src/components/patients/TriageHistoryTimeline.tsx",
+                "frontend/src/components/patients/VitalsTrendChart.tsx"
+              ],
+              "estimated_time": "2 days"
+            }
+          ]
+        },
+
+        "M5_EMR_CONSULTATION": {
+          "current": "93%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Voice-to-Text Documentation",
+              "status": "MISSING - AI FEATURE",
+              "requirements": [
+                "Integrate OpenAI Whisper API or Google Speech-to-Text",
+                "Microphone button in EMR",
+                "Real-time transcription",
+                "Structure into SOAP format (AI-powered)",
+                "Edit transcript before saving",
+                "Support English (Twi/Ga future)"
+              ],
+              "implementation": {
+                "option_1": "OpenAI Whisper API",
+                "option_2": "Google Cloud Speech-to-Text",
+                "recommended": "OpenAI Whisper (better accuracy, cheaper)"
+              },
+              "code_example": {
+                "file": "backend/src/services/ai/voice-to-text.service.ts",
+                "code": "
+import OpenAI from 'openai';
+
+export class VoiceToTextService {
+  private openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  
+  async transcribeAudio(audioFile: Buffer): Promise<string> {
+    const response = await this.openai.audio.transcriptions.create({
+      file: audioFile,
+      model: 'whisper-1',
+      language: 'en'
+    });
+    
+    return response.text;
+  }
+  
+  async structureToSOAP(transcript: string): Promise<any> {
+    const completion = await this.openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a medical assistant. Structure the doctor\\'s dictation into SOAP format.'
+        },
+        {
+          role: 'user',
+          content: `Structure this dictation into SOAP format: ${transcript}`
+        }
+      ]
+    });
+    
+    return JSON.parse(completion.choices[0].message.content);
+  }
+}
+                "
+              },
+              "estimated_time": "5 days",
+              "cost": "$0.006 per minute of audio"
+            }
+          ]
+        },
+
+        "M6_PRESCRIBING": {
+          "current": "90%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "E-Prescription SMS to Patient",
+              "status": "MISSING",
+              "requirements": [
+                "Send prescription details via SMS when created",
+                "Include: Drug names, dosages, instructions",
+                "Pickup instructions",
+                "Link to patient portal (if enabled)"
+              ],
+              "estimated_time": "1 day"
+            }
+          ]
+        },
+
+        "M9_RADIOLOGY": {
+          "current": "82%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "DICOM/PACS Integration",
+              "status": "MISSING - MAJOR FEATURE",
+              "requirements": [
+                "DICOM image storage (local or cloud)",
+                "DICOM viewer (Cornerstone.js or OHIF Viewer)",
+                "DICOM worklist (send orders to modality)",
+                "Image upload and storage",
+                "Image viewer (zoom, pan, window/level)",
+                "Multi-planar reconstruction (MPR)",
+                "DICOM tags parsing"
+              ],
+              "implementation": {
+                "storage": "Use Orthanc DICOM server (open-source)",
+                "viewer": "Cornerstone.js or OHIF Viewer (React component)",
+                "workflow": "Order created → Worklist → Modality scans → Images stored → Radiologist views → Report"
+              },
+              "docker_services_to_add": {
+                "orthanc": {
+                  "image": "jodogne/orthanc",
+                  "ports": ["4242:4242", "8042:8042"],
+                  "environment": [
+                    "ORTHANC__NAME=SmartMed PACS",
+                    "ORTHANC__REMOTE_ACCESS_ALLOWED=true"
+                  ]
+                }
+              },
+              "frontend_library": "npm install cornerstone-core cornerstone-tools",
+              "estimated_time": "10-14 days",
+              "complexity": "HIGH",
+              "optional": "Skip if hospital uses film X-rays only"
+            },
+            {
+              "gap": "Image Viewer UI",
+              "status": "MISSING",
+              "requirements": [
+                "Embed Cornerstone.js viewer",
+                "Zoom, pan, rotate controls",
+                "Window/level adjustments",
+                "Measurements (distance, angle)",
+                "Annotations",
+                "Multiple image series",
+                "Comparison view (current vs prior)"
+              ],
+              "files_to_create": [
+                "frontend/src/components/radiology/DICOMViewer.tsx",
+                "frontend/src/components/radiology/ViewerToolbar.tsx"
+              ],
+              "estimated_time": "5-7 days"
+            }
+          ]
+        },
+
+        "M11_NHIS_CLAIMS": {
+          "current": "85%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Batch Processing",
+              "status": "MISSING",
+              "requirements": [
+                "Select multiple claims",
+                "Bulk submit to NHIA",
+                "Bulk status update",
+                "Batch report generation"
+              ],
+              "estimated_time": "3 days"
+            },
+            {
+              "gap": "Reconciliation UI",
+              "status": "MISSING",
+              "requirements": [
+                "Match submitted claims to NHIA payments",
+                "Identify unpaid claims",
+                "Dispute management",
+                "Payment posting"
+              ],
+              "estimated_time": "4 days"
+            }
+          ]
+        },
+
+        "M12_FINANCE": {
+          "current": "90%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Budget Variance Reports",
+              "status": "MISSING",
+              "requirements": [
+                "Budget vs Actual by GL account",
+                "Variance analysis (favorable/unfavorable)",
+                "Budget vs Actual charts",
+                "Drill-down to transactions",
+                "Export to Excel"
+              ],
+              "files_to_create": [
+                "frontend/src/pages/finance/budget-variance.tsx",
+                "backend/src/services/finance/budget-variance.service.ts"
+              ],
+              "estimated_time": "3 days"
+            }
+          ]
+        },
+
+        "M13_INPATIENT": {
+          "current": "90%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Nursing Notes Timeline",
+              "status": "MISSING",
+              "requirements": [
+                "Timeline view of all nursing notes",
+                "Shift handover summary",
+                "Quick add note (sticky at bottom)",
+                "Filter by shift/nurse",
+                "Print nursing summary"
+              ],
+              "estimated_time": "3 days"
+            }
+          ]
+        },
+
+        "M14_MATERNITY": {
+          "current": "88%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Postnatal Care (PNC) Tracking",
+              "status": "MISSING",
+              "requirements": [
+                "PNC visit scheduling (Day 3, Week 1, Week 6)",
+                "Mother assessment",
+                "Newborn assessment",
+                "Immunization tracking",
+                "Danger signs screening"
+              ],
+              "estimated_time": "3 days"
+            },
+            {
+              "gap": "Newborn Module",
+              "status": "MISSING",
+              "requirements": [
+                "Newborn registration (linked to mother)",
+                "Birth details (weight, APGAR score, complications)",
+                "Feeding tracking",
+                "Growth monitoring (WHO charts)",
+                "Immunization schedule"
+              ],
+              "estimated_time": "4 days"
+            }
+          ]
+        },
+
+        "M15_EMERGENCY": {
+          "current": "88%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Mass Casualty Mode",
+              "status": "MISSING",
+              "requirements": [
+                "Activate mass casualty mode",
+                "Simplified triage (RED, YELLOW, GREEN, BLACK tags)",
+                "Rapid patient registration (minimal info)",
+                "Resource allocation dashboard",
+                "Deactivate when resolved"
+              ],
+              "estimated_time": "4 days",
+              "priority": "LOW (rarely used)"
+            }
+          ]
+        },
+
+        "M16_SURGERY": {
+          "current": "85%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "WHO Surgical Safety Checklist",
+              "status": "MISSING - CRITICAL",
+              "requirements": [
+                "Sign In (before anesthesia)",
+                "Time Out (before skin incision)",
+                "Sign Out (before patient leaves OR)",
+                "Digital checklist with checkboxes",
+                "Team member signatures",
+                "Cannot proceed without completion"
+              ],
+              "estimated_time": "3 days"
+            },
+            {
+              "gap": "Anesthesia Record",
+              "status": "MISSING",
+              "requirements": [
+                "Pre-operative assessment",
+                "Anesthesia plan",
+                "Intra-operative monitoring (vitals every 5 min)",
+                "Drugs administered",
+                "Complications",
+                "Post-operative orders"
+              ],
+              "estimated_time": "5 days"
+            }
+          ]
+        },
+
+        "M17_BRANCHES": {
+          "current": "90%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Inter-Branch Transfer UI",
+              "status": "MISSING",
+              "requirements": [
+                "Transfer patient from Branch A to Branch B",
+                "Transfer medical records",
+                "Transfer billing",
+                "Transfer prescription to destination pharmacy",
+                "Notification to receiving branch"
+              ],
+              "estimated_time": "4 days"
+            }
+          ]
+        },
+
+        "M19_REPORTS": {
+          "current": "82%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Custom Report Builder",
+              "status": "MISSING - MAJOR FEATURE",
+              "requirements": [
+                "Drag-and-drop report builder",
+                "Select tables (patients, encounters, invoices, etc.)",
+                "Select columns",
+                "Add filters (date range, status, etc.)",
+                "Group by / aggregate",
+                "Save custom reports",
+                "Share with other users",
+                "Schedule reports (daily, weekly, monthly)"
+              ],
+              "implementation": "Use query builder library (e.g., react-querybuilder)",
+              "estimated_time": "10 days",
+              "complexity": "HIGH"
+            },
+            {
+              "gap": "Scheduled Reports",
+              "status": "MISSING",
+              "requirements": [
+                "Schedule report to run automatically",
+                "Email PDF/Excel to recipients",
+                "Cron job setup",
+                "Report delivery log"
+              ],
+              "estimated_time": "4 days"
+            }
+          ]
+        },
+
+        "M20_HR_PAYROLL": {
+          "current": "82%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Shift Scheduling",
+              "status": "MISSING",
+              "requirements": [
+                "Create shift patterns (Day, Night, Evening)",
+                "Assign staff to shifts",
+                "Shift calendar view",
+                "Shift swap requests",
+                "Overtime tracking"
+              ],
+              "estimated_time": "5 days"
+            },
+            {
+              "gap": "Attendance Tracking",
+              "status": "MISSING",
+              "requirements": [
+                "Clock in/out",
+                "Biometric integration (optional)",
+                "Late/absent tracking",
+                "Attendance report",
+                "Integration with payroll (deduct for absences)"
+              ],
+              "estimated_time": "4 days"
+            }
+          ]
+        }
+      },
+      
+      "total_estimated_time": "4 weeks"
+    },
+
+    "PHASE_2_ADVANCED_MODULES_TO_100": {
+      "name": "Complete Advanced Modules (M21-M28)",
+      "current": "81%",
+      "target": "100%",
+      "duration": "6 weeks",
+      "priority": "HIGH",
+      
+      "gaps_to_complete": {
+        
+        "M21_TELEMEDICINE": {
+          "current": "78%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "WebRTC Video Calling",
+              "status": "MISSING - CRITICAL",
+              "requirements": [
+                "Integrate video calling SDK (Agora, Twilio Video, or Daily.co)",
+                "Video UI with local/remote video streams",
+                "Audio controls (mute/unmute)",
+                "Video controls (camera on/off)",
+                "Screen sharing",
+                "Virtual background (optional)",
+                "Connection quality indicator",
+                "Recording (with consent)",
+                "Chat during call"
+              ],
+              "recommended_provider": {
+                "provider": "Daily.co",
+                "why": "Easy to integrate, affordable, good for healthcare",
+                "cost": "$0.0010 per participant-minute (~$0.06 per hour)",
+                "alternative": "Agora ($0.99 per 1000 minutes)"
+              },
+              "implementation": {
+                "npm_install": "npm install @daily-co/daily-react",
+                "steps": [
+                  "1. Sign up for Daily.co account",
+                  "2. Get API key",
+                  "3. Create video component",
+                  "4. Create/join room",
+                  "5. Handle permissions (camera, mic)",
+                  "6. Handle events (joined, left, error)"
+                ]
+              },
+              "code_example": {
+                "file": "frontend/src/components/telemedicine/VideoCall.tsx",
+                "code": "
+import DailyIframe from '@daily-co/daily-react';
+import { useState } from 'react';
+
+export function VideoCall({ roomUrl }) {
+  const [callFrame, setCallFrame] = useState(null);
+  
+  const startCall = () => {
+    const frame = DailyIframe.createFrame({
+      iframeStyle: {
+        width: '100%',
+        height: '100%',
+        border: 'none'
+      }
+    });
+    
+    frame.join({ url: roomUrl });
+    setCallFrame(frame);
+  };
+  
+  const endCall = () => {
+    callFrame?.leave();
+    callFrame?.destroy();
+  };
+  
+  return (
+    <div className='video-container'>
+      {!callFrame ? (
+        <button onClick={startCall}>Start Video Call</button>
+      ) : (
+        <button onClick={endCall}>End Call</button>
+      )}
+      <div id='daily-iframe-container' />
+    </div>
+  );
+}
+                "
+              },
+              "estimated_time": "7-10 days",
+              "complexity": "MEDIUM-HIGH"
+            },
+            {
+              "gap": "Virtual Waiting Room",
+              "status": "MISSING",
+              "requirements": [
+                "Patient waiting page (before doctor joins)",
+                "Queue position indicator",
+                "Estimated wait time",
+                "Test video/audio before call",
+                "Cancel/reschedule option",
+                "WebSocket for real-time updates"
+              ],
+              "estimated_time": "3 days"
+            },
+            {
+              "gap": "Call Recording",
+              "status": "MISSING",
+              "requirements": [
+                "Record video/audio (with consent)",
+                "Store recording (cloud storage)",
+                "Playback UI",
+                "Download recording",
+                "Auto-delete after retention period (GDPR)"
+              ],
+              "estimated_time": "3 days"
+            }
+          ]
+        },
+
+        "M22_PUBLIC_HEALTH": {
+          "current": "82%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "DHIMS2 Export",
+              "status": "MISSING",
+              "requirements": [
+                "Export reports in DHIMS2 format",
+                "Monthly aggregated data",
+                "Upload to Ghana Health Service portal",
+                "Validation before export"
+              ],
+              "estimated_time": "4 days"
+            },
+            {
+              "gap": "Geographic Mapping",
+              "status": "MISSING",
+              "requirements": [
+                "Map view of disease cases",
+                "Heatmap by district/region",
+                "Cluster detection",
+                "Integration with Google Maps or Mapbox"
+              ],
+              "implementation": "Use react-map-gl + Mapbox",
+              "estimated_time": "5 days"
+            },
+            {
+              "gap": "Contact Tracing",
+              "status": "MISSING",
+              "requirements": [
+                "Record contacts for infectious disease cases",
+                "Contact follow-up tracking",
+                "Exposure notification",
+                "Contact network visualization"
+              ],
+              "estimated_time": "5 days"
+            }
+          ]
+        },
+
+        "M23_MARKETING_CRM": {
+          "current": "83%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Actual SMS/Email Sending",
+              "status": "MISSING - CRITICAL",
+              "requirements": [
+                "Integrate Hubtel for SMS",
+                "Integrate SendGrid for Email",
+                "Send campaign messages",
+                "Delivery status tracking",
+                "Unsubscribe management",
+                "Bounce handling"
+              ],
+              "implementation": {
+                "sms": "Use HubtelSMSService (created in M3)",
+                "email": "Integrate SendGrid SDK"
+              },
+              "code_example": {
+                "file": "backend/src/services/marketing/sendgrid.service.ts",
+                "code": "
+import sgMail from '@sendgrid/mail';
+
+export class SendGridService {
+  constructor() {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  }
+  
+  async sendCampaignEmail(recipient, template, data) {
+    const msg = {
+      to: recipient.email,
+      from: 'campaigns@smartmed.com',
+      subject: template.subject,
+      text: this.renderTemplate(template.text, data),
+      html: this.renderTemplate(template.html, data)
+    };
+    
+    await sgMail.send(msg);
+  }
+}
+                "
+              },
+              "estimated_time": "3 days"
+            },
+            {
+              "gap": "WhatsApp Integration",
+              "status": "MISSING",
+              "requirements": [
+                "WhatsApp Business API setup",
+                "Send appointment reminders via WhatsApp",
+                "2-way messaging",
+                "Rich media (images, PDFs)"
+              ],
+              "provider": "Twilio WhatsApp API or Infobip",
+              "estimated_time": "5 days"
+            }
+          ]
+        },
+
+        "M24_COMMUNITY_HEALTH": {
+          "current": "82%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Offline Mode for Mobile App",
+              "status": "MISSING - CRITICAL FOR FIELD WORK",
+              "requirements": [
+                "Field Worker app works offline",
+                "Local data storage (AsyncStorage or SQLite)",
+                "Sync when online",
+                "Conflict resolution",
+                "Indicate offline/online status"
+              ],
+              "implementation": "Use redux-offline or WatermelonDB",
+              "estimated_time": "7 days",
+              "complexity": "HIGH"
+            },
+            {
+              "gap": "GPS Tracking",
+              "status": "MISSING",
+              "requirements": [
+                "Track CHW location during visits",
+                "GPS coordinates captured per visit",
+                "Route tracking (map of visits)",
+                "Distance traveled report"
+              ],
+              "implementation": "Use expo-location",
+              "estimated_time": "3 days"
+            },
+            {
+              "gap": "Mobile Data Collection Forms",
+              "status": "MISSING",
+              "requirements": [
+                "Dynamic form builder",
+                "Offline form completion",
+                "Photo capture",
+                "Signature capture",
+                "Form validation",
+                "Submit when online"
+              ],
+              "estimated_time": "7 days"
+            }
+          ]
+        },
+
+        "M25_RESEARCH": {
+          "current": "78%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Adverse Event Reporting",
+              "status": "MISSING",
+              "requirements": [
+                "Report adverse events in trials",
+                "Severity classification (mild, moderate, severe, life-threatening)",
+                "Causality assessment",
+                "Regulatory reporting (FDA Ghana, Ethics Committee)",
+                "Timeline tracking"
+              ],
+              "estimated_time": "4 days"
+            },
+            {
+              "gap": "Consent Form Management",
+              "status": "MISSING",
+              "requirements": [
+                "Upload consent form templates",
+                "Patient signature (digital)",
+                "Consent version tracking",
+                "Withdrawal tracking",
+                "Audit trail"
+              ],
+              "estimated_time": "4 days"
+            },
+            {
+              "gap": "Electronic Case Report Forms (eCRF)",
+              "status": "MISSING",
+              "requirements": [
+                "Form builder for data collection",
+                "Scheduled visits with forms",
+                "Data validation",
+                "Query management",
+                "Export for analysis (CDISC format)"
+              ],
+              "estimated_time": "10 days",
+              "complexity": "HIGH"
+            }
+          ]
+        },
+
+        "M26_MOBILE_APPS": {
+          "current": "75%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Doctor Mobile App",
+              "status": "MISSING",
+              "requirements": [
+                "Login",
+                "View schedule",
+                "Patient list",
+                "Patient details (history, vitals, labs)",
+                "E-prescribing",
+                "View lab results",
+                "Notifications (critical labs, stat orders)",
+                "Telemedicine (join video call from app)"
+              ],
+              "platforms": "iOS + Android (React Native)",
+              "estimated_time": "10 days"
+            },
+            {
+              "gap": "Field Worker App (Offline)",
+              "status": "MISSING",
+              "requirements": [
+                "Offline-first architecture",
+                "Patient registration (offline)",
+                "Home visit forms",
+                "GPS tracking",
+                "Photo capture",
+                "Sync when online"
+              ],
+              "estimated_time": "14 days (includes offline sync)",
+              "complexity": "HIGH"
+            },
+            {
+              "gap": "Push Notifications",
+              "status": "MISSING",
+              "requirements": [
+                "Firebase Cloud Messaging (FCM) setup",
+                "Send push notifications from backend",
+                "Handle notifications in app",
+                "Notification types (appointment, lab result, message)"
+              ],
+              "estimated_time": "3 days"
+            }
+          ]
+        },
+
+        "M27_INTEGRATION_MARKETPLACE": {
+          "current": "85%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Actual Provider SDKs",
+              "status": "MISSING - CRITICAL",
+              "requirements": [
+                "Integrate Hubtel SMS SDK",
+                "Integrate Twilio SMS/WhatsApp SDK",
+                "Integrate SendGrid Email SDK",
+                "Integrate Mailgun Email SDK",
+                "Integrate Paystack Payment SDK",
+                "Integrate Flutterwave Payment SDK",
+                "Integrate MTN MoMo API",
+                "Integrate Vodafone Cash API"
+              ],
+              "implementation": "Create adapter services for each provider",
+              "estimated_time": "10 days (2 days per major provider)"
+            },
+            {
+              "gap": "Webhook Management",
+              "status": "MISSING",
+              "requirements": [
+                "Register webhook endpoints per tenant",
+                "Receive webhooks from providers (payment status, SMS delivery)",
+                "Webhook verification (signature)",
+                "Retry logic for failed webhooks",
+                "Webhook logs/history"
+              ],
+              "estimated_time": "4 days"
+            }
+          ]
+        },
+
+        "M28_WHITE_LABEL": {
+          "current": "83%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Custom Domain Routing",
+              "status": "MISSING",
+              "requirements": [
+                "Tenant can use custom domain (e.g., hms.korlebu.edu.gh instead of korlebu.smartmed.com)",
+                "DNS configuration instructions",
+                "SSL certificate provisioning (Let's Encrypt)",
+                "Multi-domain routing in nginx"
+              ],
+              "implementation": {
+                "nginx_config": "
+server {
+  server_name ~^(?<subdomain>.+)\\.smartmed\\.com$;
+  # Route to tenant based on subdomain
+}
+
+server {
+  server_name hms.korlebu.edu.gh;
+  # Route to specific tenant (custom domain)
+}
+                ",
+                "dns_setup": "Tenant adds CNAME record pointing custom domain to smartmed.com"
+              },
+              "estimated_time": "5 days"
+            },
+            {
+              "gap": "Reseller Commission Auto-Calculation",
+              "status": "MISSING",
+              "requirements": [
+                "Calculate commission based on subscription fees",
+                "Monthly commission report per reseller",
+                "Commission payout tracking",
+                "Commission rate configuration"
+              ],
+              "estimated_time": "3 days"
+            }
+          ]
+        }
+      },
+      
+      "total_estimated_time": "6 weeks"
+    },
+
+    "PHASE_3_INFRASTRUCTURE_TO_100": {
+      "name": "Complete Infrastructure",
+      "current": "78%",
+      "target": "100%",
+      "duration": "3 weeks",
+      "priority": "HIGH",
+      
+      "gaps_to_complete": {
+        
+        "SAAS_SUBSCRIPTIONS": {
+          "current": "85%",
+          "target": "100%",
+          "gaps": [
+            {
+              "gap": "Auto-Billing",
+              "status": "MISSING",
+              "requirements": [
+                "Cron job to charge subscriptions monthly",
+                "Charge via configured payment gateway",
+                "Handle payment success/failure",
+                "Update subscription status",
+                "Send invoice email",
+                "Retry failed payments"
+              ],
+              "code_example": {
+                "file": "backend/src/cron/subscription-billing.cron.ts",
+                "code": "
+import { Cron } from '@nestjs/schedule';
+
+@Injectable()
+export class SubscriptionBillingCron {
+  @Cron('0 0 1 * *') // First day of month at midnight
+  async billSubscriptions() {
+    const dueSubscriptions = await this.subscriptionService.findDue();
+    
+    for (const subscription of dueSubscriptions) {
+      try {
+        const payment = await this.paymentService.charge(
+          subscription.tenant,
+          subscription.plan.price
+        );
+        
+        if (payment.success) {
+          await this.subscriptionService.markPaid(subscription.id);
+          await this.emailService.sendInvoice(subscription.tenant);
+        } else {
+          await this.subscriptionService.markFailed(subscription.id);
+          await this.emailService.sendPaymentFailed(subscription.tenant);
+        }
+      } catch (error) {
+        console.error(`Billing failed for tenant ${subscription.tenant.id}:`, error);
+      }
+    }
+  }
+}
+                "
+              },
+              "estimated_time": "4 days"
+            },
+            {
+              "gap": "Grace Period Enforcement",
+              "status": "MISSING",
+              "requirements": [
+                "If payment fails, give 3-day grace period",
+                "Warning notifications (day 1, day 2, final day)",
+                "Suspend account after grace period expires",
+                "Reactivate when payment received",
+                "Prevent data loss (don't delete)"
+              ],
+              "estimated_time": "3 days"
+            }
+          ]
+        },
+
+        "AI_FEATURES": {
+          "current": "70%",
+          "target": "95%",
+          "gaps": [
+            {
+              "gap": "Connect to Actual LLM APIs",
+              "status": "MISSING - CRITICAL FOR AI",
+              "requirements": [
+                "Integrate OpenAI GPT-4 for Clinical Decision Support",
+                "Integrate OpenAI Whisper for Voice-to-Text",
+                "Integrate OpenAI for AI Chatbot",
+                "Integrate Google Cloud Vision for Ghana Card OCR",
+                "Create AI service layer with error handling",
+                "API cost tracking per tenant",
+                "Fallback to rule-based if API fails"
+              ],
+              "implementation": {
+                "services_to_create": [
+                  "backend/src/services/ai/openai.service.ts",
+                  "backend/src/services/ai/clinical-decision-support.service.ts",
+                  "backend/src/services/ai/chatbot.service.ts",
+                  "backend/src/services/ai/ocr.service.ts"
+                ]
+              },
+              "code_example": {
+                "file": "backend/src/services/ai/clinical-decision-support.service.ts",
+                "code": "
+import OpenAI from 'openai';
+
+export class ClinicalDecisionSupportService {
+  private openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  
+  async suggestDiagnoses(chiefComplaint: string, vitals: any, history: string): Promise<any> {
+    const prompt = `
+Patient presents with:
+Chief Complaint: ${chiefComplaint}
+Vitals: ${JSON.stringify(vitals)}
+History: ${history}
+
+Provide differential diagnoses with probabilities, recommended tests, and red flags to monitor. Format as JSON.
+    `;
+    
+    const completion = await this.openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a medical AI assistant. Provide clinical decision support based on patient presentation. Focus on common conditions in Ghana (malaria, typhoid, dengue, etc.).'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.3
+    });
+    
+    return JSON.parse(completion.choices[0].message.content);
+  }
+}
+                "
+              },
+              "cost_per_api": {
+                "gpt4": "$0.03 per 1K input tokens, $0.06 per 1K output tokens",
+                "whisper": "$0.006 per minute",
+                "vision": "$0.002 per image"
+              },
+              "estimated_time": "7 days"
+            },
+            {
+              "gap": "X-Ray Analysis (Computer Vision)",
+              "status": "MISSING - ADVANCED AI",
+              "requirements": [
+                "Integrate medical image analysis AI",
+                "Detect pneumonia, TB, fractures on X-rays",
+                "Highlight abnormal areas",
+                "Confidence score",
+                "Radiologist review required (AI is assistive only)"
+              ],
+              "options": {
+                "option_1": "Partner with Qure.ai or Zebra Medical (paid APIs)",
+                "option_2": "Use open-source models (Hugging Face)",
+                "option_3": "Build custom model (requires large dataset, ML expertise)"
+              },
+              "recommendation": "Start with option 1 (partner), evaluate option 2 for cost savings later",
+              "estimated_time": "14+ days (complex)",
+              "priority": "MEDIUM (optional, high value if implemented)"
+            }
+          ]
+        },
+
+        "CICD_PIPELINE": {
+          "current": "0%",
+          "target": "95%",
+          "gaps": [
+            {
+              "gap": "GitHub Actions CI/CD",
+              "status": "MISSING - DEVOPS",
+              "requirements": [
+                "Automated tests on every push",
+                "Build Docker images",
+                "Push to container registry (Docker Hub or GCR)",
+                "Deploy to staging on merge to develop",
+                "Deploy to production on merge to main (manual approval)",
+                "Run E2E tests before deploy",
+                "Rollback on failure"
+              ],
+              "file_to_create": ".github/workflows/ci-cd.yml",
+              "code_example": {
+                "file": ".github/workflows/ci-cd.yml",
+                "code": "
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: |
+          cd backend && npm install
+          cd ../frontend && npm install
+      - name: Run backend tests
+        run: cd backend && npm test
+      - name: Run frontend tests
+        run: cd frontend && npm test
+      - name: Run E2E tests
+        run: npm run test:e2e
+  
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Docker images
+        run: |
+          docker build -t smartmed-backend:${{ github.sha }} ./backend
+          docker build -t smartmed-frontend:${{ github.sha }} ./frontend
+      - name: Push to Docker Hub
+        run: |
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker push smartmed-backend:${{ github.sha }}
+          docker push smartmed-frontend:${{ github.sha }}
+      - name: Deploy to production
+        run: |
+          # SSH to server and pull latest images
+          ssh ${{ secrets.PRODUCTION_SERVER }} 'cd /app && docker-compose pull && docker-compose up -d'
+                "
+              },
+              "estimated_time": "4 days"
+            }
+          ]
+        }
+      },
+      
+      "total_estimated_time": "3 weeks"
+    },
+
+    "PHASE_4_TESTING_TO_95": {
+      "name": "Comprehensive Testing",
+      "current": "60%",
+      "target": "95%",
+      "duration": "3 weeks",
+      "priority": "CRITICAL",
+      
+      "testing_requirements": {
+        
+        "UNIT_TESTS": {
+          "target_coverage": "80%",
+          "current_coverage": "~30%",
+          "tools": "Jest (backend), React Testing Library (frontend)",
+          "priority_services_to_test": [
+            "Authentication (login, JWT, refresh)",
+            "Billing calculations",
+            "Drug interaction checker",
+            "NHIS claims XML generation",
+            "Finance journal entries",
+            "Inventory forecasting (if ML model added)",
+            "MRN generation",
+            "Duplicate patient detection"
+          ],
+          "estimated_time": "10 days",
+          "parallel_work": "Can be done while developing other features"
+        },
+
+        "INTEGRATION_TESTS": {
+          "focus": "API endpoint testing",
+          "tool": "Supertest",
+          "scenarios": [
+            "POST /auth/login returns JWT",
+            "POST /patients with duplicate detection",
+            "POST /prescriptions triggers pharmacy queue",
+            "POST /lab/orders creates order and updates queue",
+            "POST /billing/invoices calculates total correctly",
+            "POST /billing/payments updates invoice status",
+            "POST /nhis/claims generates XML"
+          ],
+          "estimated_time": "7 days"
+        },
+
+        "E2E_TESTS": {
+          "current": "45 tests in 2 suites",
+          "target": "150+ tests covering all workflows",
+          "tool": "Playwright or Cypress",
+          "critical_workflows": [
+            "Complete outpatient visit (register → triage → consult → prescribe → dispense → bill → pay)",
+            "Inpatient admission (admit → vitals → nursing notes → discharge)",
+            "Lab workflow (order → collect → enter results → approve → notify doctor)",
+            "Telemedicine (book → join video → consult → prescribe)",
+            "NHIS claim (service → invoice → claim → submit)",
+            "Patient portal (login → book appointment → view results → pay bill)",
+            "Multi-tenant isolation (Tenant A cannot see Tenant B data)"
+          ],
+          "estimated_time": "10 days"
+        },
+
+        "PERFORMANCE_TESTS": {
+          "tool": "Artillery or K6",
+          "scenarios": [
+            "100 concurrent users booking appointments",
+            "50 concurrent pharmacy dispensing operations",
+            "API response time < 500ms (95th percentile)",
+            "Database queries < 200ms",
+            "Page load time < 2 seconds"
+          ],
+          "estimated_time": "4 days"
+        },
+
+        "SECURITY_TESTS": {
+          "tool": "OWASP ZAP, Manual testing",
+          "checks": [
+            "SQL injection prevention",
+            "XSS prevention",
+            "CSRF protection",
+            "Authentication bypass attempts",
+            "Authorization (tenant A cannot access tenant B data)",
+            "Sensitive data in logs (passwords, tokens)",
+            "OWASP Top 10 compliance"
+          ],
+          "estimated_time": "5 days"
+        }
+      },
+      
+      "total_estimated_time": "3 weeks (can overlap with development)"
+    }
+  },
+
+  "summary_timeline": {
+    "week_1_to_4": "Complete Core Modules (M1-M20) to 100%",
+    "week_5_to_10": "Complete Advanced Modules (M21-M28) to 100%",
+    "week_11_to_13": "Complete Infrastructure (SaaS, AI, CI/CD) to 100%",
+    "week_14_to_16": "Comprehensive Testing to 95%",
+    "total_duration": "16 weeks (4 months)",
+    "can_be_compressed": "12 weeks with 2 developers working in parallel"
+  },
+
+  "priority_order": {
+    "MUST_HAVE_P0": [
+      "WebRTC Video for Telemedicine",
+      "SMS/Email sending (Hubtel, SendGrid)",
+      "AI LLM integration (OpenAI GPT-4, Whisper)",
+      "Auto-billing for SaaS",
+      "Doctor mobile app",
+      "CI/CD pipeline",
+      "E2E tests for critical workflows"
+    ],
+    "SHOULD_HAVE_P1": [
+      "DICOM/PACS for Radiology",
+      "Custom report builder",
+      "WhatsApp integration",
+      "Offline mode for Field Worker app",
+      "X-Ray AI analysis",
+      "Unit tests (80% coverage)",
+      "WHO Surgical Checklist"
+    ],
+    "NICE_TO_HAVE_P2": [
+      "Mass casualty mode",
+      "Contact tracing",
+      "Geographic mapping",
+      "Custom domain routing",
+      "eCRF for research"
+    ]
+  },
+
+  "deliverables": {
+    "at_100_percent": [
+      "All 28 modules at 100% completion",
+      "All AI features connected to actual APIs (GPT-4, Whisper, Vision)",
+      "WebRTC video telemedicine working",
+      "SMS/Email/WhatsApp sending working",
+      "Doctor + Patient + Field Worker mobile apps",
+      "Auto-billing and subscription management",
+      "CI/CD pipeline deployed",
+      "80%+ test coverage",
+      "All E2E workflows tested",
+      "Production-ready",
+      "Documentation complete",
+      "User training materials"
+    ]
+  },
+
+  "usage_instructions": {
+    "step_1": "Review this JSON file completely",
+    "step_2": "Prioritize: Work on P0 items first, then P1, then P2",
+    "step_3": "Use this JSON as a checklist - mark items as done",
+    "step_4": "For each gap, follow the implementation details provided",
+    "step_5": "Install required libraries (code examples show npm install commands)",
+    "step_6": "Create the files mentioned in 'files_to_create'",
+    "step_7": "Test each feature after implementation",
+    "step_8": "Track progress weekly - aim to complete Phase 1 in 4 weeks",
+    "step_9": "Use AI assistant (Claude, GPT-4, Copilot) to help write code faster",
+    "step_10": "After 16 weeks, SmartMed Ultimate will be 100% complete and production-ready!"
+  },
+
+  "success_criteria": {
+    "definition_of_100_percent": {
+      "all_modules": "Every feature specified works as described",
+      "all_integrations": "All external APIs integrated (payment, SMS, email, video)",
+      "all_ai": "AI features connected to actual LLM/ML models",
+      "testing": "80%+ unit test coverage, all critical E2E tests passing",
+      "performance": "API < 500ms, page load < 2s, handles 100 concurrent users",
+      "security": "No critical vulnerabilities, OWASP Top 10 compliant",
+      "production": "Deployed with CI/CD, monitoring, backups",
+      "documentation": "Complete user docs, API docs, deployment guide"
+    }
+  }
+}

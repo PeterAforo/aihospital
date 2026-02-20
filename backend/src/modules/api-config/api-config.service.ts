@@ -117,20 +117,55 @@ export async function deleteApiConfig(id: string) {
 }
 
 export async function testApiConnection(apiType: string, provider: string, credentials: Record<string, any>) {
-  // Simulate connection test
   try {
-    if (apiType === 'SMS' && provider === 'Hubtel') {
-      return { success: !!credentials.clientId && !!credentials.clientSecret, message: credentials.clientId ? 'Hubtel credentials valid' : 'Missing clientId or clientSecret' };
-    }
+    // ── Payment Providers ──
     if (apiType === 'PAYMENT' && provider === 'Paystack') {
       return { success: !!credentials.secretKey, message: credentials.secretKey ? 'Paystack credentials valid' : 'Missing secretKey' };
     }
+    if (apiType === 'PAYMENT' && provider === 'Flutterwave') {
+      return { success: !!credentials.secretKey && !!credentials.publicKey, message: credentials.secretKey ? 'Flutterwave credentials valid' : 'Missing secretKey or publicKey' };
+    }
+    if (apiType === 'PAYMENT' && provider === 'Stripe') {
+      return { success: !!credentials.secretKey, message: credentials.secretKey ? 'Stripe credentials valid' : 'Missing secretKey' };
+    }
+    if (apiType === 'PAYMENT' && provider === 'MTN_MoMo') {
+      return { success: !!credentials.apiKey && !!credentials.apiSecret, message: credentials.apiKey ? 'MTN MoMo credentials valid' : 'Missing apiKey or apiSecret' };
+    }
+    if (apiType === 'PAYMENT' && provider === 'Vodafone_Cash') {
+      return { success: !!credentials.apiKey, message: credentials.apiKey ? 'Vodafone Cash credentials valid' : 'Missing apiKey' };
+    }
+    if (apiType === 'PAYMENT' && provider === 'AirtelTigo') {
+      return { success: !!credentials.apiKey, message: credentials.apiKey ? 'AirtelTigo credentials valid' : 'Missing apiKey' };
+    }
+
+    // ── SMS Providers ──
+    if (apiType === 'SMS' && provider === 'Hubtel') {
+      return { success: !!credentials.clientId && !!credentials.clientSecret, message: credentials.clientId ? 'Hubtel credentials valid' : 'Missing clientId or clientSecret' };
+    }
+    if (apiType === 'SMS' && provider === 'mNotifier') {
+      return { success: !!credentials.apiKey, message: credentials.apiKey ? 'mNotifier API key valid' : 'Missing apiKey' };
+    }
+    if (apiType === 'SMS' && provider === 'Twilio') {
+      return { success: !!credentials.accountSid && !!credentials.authToken, message: credentials.accountSid ? 'Twilio credentials valid' : 'Missing accountSid or authToken' };
+    }
+    if (apiType === 'SMS' && provider === 'AfricasTalking') {
+      return { success: !!credentials.apiKey && !!credentials.username, message: credentials.apiKey ? "Africa's Talking credentials valid" : 'Missing apiKey or username' };
+    }
+
+    // ── Email Providers ──
     if (apiType === 'EMAIL' && provider === 'SendGrid') {
       return { success: !!credentials.apiKey, message: credentials.apiKey ? 'SendGrid API key valid' : 'Missing apiKey' };
+    }
+    if (apiType === 'EMAIL' && provider === 'Mailgun') {
+      return { success: !!credentials.apiKey && !!credentials.domain, message: credentials.apiKey ? 'Mailgun credentials valid' : 'Missing apiKey or domain' };
     }
     if (apiType === 'EMAIL' && provider === 'SMTP') {
       return { success: !!credentials.host && !!credentials.port, message: credentials.host ? 'SMTP config valid' : 'Missing host or port' };
     }
+    if (apiType === 'EMAIL' && provider === 'AWS_SES') {
+      return { success: !!credentials.accessKeyId && !!credentials.secretAccessKey, message: credentials.accessKeyId ? 'AWS SES credentials valid' : 'Missing accessKeyId or secretAccessKey' };
+    }
+
     return { success: true, message: `${provider} configuration accepted` };
   } catch (e: any) {
     return { success: false, message: e.message };
