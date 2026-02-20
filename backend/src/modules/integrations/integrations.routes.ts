@@ -10,6 +10,7 @@ import { mnotifierService } from './mnotifier.service.js';
 import { twilioService } from './twilio.service.js';
 import { paystackService } from '../billing/paystack.service.js';
 import { verifyPaystackSignature, verifyFlutterwaveSignature, verifyStripeSignature, logWebhook, getWebhookLogs, getWebhookStats } from './webhook.service.js';
+import { dhims2Service } from './dhims2.service.js';
 
 const router: Router = Router();
 
@@ -377,6 +378,58 @@ router.get('/status', async (req: any, res: Response) => {
       Promise.resolve(twilioService.getStatus()),
     ]);
     res.json({ success: true, data: { nhia, momo, sms, paymentProviders, smsProviders, mnotifier, twilio } });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+// ==================== DHIMS2 REPORTING ====================
+
+router.get('/dhims2/opd', async (req: any, res: Response) => {
+  try {
+    const { month, year } = req.query;
+    const m = month ? parseInt(month as string) : new Date().getMonth() + 1;
+    const y = year ? parseInt(year as string) : new Date().getFullYear();
+    const report = await dhims2Service.generateOPDReport(req.tenantId || req.user?.tenantId, m, y);
+    res.json({ success: true, data: report });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/dhims2/ipd', async (req: any, res: Response) => {
+  try {
+    const { month, year } = req.query;
+    const m = month ? parseInt(month as string) : new Date().getMonth() + 1;
+    const y = year ? parseInt(year as string) : new Date().getFullYear();
+    const report = await dhims2Service.generateIPDReport(req.tenantId || req.user?.tenantId, m, y);
+    res.json({ success: true, data: report });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/dhims2/maternal', async (req: any, res: Response) => {
+  try {
+    const { month, year } = req.query;
+    const m = month ? parseInt(month as string) : new Date().getMonth() + 1;
+    const y = year ? parseInt(year as string) : new Date().getFullYear();
+    const report = await dhims2Service.generateMaternalReport(req.tenantId || req.user?.tenantId, m, y);
+    res.json({ success: true, data: report });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/dhims2/lab', async (req: any, res: Response) => {
+  try {
+    const { month, year } = req.query;
+    const m = month ? parseInt(month as string) : new Date().getMonth() + 1;
+    const y = year ? parseInt(year as string) : new Date().getFullYear();
+    const report = await dhims2Service.generateLabReport(req.tenantId || req.user?.tenantId, m, y);
+    res.json({ success: true, data: report });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.get('/dhims2/bundle', async (req: any, res: Response) => {
+  try {
+    const { month, year } = req.query;
+    const m = month ? parseInt(month as string) : new Date().getMonth() + 1;
+    const y = year ? parseInt(year as string) : new Date().getFullYear();
+    const bundle = await dhims2Service.generateMonthlyBundle(req.tenantId || req.user?.tenantId, m, y);
+    res.json({ success: true, data: bundle });
   } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
 });
 
