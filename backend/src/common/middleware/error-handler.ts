@@ -3,6 +3,30 @@ import { ZodError } from 'zod';
 import { logger } from '../utils/logger.js';
 import { sendError } from '../utils/api-response.js';
 
+// Optional Sentry integration — only active when SENTRY_DSN is set
+let Sentry: any = null;
+if (process.env.SENTRY_DSN) {
+  try {
+    Sentry = require('@sentry/node');
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'development',
+      tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1'),
+      beforeSend(event: any) {
+        // Strip sensitive data
+        if (event.request?.headers) {
+          delete event.request.headers['authorization'];
+          delete event.request.headers['cookie'];
+        }
+        return event;
+      },
+    });
+    logger.info('[SENTRY] Error monitoring initialized');
+  } catch {
+    logger.warn('[SENTRY] @sentry/node not installed — error monitoring disabled');
+  }
+}
+
 export class AppError extends Error {
   statusCode: number;
   code?: string;
@@ -59,6 +83,20 @@ export const errorHandler = (
   }
   if (err.name === 'TokenExpiredError') {
     return sendError(res, 'Token expired', 401, undefined, 'TOKEN_EXPIRED');
+  }
+
+  // Report unhandled errors to Sentry
+  if (Sentry) {
+    Sentry.withScope((scope: any) => {
+      scope.setTag('path', req.path);
+      scope.setTag('method', req.method);
+      scope.setExtra('query', req.query);
+      scope.setExtra('body', req.body);
+      if ((req as any).user) {
+        scope.setUser({ id: (req as any).user.userId, role: (req as any).user.role });
+      }
+      Sentry.captureException(err);
+    });
   }
 
   // Default error

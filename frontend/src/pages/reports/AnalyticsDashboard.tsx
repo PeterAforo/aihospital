@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   BarChart3, Users, Calendar, DollarSign, TrendingUp,
-  Activity, Pill, FlaskConical, Bed, CreditCard, ArrowUpRight, ArrowDownRight
+  Activity, Pill, FlaskConical, Bed, CreditCard, ArrowUpRight, ArrowDownRight,
+  Download, FileSpreadsheet, Printer,
 } from 'lucide-react';
+import { exportToExcel, exportToCSV, exportToPrintPDF, dataToHtmlTable, formatCurrency as fmtGHS } from '@/lib/export-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -104,6 +106,46 @@ const AnalyticsDashboard: React.FC = () => {
 
   useEffect(() => { loadData(); }, [activeTab, periodDays]);
 
+  const getExportData = (): { rows: Record<string, any>[]; title: string } => {
+    const { start, end } = getDateRange();
+    const period = `${new Date(start).toLocaleDateString()} - ${new Date(end).toLocaleDateString()}`;
+    switch (activeTab) {
+      case 'executive': return { title: `Executive Summary (${period})`, rows: executive ? [{
+        'Total Patients': executive.totalPatients, 'New Patients': executive.newPatients,
+        'Patient Growth %': executive.patientGrowth, 'Appointments': executive.totalAppointments,
+        'Consultations': executive.totalEncounters, 'Revenue (GHS)': executive.revenue,
+        'Revenue Growth %': executive.revenueGrowth, 'Outstanding (GHS)': executive.outstandingAmount,
+        'Active Admissions': executive.activeAdmissions,
+      }] : [] };
+      case 'revenue': return { title: `Revenue Analytics (${period})`, rows: revenue?.byCategory.map(c => ({ Category: c.category, 'Amount (GHS)': c.amount })) || [] };
+      case 'clinical': return { title: `Clinical Analytics (${period})`, rows: clinical?.topDiagnoses.map(d => ({ 'ICD Code': d.icdCode, Description: d.description, Count: d.count })) || [] };
+      case 'pharmacy': return { title: `Pharmacy Analytics (${period})`, rows: pharmacy?.topMedications.map(m => ({ Medication: m.name, 'Dispense Count': m.count, 'Total Qty': m.quantity })) || [] };
+      case 'lab': return { title: `Laboratory Analytics (${period})`, rows: lab?.topTests.map(t => ({ Test: t.name, Count: t.count })) || [] };
+      case 'appointments': return { title: `Appointment Analytics (${period})`, rows: appointments?.byStatus.map(s => ({ Status: s.status, Count: s.count })) || [] };
+      default: return { rows: [], title: 'Report' };
+    }
+  };
+
+  const handleExportExcel = () => {
+    const { rows, title } = getExportData();
+    if (!rows.length) return toast({ title: 'No data', description: 'Load data first', variant: 'destructive' });
+    exportToExcel(rows, `analytics-${activeTab}-${periodDays}d`, title);
+  };
+
+  const handleExportCSV = () => {
+    const { rows } = getExportData();
+    if (!rows.length) return toast({ title: 'No data', description: 'Load data first', variant: 'destructive' });
+    exportToCSV(rows, `analytics-${activeTab}-${periodDays}d`);
+  };
+
+  const handleExportPDF = () => {
+    const { rows, title } = getExportData();
+    if (!rows.length) return toast({ title: 'No data', description: 'Load data first', variant: 'destructive' });
+    const cols = Object.keys(rows[0]).map(k => ({ key: k, label: k }));
+    const html = `<h1>${title}</h1><h2>MediCare Ghana Hospital Management System</h2>` + dataToHtmlTable(rows, cols);
+    exportToPrintPDF(title, html);
+  };
+
   const tabs: { key: TabType; label: string; icon: React.ReactNode }[] = [
     { key: 'executive', label: 'Executive', icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'revenue', label: 'Revenue', icon: <DollarSign className="w-4 h-4" /> },
@@ -129,6 +171,17 @@ const AnalyticsDashboard: React.FC = () => {
               {p.label}
             </Button>
           ))}
+          <div className="border-l pl-2 ml-1 flex gap-1">
+            <Button variant="outline" size="sm" onClick={handleExportExcel} title="Export Excel">
+              <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportCSV} title="Export CSV">
+              <Download className="w-4 h-4 mr-1" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPDF} title="Print / PDF">
+              <Printer className="w-4 h-4 mr-1" /> PDF
+            </Button>
+          </div>
         </div>
       </div>
 
