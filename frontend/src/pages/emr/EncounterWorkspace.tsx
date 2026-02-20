@@ -96,8 +96,8 @@ const EncounterWorkspace: React.FC = () => {
         }
 
         // Set triage record if available
-        if (data.triageRecord) {
-          setTriageRecord(data.triageRecord);
+        if ((data as any).triageRecord) {
+          setTriageRecord((data as any).triageRecord);
         }
       } catch (error: any) {
         toast({

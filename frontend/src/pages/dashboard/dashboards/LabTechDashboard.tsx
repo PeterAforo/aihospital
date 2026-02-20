@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FlaskConical, Users, Clock, Beaker, CheckCircle, AlertTriangle, FileText } from "lucide-react";
+import { FlaskConical, Users, Clock, Beaker, CheckCircle, FileText } from "lucide-react";
 import { laboratoryService, LabWorklistItem } from "@/services/laboratory.service";
 import { Badge } from "@/components/ui/badge";
 
