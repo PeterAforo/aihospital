@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 const uploadsDir = path.join(process.cwd(), 'uploads');
 const patientPhotosDir = path.join(uploadsDir, 'patients');
 const patientDocumentsDir = path.join(uploadsDir, 'documents');
+const audioDir = path.join(uploadsDir, 'audio');
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -18,6 +19,10 @@ if (!fs.existsSync(patientPhotosDir)) {
 
 if (!fs.existsSync(patientDocumentsDir)) {
   fs.mkdirSync(patientDocumentsDir, { recursive: true });
+}
+
+if (!fs.existsSync(audioDir)) {
+  fs.mkdirSync(audioDir, { recursive: true });
 }
 
 // Configure storage for patient photos
@@ -96,6 +101,43 @@ export const uploadPatientDocument = multer({
   fileFilter: documentFileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB max
+  },
+});
+
+// Configure storage for audio files (voice-to-text)
+const audioStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, audioDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const filename = `${uuidv4()}${ext}`;
+    cb(null, filename);
+  },
+});
+
+const audioFileFilter = (
+  _req: Express.Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  const allowedMimes = [
+    'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/mpga', 'audio/m4a',
+    'audio/wav', 'audio/webm', 'audio/ogg', 'audio/x-wav',
+    'video/mp4', 'video/webm',
+  ];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Unsupported audio format. Allowed: mp3, mp4, m4a, wav, webm, ogg'));
+  }
+};
+
+export const uploadAudio = multer({
+  storage: audioStorage,
+  fileFilter: audioFileFilter,
+  limits: {
+    fileSize: 25 * 1024 * 1024, // 25MB max (Whisper API limit)
   },
 });
 

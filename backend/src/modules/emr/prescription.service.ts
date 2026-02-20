@@ -1,4 +1,6 @@
 import { prisma } from '../../common/utils/prisma';
+import { smsService } from '../../common/services/sms.service.js';
+import { logger } from '../../common/utils/logger.js';
 
 export interface CreatePrescriptionDto {
   encounterId: string;
@@ -118,7 +120,38 @@ export class PrescriptionService {
       },
     });
 
+    // Send e-prescription SMS to patient (async, non-blocking)
+    this.sendPrescriptionSMS(prescription).catch(e =>
+      logger.warn(`Failed to send prescription SMS: ${e.message}`)
+    );
+
     return prescription;
+  }
+
+  /**
+   * Send prescription details via SMS to patient
+   */
+  private async sendPrescriptionSMS(prescription: any) {
+    try {
+      const patient = await prisma.patient.findUnique({
+        where: { id: prescription.patientId },
+        select: { phonePrimary: true, phoneSecondary: true, firstName: true },
+      });
+
+      const phone = patient?.phonePrimary || patient?.phoneSecondary;
+      if (!phone) return;
+
+      const drugList = (prescription.items || [])
+        .slice(0, 5)
+        .map((item: any) => `- ${item.drug?.genericName || item.drug?.brandName || 'Medication'}: ${item.dosage}, ${item.frequency}`)
+        .join('\n');
+
+      const message = `Dear ${patient.firstName}, your prescription is ready:\n${drugList}\n\nPlease visit the pharmacy for dispensing.\n-MediCare Ghana`;
+
+      await smsService.sendSMS({ to: phone, message });
+    } catch (error: any) {
+      logger.warn(`Prescription SMS error: ${error.message}`);
+    }
   }
 
   /**

@@ -8,6 +8,8 @@ import {
   getClinicalDecisionSupport,
   interpretLabResults,
 } from './ai.service.js';
+import { transcribeAudio, structureToSOAP, cleanupTempFile } from './voice-to-text.service.js';
+import { uploadAudio } from '../../common/utils/upload.js';
 
 const router = Router();
 
@@ -100,6 +102,80 @@ router.post('/lab-interpret', async (req: Request, res: Response) => {
   }
 });
 
+// ── Voice-to-Text (Whisper) ──
+router.post('/voice-to-text', uploadAudio.single('audio'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Audio file is required. Upload as multipart/form-data with field name "audio".' });
+    }
+
+    const language = (req.body?.language as string) || 'en';
+    const result = await transcribeAudio(req.file.path, language);
+
+    // Cleanup temp file
+    cleanupTempFile(req.file.path);
+
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+
+    res.json({
+      success: true,
+      transcript: result.transcript,
+      language: result.language,
+      duration: result.duration,
+    });
+  } catch (error: any) {
+    if (req.file) cleanupTempFile(req.file.path);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Voice-to-SOAP (Whisper + GPT-4) ──
+router.post('/voice-to-soap', uploadAudio.single('audio'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Audio file is required. Upload as multipart/form-data with field name "audio".' });
+    }
+
+    const language = (req.body?.language as string) || 'en';
+
+    // Step 1: Transcribe
+    const transcription = await transcribeAudio(req.file.path, language);
+    cleanupTempFile(req.file.path);
+
+    if (!transcription.success || !transcription.transcript) {
+      return res.status(500).json({ error: transcription.error || 'Transcription failed' });
+    }
+
+    // Step 2: Structure to SOAP
+    const soap = await structureToSOAP(transcription.transcript);
+
+    res.json({
+      success: true,
+      transcript: transcription.transcript,
+      duration: transcription.duration,
+      soap,
+    });
+  } catch (error: any) {
+    if (req.file) cleanupTempFile(req.file.path);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Text-to-SOAP (GPT-4 only, no audio) ──
+router.post('/text-to-soap', async (req: Request, res: Response) => {
+  try {
+    const { transcript } = req.body;
+    if (!transcript) return res.status(400).json({ error: 'transcript field is required' });
+
+    const soap = await structureToSOAP(transcript);
+    res.json({ success: true, soap });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ── AI Health Check ──
 router.get('/health', (_req: Request, res: Response) => {
   const hasOpenAI = !!process.env.OPENAI_API_KEY;
@@ -113,6 +189,8 @@ router.get('/health', (_req: Request, res: Response) => {
       chatbot: { status: 'active', type: hasOpenAI ? 'ai-powered' : 'rule-based' },
       clinicalDecision: { status: hasOpenAI ? 'active' : 'requires-api-key', type: 'ai-powered' },
       labInterpretation: { status: 'active', type: hasOpenAI ? 'ai-powered' : 'rule-based' },
+      voiceToText: { status: hasOpenAI ? 'active' : 'requires-api-key', type: 'ai-powered (Whisper)' },
+      voiceToSOAP: { status: hasOpenAI ? 'active' : 'requires-api-key', type: 'ai-powered (Whisper + GPT-4)' },
     },
   });
 });
