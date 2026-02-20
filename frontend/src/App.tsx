@@ -153,6 +153,9 @@ import ShiftSchedulingPage from './pages/hr/ShiftSchedulingPage';
 // Pharmacy Stock Transfer
 import StockTransferPage from './pages/pharmacy/StockTransferPage';
 
+// NHIS Batch Processing
+import NHISBatchPage from './pages/billing/NHISBatchPage';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -311,6 +314,9 @@ function App() {
 
         {/* Stock Transfers */}
         <Route path="/pharmacy/transfers" element={<StockTransferPage />} />
+
+        {/* NHIS Batch Processing */}
+        <Route path="/billing/nhis/batch" element={<NHISBatchPage />} />
 
         {/* Admin */}
         <Route path="/admin/audit-logs" element={<AuditLogsPage />} />

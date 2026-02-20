@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Calendar, Pill, FlaskConical, CreditCard,
   UserCog, Settings, HeartPulse, UserPlus, ClipboardList,
-  DollarSign, BarChart3, Shield, Truck, Package, FileText, Bed, Building2, Scan, Scissors, Baby, Siren, Wrench, ExternalLink, Warehouse, Brain, Video, Syringe, Plug, Heart, MapPin, Microscope, Palette, Clock, type LucideIcon,
+  DollarSign, BarChart3, Shield, Truck, Package, FileText, Bed, Building2, Scan, Scissors, Baby, Siren, Wrench, ExternalLink, Warehouse, Brain, Video, Syringe, Plug, Heart, MapPin, Microscope, Palette, Clock, Upload, type LucideIcon,
 } from 'lucide-react';
 
 export interface SidebarItem {
@@ -123,6 +123,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
         { path: '/billing', icon: CreditCard, label: 'Billing' },
         { path: '/billing/outstanding', icon: FileText, label: 'Outstanding' },
         { path: '/billing/nhis', icon: Shield, label: 'NHIS Claims' },
+        { path: '/billing/nhis/batch', icon: Upload, label: 'NHIS Batch & Reconcile' },
       ],
     },
     {
