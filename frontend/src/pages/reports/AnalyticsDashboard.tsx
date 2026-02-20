@@ -4,7 +4,7 @@ import {
   Activity, Pill, FlaskConical, Bed, CreditCard, ArrowUpRight, ArrowDownRight,
   Download, FileSpreadsheet, Printer,
 } from 'lucide-react';
-import { exportToExcel, exportToCSV, exportToPrintPDF, dataToHtmlTable, formatCurrency as fmtGHS } from '@/lib/export-utils';
+import { exportToExcel, exportToCSV, exportToPrintPDF, dataToHtmlTable } from '@/lib/export-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';

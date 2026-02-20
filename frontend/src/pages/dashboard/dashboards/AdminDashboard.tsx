@@ -64,6 +64,7 @@ export default function AdminDashboard() {
     { icon: BarChart3, label: "Profitability", path: "/finance/profitability", color: "#14b8a6" },
     { icon: DollarSign, label: "Billing", path: "/billing", color: "#f97316" },
     { icon: Shield, label: "User Management", path: "/settings/users", color: "#6366f1" },
+    { icon: BarChart3, label: "Reports & Analytics", path: "/reports/analytics", color: "#7c3aed" },
     { icon: Settings, label: "Settings", path: "/settings", color: "#64748b" },
   ];
 

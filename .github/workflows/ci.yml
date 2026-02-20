@@ -6,9 +6,17 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
 jobs:
   backend-lint-and-build:
-    name: Backend - Lint & Build
+    name: Backend - Lint, Build & Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -20,12 +28,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-backend-${{ hashFiles('backend/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-backend-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -37,10 +56,9 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Run tests
-        run: pnpm test --if-present
+        run: npx jest --no-coverage --forceExit
         env:
           NODE_ENV: test
-          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           JWT_SECRET: test-secret-key
           JWT_REFRESH_SECRET: test-refresh-secret
 
@@ -57,21 +75,34 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-frontend-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-frontend-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: TypeScript compile check
-        run: npx -p typescript tsc --noEmit
+        run: npx tsc --noEmit
 
-      - name: Build
+      - name: Build production bundle
         run: pnpm run build
+        env:
+          VITE_API_URL: https://aihospital.onrender.com/api
 
   docker-build:
     name: Docker Build Test
@@ -87,3 +118,23 @@ jobs:
 
       - name: Build frontend image
         run: docker build -t aihospital-frontend ./frontend
+
+  deploy-notification:
+    name: Deploy Ready
+    runs-on: ubuntu-latest
+    needs: [backend-lint-and-build, frontend-lint-and-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Summary
+        run: |
+          echo "## Deployment Ready" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All checks passed on **main** branch." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Platform | URL |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|----------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | Render | https://aihospital.onrender.com |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | Vercel | https://aihospital-frontend.vercel.app |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Render and Vercel auto-deploy from main branch pushes." >> $GITHUB_STEP_SUMMARY
