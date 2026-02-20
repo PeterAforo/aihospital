@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "SmartMed Doctor",
+    "slug": "aihospital-doctor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "smartmed-doctor",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#059669"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smartmed.doctor"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#059669"
+      },
+      "package": "com.smartmed.doctor"
+    },
+    "plugins": ["expo-router", "expo-secure-store"]
+  }
+}
