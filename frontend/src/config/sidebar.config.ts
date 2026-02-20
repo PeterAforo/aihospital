@@ -258,6 +258,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
         { path: '/billing', icon: CreditCard, label: 'Billing' },
         { path: '/billing/outstanding', icon: FileText, label: 'Outstanding' },
         { path: '/billing/nhis', icon: Shield, label: 'NHIS Claims' },
+        { path: '/billing/nhis/batch', icon: Upload, label: 'NHIS Batch & Reconcile' },
       ],
     },
     {
