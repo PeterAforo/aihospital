@@ -159,6 +159,9 @@ import NHISBatchPage from './pages/billing/NHISBatchPage';
 // Custom Report Builder
 import CustomReportBuilder from './pages/reports/CustomReportBuilder';
 
+// Video Call
+import VideoCallPage from './pages/telemedicine/VideoCallPage';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -323,6 +326,9 @@ function App() {
 
         {/* Custom Report Builder */}
         <Route path="/reports/builder" element={<CustomReportBuilder />} />
+
+        {/* Video Call */}
+        <Route path="/telemedicine/call/:sessionId" element={<VideoCallPage />} />
 
         {/* Admin */}
         <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
