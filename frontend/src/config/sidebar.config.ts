@@ -130,6 +130,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Reports',
       items: [
         { path: '/reports/analytics', icon: BarChart3, label: 'Analytics Dashboard' },
+        { path: '/reports/builder', icon: FileText, label: 'Report Builder' },
       ],
     },
     {
@@ -265,6 +266,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Reports',
       items: [
         { path: '/reports/analytics', icon: BarChart3, label: 'Analytics Dashboard' },
+        { path: '/reports/builder', icon: FileText, label: 'Report Builder' },
       ],
     },
     {
@@ -320,6 +322,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Reports',
       items: [
         { path: '/reports/analytics', icon: BarChart3, label: 'Analytics Dashboard' },
+        { path: '/reports/builder', icon: FileText, label: 'Report Builder' },
       ],
     },
     {

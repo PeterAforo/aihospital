@@ -156,6 +156,9 @@ import StockTransferPage from './pages/pharmacy/StockTransferPage';
 // NHIS Batch Processing
 import NHISBatchPage from './pages/billing/NHISBatchPage';
 
+// Custom Report Builder
+import CustomReportBuilder from './pages/reports/CustomReportBuilder';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -317,6 +320,9 @@ function App() {
 
         {/* NHIS Batch Processing */}
         <Route path="/billing/nhis/batch" element={<NHISBatchPage />} />
+
+        {/* Custom Report Builder */}
+        <Route path="/reports/builder" element={<CustomReportBuilder />} />
 
         {/* Admin */}
         <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
