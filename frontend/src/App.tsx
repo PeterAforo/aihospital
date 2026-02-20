@@ -147,6 +147,12 @@ import SurgicalChecklistPage from './pages/theatre/SurgicalChecklistPage';
 // Finance
 import BudgetVariancePage from './pages/finance/BudgetVariancePage';
 
+// HR Shift Scheduling
+import ShiftSchedulingPage from './pages/hr/ShiftSchedulingPage';
+
+// Pharmacy Stock Transfer
+import StockTransferPage from './pages/pharmacy/StockTransferPage';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -299,6 +305,12 @@ function App() {
 
         {/* Finance */}
         <Route path="/finance/budget-variance" element={<BudgetVariancePage />} />
+
+        {/* HR Shift Scheduling */}
+        <Route path="/hr/shifts" element={<ShiftSchedulingPage />} />
+
+        {/* Stock Transfers */}
+        <Route path="/pharmacy/transfers" element={<StockTransferPage />} />
 
         {/* Admin */}
         <Route path="/admin/audit-logs" element={<AuditLogsPage />} />

@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Calendar, Pill, FlaskConical, CreditCard,
   UserCog, Settings, HeartPulse, UserPlus, ClipboardList,
-  DollarSign, BarChart3, Shield, Truck, Package, FileText, Bed, Building2, Scan, Scissors, Baby, Siren, Wrench, ExternalLink, Warehouse, Brain, Video, Syringe, Plug, Heart, MapPin, Microscope, Palette, type LucideIcon,
+  DollarSign, BarChart3, Shield, Truck, Package, FileText, Bed, Building2, Scan, Scissors, Baby, Siren, Wrench, ExternalLink, Warehouse, Brain, Video, Syringe, Plug, Heart, MapPin, Microscope, Palette, Clock, type LucideIcon,
 } from 'lucide-react';
 
 export interface SidebarItem {
@@ -41,6 +41,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
         { path: '/pharmacy', icon: Pill, label: 'Pharmacy' },
         { path: '/pharmacy/purchase-orders', icon: Package, label: 'Purchase Orders' },
         { path: '/pharmacy/suppliers', icon: Truck, label: 'Suppliers' },
+        { path: '/pharmacy/transfers', icon: Truck, label: 'Stock Transfers' },
         { path: '/lab', icon: FlaskConical, label: 'Laboratory' },
       ],
     },
@@ -118,6 +119,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       items: [
         { path: '/finance/pricing', icon: DollarSign, label: 'Finance & Pricing' },
         { path: '/finance/profitability', icon: BarChart3, label: 'Profitability' },
+        { path: '/finance/budget-variance', icon: BarChart3, label: 'Budget Variance' },
         { path: '/billing', icon: CreditCard, label: 'Billing' },
         { path: '/billing/outstanding', icon: FileText, label: 'Outstanding' },
         { path: '/billing/nhis', icon: Shield, label: 'NHIS Claims' },
@@ -139,6 +141,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Administration',
       items: [
         { path: '/hr', icon: UserCog, label: 'HR & Payroll' },
+        { path: '/hr/shifts', icon: Clock, label: 'Shift Scheduling' },
         { path: '/settings/users', icon: Shield, label: 'User Management' },
         { path: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
         { path: '/api-settings', icon: Plug, label: 'API & Integrations' },
@@ -172,6 +175,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
         { path: '/pharmacy', icon: Pill, label: 'Pharmacy' },
         { path: '/pharmacy/purchase-orders', icon: Package, label: 'Purchase Orders' },
         { path: '/pharmacy/suppliers', icon: Truck, label: 'Suppliers' },
+        { path: '/pharmacy/transfers', icon: Truck, label: 'Stock Transfers' },
         { path: '/lab', icon: FlaskConical, label: 'Laboratory' },
       ],
     },
@@ -249,6 +253,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       items: [
         { path: '/finance/pricing', icon: DollarSign, label: 'Finance & Pricing' },
         { path: '/finance/profitability', icon: BarChart3, label: 'Profitability' },
+        { path: '/finance/budget-variance', icon: BarChart3, label: 'Budget Variance' },
         { path: '/billing', icon: CreditCard, label: 'Billing' },
         { path: '/billing/outstanding', icon: FileText, label: 'Outstanding' },
         { path: '/billing/nhis', icon: Shield, label: 'NHIS Claims' },
@@ -270,6 +275,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Administration',
       items: [
         { path: '/hr', icon: UserCog, label: 'HR & Payroll' },
+        { path: '/hr/shifts', icon: Clock, label: 'Shift Scheduling' },
         { path: '/settings/users', icon: Shield, label: 'User Management' },
         { path: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
         { path: '/api-settings', icon: Plug, label: 'API & Integrations' },
