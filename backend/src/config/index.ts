@@ -33,7 +33,17 @@ export const config = {
   },
   
   // CORS
-  allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(','),
+  allowedOrigins: (() => {
+    const origins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',').map(o => o.trim());
+    // Always include the frontend URL and known deployment URLs
+    const frontendUrl = process.env.FRONTEND_URL || '';
+    if (frontendUrl && !origins.includes(frontendUrl)) origins.push(frontendUrl);
+    const knownOrigins = ['https://aihospital-frontend.vercel.app', 'http://localhost:5173'];
+    for (const o of knownOrigins) {
+      if (!origins.includes(o)) origins.push(o);
+    }
+    return origins;
+  })(),
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   
   // Hubtel SMS

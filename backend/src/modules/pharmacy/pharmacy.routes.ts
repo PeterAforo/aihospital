@@ -10,6 +10,34 @@ const router = Router();
 // Apply authentication to all routes
 router.use(authenticate);
 
+// ==================== DRUGS LISTING ====================
+
+// Get drugs list (for dropdowns)
+router.get('/drugs', async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const { limit, search } = req.query;
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+    const where: any = { tenantId: user.tenantId };
+    if (search) {
+      where.OR = [
+        { genericName: { contains: search as string, mode: 'insensitive' } },
+        { brandName: { contains: search as string, mode: 'insensitive' } },
+      ];
+    }
+    const drugs = await prisma.drug.findMany({
+      where,
+      select: { id: true, genericName: true, brandName: true, strength: true, form: true, category: true },
+      take: limit ? parseInt(limit as string) : 200,
+      orderBy: { genericName: 'asc' },
+    });
+    res.json({ success: true, data: drugs });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ==================== DISPENSING ====================
 
 // Get prescription queue

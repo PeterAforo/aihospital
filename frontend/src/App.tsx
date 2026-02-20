@@ -50,6 +50,7 @@ import StockManagement from './pages/pharmacy/StockManagement';
 import DispenseDetail from './pages/pharmacy/DispenseDetail';
 import PurchaseOrderManagement from './pages/pharmacy/PurchaseOrderManagement';
 import SupplierManagement from './pages/pharmacy/SupplierManagement';
+import ReceiveStockPage from './pages/pharmacy/ReceiveStockPage';
 
 // Laboratory
 import LabDashboard from './pages/laboratory/LabDashboard';
@@ -234,6 +235,7 @@ function App() {
         <Route path="/pharmacy" element={<PharmacyDashboard />} />
         <Route path="/pharmacy/queue" element={<DispensingQueue />} />
         <Route path="/pharmacy/stock" element={<StockManagement />} />
+        <Route path="/pharmacy/stock/receive" element={<ReceiveStockPage />} />
         <Route path="/pharmacy/dispense/:prescriptionId" element={<DispenseDetail />} />
         <Route path="/pharmacy/purchase-orders" element={<PurchaseOrderManagement />} />
         <Route path="/pharmacy/suppliers" element={<SupplierManagement />} />

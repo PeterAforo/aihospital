@@ -30,10 +30,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationCount, setNotificationCount] = useState<NotificationCount>({ total: 0, unread: 0 });
   const [isLoading, setIsLoading] = useState(false);
+  const [authFailed, setAuthFailed] = useState(false);
   const { user } = useSelector((state: RootState) => state.auth);
 
   const refreshNotifications = async () => {
-    if (!user?.id) return;
+    if (!user?.id || authFailed) return;
     
     try {
       setIsLoading(true);
@@ -42,6 +43,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         notificationService.getNotificationCount(user.id),
       ]);
       
+      // Stop polling if we get 401 errors
+      const has401 = [notificationsResult, countResult].some(
+        r => r.status === 'rejected' && (r.reason?.response?.status === 401 || r.reason?.status === 401)
+      );
+      if (has401) {
+        setAuthFailed(true);
+        return;
+      }
+
       if (notificationsResult.status === 'fulfilled') setNotifications(notificationsResult.value);
       if (countResult.status === 'fulfilled') setNotificationCount(countResult.value);
     } catch {
@@ -71,8 +81,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   };
 
+  // Reset auth failure state when user changes (re-login)
   useEffect(() => {
     if (user?.id) {
+      setAuthFailed(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.id && !authFailed) {
       refreshNotifications();
       
       // Set up polling for new notifications
@@ -80,7 +97,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       
       return () => clearInterval(interval);
     }
-  }, [user?.id]);
+  }, [user?.id, authFailed]);
 
   const value: NotificationContextType = {
     notifications,
