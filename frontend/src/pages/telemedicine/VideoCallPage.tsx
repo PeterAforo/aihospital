@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../../services/api';
 import {
   Video, VideoOff, Mic, MicOff, Phone, Monitor,
-  MessageSquare, Users, Clock, AlertCircle, Maximize,
+  MessageSquare, Users, Clock, Maximize,
 } from 'lucide-react';
 
 interface CallState {
@@ -156,7 +156,8 @@ export default function VideoCallPage() {
   }, []);
 
   const patientName = session ? `${session.patient?.firstName || ''} ${session.patient?.lastName || ''}`.trim() : 'Patient';
-  const doctorName = session ? `Dr. ${session.doctor?.firstName || ''} ${session.doctor?.lastName || ''}`.trim() : 'Doctor';
+  // doctorName available for future use in UI
+  void (session ? `Dr. ${session.doctor?.firstName || ''} ${session.doctor?.lastName || ''}`.trim() : 'Doctor');
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#111827' }}>

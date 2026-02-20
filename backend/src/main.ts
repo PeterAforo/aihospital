@@ -49,6 +49,7 @@ import whiteLabelRoutes from './modules/white-label/white-label.routes.js';
 import communityHealthRoutes from './modules/community-health/community-health.routes.js';
 import researchRoutes from './modules/research/research.routes.js';
 import saasRoutes from './modules/saas/saas.routes.js';
+import anesthesiaRoutes from './modules/surgery/anesthesia.routes.js';
 
 // Import services
 import { queueWebSocketService } from './common/services/queue-websocket.service.js';
@@ -181,6 +182,7 @@ app.use('/api/white-label', whiteLabelRoutes);
 app.use('/api/community-health', communityHealthRoutes);
 app.use('/api/research', researchRoutes);
 app.use('/api/saas', saasRoutes);
+app.use('/api/anesthesia', anesthesiaRoutes);
 
 // Error handling
 app.use(notFoundHandler);

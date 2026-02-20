@@ -162,6 +162,12 @@ import CustomReportBuilder from './pages/reports/CustomReportBuilder';
 // Video Call
 import VideoCallPage from './pages/telemedicine/VideoCallPage';
 
+// Postnatal Care & Newborn
+import PostnatalCarePage from './pages/maternity/PostnatalCarePage';
+
+// Anesthesia Records
+import AnesthesiaRecordPage from './pages/surgery/AnesthesiaRecordPage';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -329,6 +335,12 @@ function App() {
 
         {/* Video Call */}
         <Route path="/telemedicine/call/:sessionId" element={<VideoCallPage />} />
+
+        {/* Postnatal Care */}
+        <Route path="/maternity/postnatal" element={<PostnatalCarePage />} />
+
+        {/* Anesthesia Records */}
+        <Route path="/theatre/anesthesia" element={<AnesthesiaRecordPage />} />
 
         {/* Admin */}
         <Route path="/admin/audit-logs" element={<AuditLogsPage />} />

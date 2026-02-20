@@ -62,12 +62,14 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Theatre',
       items: [
         { path: '/theatre', icon: Scissors, label: 'Surgery Schedule' },
+        { path: '/theatre/anesthesia', icon: Syringe, label: 'Anesthesia Records' },
       ],
     },
     {
       section: 'Maternity',
       items: [
         { path: '/maternity', icon: Baby, label: 'Maternity / ANC' },
+        { path: '/maternity/postnatal', icon: Heart, label: 'Postnatal Care' },
       ],
     },
     {
@@ -198,12 +200,14 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Theatre',
       items: [
         { path: '/theatre', icon: Scissors, label: 'Surgery Schedule' },
+        { path: '/theatre/anesthesia', icon: Syringe, label: 'Anesthesia Records' },
       ],
     },
     {
       section: 'Maternity',
       items: [
         { path: '/maternity', icon: Baby, label: 'Maternity / ANC' },
+        { path: '/maternity/postnatal', icon: Heart, label: 'Postnatal Care' },
       ],
     },
     {
@@ -369,12 +373,14 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Theatre',
       items: [
         { path: '/theatre', icon: Scissors, label: 'Surgery Schedule' },
+        { path: '/theatre/anesthesia', icon: Syringe, label: 'Anesthesia Records' },
       ],
     },
     {
       section: 'Maternity',
       items: [
         { path: '/maternity', icon: Baby, label: 'Maternity / ANC' },
+        { path: '/maternity/postnatal', icon: Heart, label: 'Postnatal Care' },
       ],
     },
   ],

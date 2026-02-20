@@ -575,6 +575,7 @@ model Patient {
   immunizationRecords ImmunizationRecord[]
   feedback            PatientFeedback[]
   loyaltyAccount      LoyaltyAccount?
+  anesthesiaRecords   AnesthesiaRecord[] @relation("AnesthesiaRecords")
 
   @@unique([tenantId, mrn])
   @@unique([tenantId, ghanaCardNumber])
@@ -3293,6 +3294,91 @@ model SurgicalChecklist {
 
   @@index([surgeryId, phase])
   @@map("surgical_checklists")
+}
+
+// ==================== ANESTHESIA ====================
+
+model AnesthesiaRecord {
+  id                String   @id @default(uuid())
+  tenantId          String
+  surgeryId         String
+  patientId         String
+  anesthetistId     String
+
+  // Pre-Anesthesia
+  asaClass          String?  // ASA I-VI
+  mallampatiScore   String?  // I, II, III, IV
+  airwayAssessment  String?
+  allergies         String?
+  npoStatus         String?  // NPO compliance
+  preOpVitals       Json?    // { hr, bp, spo2, temp, rr }
+  preExistingConditions String?
+  previousAnesthesia String?
+  complications     String?
+
+  // Anesthesia Details
+  anesthesiaType    String   // GENERAL, REGIONAL, SPINAL, EPIDURAL, LOCAL, SEDATION, COMBINED
+  technique         String?  // e.g., RSI, LMA, ETT, Spinal block
+  airwayDevice      String?  // ETT, LMA, MASK, NASAL
+  ettSize           String?
+  ettDepth          String?
+  inductionAgent    String?  // e.g., Propofol, Thiopentone
+  inductionDose     String?
+  muscleRelaxant    String?
+  muscleRelaxantDose String?
+  maintenanceAgent  String?  // e.g., Sevoflurane, Isoflurane, TIVA
+  opioidUsed        String?
+  opioidDose        String?
+  localAnesthetic   String?
+  localDose         String?
+  ivFluids          String?  // e.g., NS 1L, RL 500ml
+  bloodProducts     String?
+  vasopressors      String?
+
+  // Timing
+  inductionTime     DateTime?
+  intubationTime    DateTime?
+  incisionTime      DateTime?
+  endSurgeryTime    DateTime?
+  extubationTime    DateTime?
+  pacuArrivalTime   DateTime?
+
+  // Monitoring
+  monitoringUsed    String[] // ECG, SPO2, NIBP, ETCO2, IBP, TEMP, BIS, NMT
+  vitalSigns        Json?    // Array of { time, hr, sbp, dbp, spo2, etco2, temp, rr }
+
+  // Intraoperative Events
+  intraOpEvents     String?  // e.g., hypotension, bradycardia, desaturation
+  estimatedBloodLoss Float?
+  urineOutput       Float?
+  totalIVFluids     Float?   // ml
+
+  // Post-Anesthesia (PACU)
+  pacuScore         Int?     // Aldrete score 0-10
+  postOpPainScore   Int?     // 0-10
+  postOpNausea      Boolean  @default(false)
+  postOpShivering   Boolean  @default(false)
+  postOpComplications String?
+  pacuDischargeTime DateTime?
+  pacuDischargeScore Int?
+
+  // Notes
+  preOpNotes        String?
+  intraOpNotes      String?
+  postOpNotes       String?
+  anesthesiaPlan    String?
+
+  status            String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  patient           Patient  @relation("AnesthesiaRecords", fields: [patientId], references: [id])
+
+  @@index([tenantId, surgeryId])
+  @@index([patientId])
+  @@index([anesthetistId])
+  @@map("anesthesia_records")
 }
 
 // ==================== MATERNITY / OBSTETRICS ====================
