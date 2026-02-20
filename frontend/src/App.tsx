@@ -136,6 +136,9 @@ import ResearchPage from './pages/research/ResearchPage';
 // White Label & SaaS
 import WhiteLabelPage from './pages/white-label/WhiteLabelPage';
 
+// Admin
+import AuditLogsPage from './pages/admin/AuditLogsPage';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -276,6 +279,9 @@ function App() {
 
         {/* White Label & SaaS */}
         <Route path="/white-label" element={<WhiteLabelPage />} />
+
+        {/* Admin */}
+        <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
 
         {/* Patient Portal */}
         <Route path="/portal" element={<PortalRedirect />} />

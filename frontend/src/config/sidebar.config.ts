@@ -140,6 +140,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       items: [
         { path: '/hr', icon: UserCog, label: 'HR & Payroll' },
         { path: '/settings/users', icon: Shield, label: 'User Management' },
+        { path: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
         { path: '/api-settings', icon: Plug, label: 'API & Integrations' },
         { path: '/white-label', icon: Palette, label: 'White Label & SaaS' },
         { path: '/settings', icon: Settings, label: 'Settings' },
@@ -270,6 +271,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       items: [
         { path: '/hr', icon: UserCog, label: 'HR & Payroll' },
         { path: '/settings/users', icon: Shield, label: 'User Management' },
+        { path: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
         { path: '/api-settings', icon: Plug, label: 'API & Integrations' },
         { path: '/settings', icon: Settings, label: 'Settings' },
       ],
