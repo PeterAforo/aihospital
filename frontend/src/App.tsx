@@ -144,6 +144,9 @@ import AuditLogsPage from './pages/admin/AuditLogsPage';
 import NursingNotesTimeline from './pages/inpatient/NursingNotesTimeline';
 import SurgicalChecklistPage from './pages/theatre/SurgicalChecklistPage';
 
+// Finance
+import BudgetVariancePage from './pages/finance/BudgetVariancePage';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -293,6 +296,9 @@ function App() {
 
         {/* Surgical Checklist */}
         <Route path="/theatre/surgeries/:surgeryId/checklist" element={<SurgicalChecklistPage />} />
+
+        {/* Finance */}
+        <Route path="/finance/budget-variance" element={<BudgetVariancePage />} />
 
         {/* Admin */}
         <Route path="/admin/audit-logs" element={<AuditLogsPage />} />

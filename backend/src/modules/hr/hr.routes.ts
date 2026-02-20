@@ -102,6 +102,66 @@ router.post('/payroll/approve', async (req: any, res: Response) => {
   } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
 });
 
+// ==================== SHIFT SCHEDULING ====================
+
+router.get('/shifts', async (req: any, res: Response) => {
+  try {
+    const { branchId, department, staffProfileId, startDate, endDate, shiftType } = req.query;
+    const shifts = await hrService.getShiftSchedules(req.tenantId!, {
+      branchId: branchId as string, department: department as string,
+      staffProfileId: staffProfileId as string, shiftType: shiftType as string,
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+    });
+    res.json({ success: true, data: shifts });
+  } catch (error: any) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.post('/shifts', async (req: any, res: Response) => {
+  try {
+    const shift = await hrService.createShiftSchedule(req.tenantId!, { ...req.body, createdBy: req.user?.id });
+    res.status(201).json({ success: true, data: shift });
+  } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
+});
+
+router.post('/shifts/bulk', async (req: any, res: Response) => {
+  try {
+    const { shifts } = req.body;
+    if (!shifts?.length) return res.status(400).json({ success: false, error: 'shifts array required' });
+    const results = await hrService.bulkCreateShifts(req.tenantId!, shifts.map((s: any) => ({ ...s, createdBy: req.user?.id })));
+    res.status(201).json({ success: true, data: results });
+  } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
+});
+
+router.post('/shifts/:id/check-in', async (req: any, res: Response) => {
+  try {
+    const shift = await hrService.checkInShift(req.params.id);
+    res.json({ success: true, data: shift });
+  } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
+});
+
+router.post('/shifts/:id/check-out', async (req: any, res: Response) => {
+  try {
+    const shift = await hrService.checkOutShift(req.params.id);
+    res.json({ success: true, data: shift });
+  } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
+});
+
+router.patch('/shifts/:id/status', async (req: any, res: Response) => {
+  try {
+    const { status, notes } = req.body;
+    const shift = await hrService.updateShiftStatus(req.params.id, status, notes);
+    res.json({ success: true, data: shift });
+  } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
+});
+
+router.delete('/shifts/:id', async (req: any, res: Response) => {
+  try {
+    await hrService.deleteShift(req.params.id);
+    res.json({ success: true, message: 'Shift deleted' });
+  } catch (error: any) { res.status(400).json({ success: false, error: error.message }); }
+});
+
 // Dashboard
 router.get('/dashboard', async (req: any, res: Response) => {
   try {

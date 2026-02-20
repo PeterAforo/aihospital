@@ -85,6 +85,7 @@ model Tenant {
   discountSchemes       DiscountScheme[]
   categoryProfitSettings CategoryProfitSettings[]
   saasSubscriptions      SaasSubscription[]
+  shiftSchedules         ShiftSchedule[]
 
   @@map("tenants")
 }
@@ -4194,10 +4195,39 @@ model StaffProfile {
 
   leaveRequests     LeaveRequest[]
   payrollRecords    PayrollRecord[]
+  shiftSchedules    ShiftSchedule[]
 
   @@unique([tenantId, employeeId])
   @@index([tenantId, department])
   @@map("staff_profiles")
+}
+
+model ShiftSchedule {
+  id              String       @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  staffProfileId  String
+  shiftDate       DateTime
+  shiftType       String       // MORNING, AFTERNOON, NIGHT, ON_CALL
+  startTime       String       // "07:00"
+  endTime         String       // "15:00"
+  department      String?
+  status          String       @default("SCHEDULED") // SCHEDULED, CHECKED_IN, CHECKED_OUT, ABSENT, SWAPPED
+  checkedInAt     DateTime?
+  checkedOutAt    DateTime?
+  notes           String?
+  swappedWith     String?      // staffProfileId of swap partner
+  createdBy       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  staffProfile    StaffProfile @relation(fields: [staffProfileId], references: [id], onDelete: Cascade)
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, shiftDate])
+  @@index([staffProfileId, shiftDate])
+  @@index([tenantId, branchId, shiftDate])
+  @@map("shift_schedules")
 }
 
 model LeaveRequest {

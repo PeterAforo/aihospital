@@ -176,6 +176,103 @@ class HRService {
     });
   }
 
+  // ==================== SHIFT SCHEDULING ====================
+
+  async getShiftSchedules(tenantId: string, filters?: {
+    branchId?: string; department?: string; staffProfileId?: string;
+    startDate?: Date; endDate?: Date; shiftType?: string;
+  }) {
+    const db = prisma as any;
+    const where: any = { tenantId };
+    if (filters?.branchId) where.branchId = filters.branchId;
+    if (filters?.department) where.department = filters.department;
+    if (filters?.staffProfileId) where.staffProfileId = filters.staffProfileId;
+    if (filters?.shiftType) where.shiftType = filters.shiftType;
+    if (filters?.startDate || filters?.endDate) {
+      where.shiftDate = {};
+      if (filters?.startDate) where.shiftDate.gte = filters.startDate;
+      if (filters?.endDate) where.shiftDate.lte = filters.endDate;
+    }
+
+    return db.shiftSchedule.findMany({
+      where,
+      include: {
+        staffProfile: { select: { id: true, employeeId: true, department: true, designation: true, userId: true } },
+      },
+      orderBy: [{ shiftDate: 'asc' }, { startTime: 'asc' }],
+      take: 200,
+    });
+  }
+
+  async createShiftSchedule(tenantId: string, data: any) {
+    const db = prisma as any;
+    return db.shiftSchedule.create({
+      data: {
+        tenantId,
+        branchId: data.branchId,
+        staffProfileId: data.staffProfileId,
+        shiftDate: new Date(data.shiftDate),
+        shiftType: data.shiftType,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        department: data.department,
+        notes: data.notes,
+        createdBy: data.createdBy,
+      },
+    });
+  }
+
+  async bulkCreateShifts(tenantId: string, shifts: any[]) {
+    const db = prisma as any;
+    const results = [];
+    for (const shift of shifts) {
+      const created = await db.shiftSchedule.create({
+        data: {
+          tenantId,
+          branchId: shift.branchId,
+          staffProfileId: shift.staffProfileId,
+          shiftDate: new Date(shift.shiftDate),
+          shiftType: shift.shiftType,
+          startTime: shift.startTime,
+          endTime: shift.endTime,
+          department: shift.department,
+          createdBy: shift.createdBy,
+        },
+      });
+      results.push(created);
+    }
+    return results;
+  }
+
+  async checkInShift(shiftId: string) {
+    const db = prisma as any;
+    return db.shiftSchedule.update({
+      where: { id: shiftId },
+      data: { status: 'CHECKED_IN', checkedInAt: new Date() },
+    });
+  }
+
+  async checkOutShift(shiftId: string) {
+    const db = prisma as any;
+    return db.shiftSchedule.update({
+      where: { id: shiftId },
+      data: { status: 'CHECKED_OUT', checkedOutAt: new Date() },
+    });
+  }
+
+  async updateShiftStatus(shiftId: string, status: string, notes?: string) {
+    const db = prisma as any;
+    return db.shiftSchedule.update({
+      where: { id: shiftId },
+      data: { status, notes },
+    });
+  }
+
+  async deleteShift(shiftId: string) {
+    const db = prisma as any;
+    return db.shiftSchedule.delete({ where: { id: shiftId } });
+  }
+
   // ==================== DASHBOARD ====================
 
   async getDashboardStats(tenantId: string) {
