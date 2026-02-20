@@ -55,6 +55,7 @@ import { queueWebSocketService } from './common/services/queue-websocket.service
 import { reminderScheduler } from './common/services/reminder-scheduler.service.js';
 import { autoBillingService } from './common/services/auto-billing.service.js';
 import { scheduledReportsService } from './common/services/scheduled-reports.service.js';
+import { gracePeriodService } from './common/services/grace-period.service.js';
 import { paystackService } from './modules/billing/paystack.service';
 import crypto from 'crypto';
 import { apiLimiter, webhookLimiter } from './common/middleware/rate-limiter';
@@ -217,6 +218,10 @@ if (!isVercel) {
       // Start scheduled reports service
       scheduledReportsService.start();
       logger.info('Scheduled reports service started');
+
+      // Start grace period enforcement
+      gracePeriodService.start();
+      logger.info('Grace period enforcement started');
     } catch (error) {
       logger.error('Failed to start server:', error);
       process.exit(1);
