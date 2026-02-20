@@ -40,13 +40,13 @@ export const config = {
   hubtel: {
     clientId: process.env.HUBTEL_CLIENT_ID || '',
     clientSecret: process.env.HUBTEL_CLIENT_SECRET || '',
-    senderId: process.env.HUBTEL_SENDER_ID || 'MediCare',
+    senderId: process.env.HUBTEL_SENDER_ID || 'SmartMed',
   },
 
   // mNotify SMS
   mnotify: {
     apiKey: process.env.MNOTIFY_API_KEY || '',
-    senderId: process.env.MNOTIFY_SENDER_ID || 'MediCare',
+    senderId: process.env.MNOTIFY_SENDER_ID || 'SmartMed',
   },
 
   // WhatsApp Business API
@@ -60,6 +60,13 @@ export const config = {
   aiService: {
     url: process.env.AI_SERVICE_URL || 'http://localhost:5001',
     timeout: parseInt(process.env.AI_SERVICE_TIMEOUT || '5000', 10),
+  },
+
+  // OpenAI
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || '',
+    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS || '1024', 10),
   },
   
   // Logging

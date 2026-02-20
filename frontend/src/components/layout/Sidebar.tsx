@@ -66,7 +66,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 animate={{ opacity: 1 }}
                 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#2563eb" }}
               >
-                MediCare
+                SmartMed
               </motion.span>
             )}
           </Link>
@@ -178,7 +178,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <div style={{ padding: "0.75rem 1rem", borderTop: "1px solid #e5e7eb" }}>
           {!collapsed && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ fontSize: "0.7rem", color: "#9ca3af", margin: 0 }}>
-              MediCare Ghana v1.0
+              SmartMed v2.0 · AI-Powered
             </motion.p>
           )}
         </div>

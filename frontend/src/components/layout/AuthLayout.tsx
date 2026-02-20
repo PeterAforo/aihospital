@@ -56,10 +56,10 @@ export default function AuthLayout() {
             <Stethoscope style={{ width: "36px", height: "36px", color: "white" }} />
           </div>
           <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "white", marginBottom: "0.5rem" }}>
-            MediCare Ghana
+            SmartMed
           </h1>
           <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "1rem" }}>
-            Hospital Management System
+            AI-Powered Hospital Management
           </p>
         </motion.div>
 
@@ -88,7 +88,7 @@ export default function AuthLayout() {
           transition={{ delay: 0.5 }}
           style={{ textAlign: "center", fontSize: "0.875rem", marginTop: "2rem", color: "rgba(255,255,255,0.7)" }}
         >
-          © 2024 MediCare Ghana. All rights reserved.
+          © 2025 SmartMed. Healthcare Made Intelligent.
         </motion.p>
       </motion.div>
     </div>

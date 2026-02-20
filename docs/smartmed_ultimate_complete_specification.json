@@ -1,0 +1,1182 @@
+{
+  "project_name": "SmartMed Ultimate",
+  "vision": "The World's Most Advanced AI-Powered Hospital Management SaaS Platform",
+  "tagline": "Complete Healthcare Ecosystem in One Intelligent Platform",
+  
+  "architecture": "Multi-Tenant SaaS with Super Admin → Tenant → Branch → Department hierarchy",
+
+  "advanced_modules": {
+    
+    "MODULE_13_TELEMEDICINE": {
+      "name": "Telemedicine & Virtual Care",
+      "icon": "📹",
+      "priority": "HIGH - Essential for modern healthcare",
+      "description": "Complete virtual care platform for remote consultations",
+      
+      "features": {
+        "video_consultation": {
+          "technology": "WebRTC (Agora, Twilio Video, or Daily.co)",
+          "features": [
+            "HD video/audio calls (1-on-1 or group)",
+            "Screen sharing (share lab results, X-rays)",
+            "Virtual waiting room",
+            "Consultation recording (with consent)",
+            "Real-time chat during call",
+            "Virtual background",
+            "Noise cancellation",
+            "Low-bandwidth mode for rural Ghana"
+          ],
+          "workflow": [
+            "1. Patient books telemedicine appointment",
+            "2. Patient receives SMS/email with video link",
+            "3. At appointment time, patient clicks link",
+            "4. Patient enters virtual waiting room",
+            "5. Doctor clicks 'Start Consultation'",
+            "6. Video call begins",
+            "7. Doctor can: View patient history, Prescribe, Order labs, Document notes",
+            "8. Consultation ends, automatic billing",
+            "9. Prescription sent to patient's phone/email"
+          ],
+          "user_experience": {
+            "patient": "Click link → Wait → Doctor joins → Consult → Get prescription",
+            "doctor": "See queue → Click patient → Video starts → Consult → Complete"
+          }
+        },
+        
+        "remote_patient_monitoring": {
+          "description": "Monitor patients with chronic diseases remotely",
+          "features": [
+            "Patients submit vitals via mobile app (BP, glucose, weight, SpO2)",
+            "AI analyzes trends and alerts doctor if abnormal",
+            "Scheduled check-ins (daily/weekly)",
+            "Medication adherence tracking",
+            "Symptom tracking",
+            "Remote coaching (diabetes, hypertension management)"
+          ],
+          "use_cases": [
+            "Diabetes management (track glucose, medication)",
+            "Hypertension monitoring (BP readings)",
+            "Post-surgery follow-up",
+            "Chronic disease management",
+            "Pregnancy monitoring (ANC via telemedicine)"
+          ],
+          "ai_features": [
+            "🤖 AI predicts health deterioration from vital trends",
+            "🤖 AI suggests when in-person visit needed",
+            "🤖 AI generates progress reports for doctors"
+          ]
+        },
+        
+        "e_consultation": {
+          "description": "Asynchronous consultation (no video, message-based)",
+          "features": [
+            "Patient submits question + symptoms + photos",
+            "Doctor reviews and responds within 24 hours",
+            "Follow-up questions allowed",
+            "Prescription issued if appropriate",
+            "Lower cost than video consultation"
+          ],
+          "use_cases": [
+            "Skin conditions (upload photo)",
+            "Medication refills",
+            "Minor ailments",
+            "Second opinion"
+          ]
+        },
+        
+        "tele_pharmacy": {
+          "description": "Order medications online, delivered to home",
+          "workflow": [
+            "Patient receives e-prescription",
+            "Patient orders via portal/app",
+            "Pharmacy processes order",
+            "Delivery partner dispatches",
+            "Patient receives at home"
+          ],
+          "integration": "Integrate with delivery services (Glovo, Bolt Food in Ghana)"
+        },
+        
+        "business_value": "Expand reach to rural areas, convenience for patients, new revenue stream"
+      },
+      
+      "database_tables": [
+        "telemedicine_appointments",
+        "video_calls (call_id, duration, participants, recording_url)",
+        "remote_monitoring_readings",
+        "e_consultations",
+        "telemedicine_prescriptions"
+      ]
+    },
+
+    "MODULE_14_PUBLIC_HEALTH": {
+      "name": "Public Health & Disease Surveillance",
+      "icon": "🏥",
+      "priority": "HIGH - Government/NGO requirement",
+      "description": "Track disease outbreaks, immunizations, and public health programs",
+      
+      "features": {
+        "disease_surveillance": {
+          "description": "Real-time disease outbreak detection and reporting",
+          "features": [
+            "Notifiable diseases tracking (Cholera, Measles, Meningitis, Yellow Fever, COVID-19, Ebola, Polio)",
+            "Automatic case reporting to Ghana Health Service",
+            "Outbreak alerts (if cases exceed threshold)",
+            "Epidemic curve visualization",
+            "Geographic mapping of cases",
+            "Contact tracing",
+            "Laboratory confirmation tracking"
+          ],
+          "workflow": [
+            "1. Doctor diagnoses notifiable disease",
+            "2. System auto-creates disease notification",
+            "3. Alert sent to Public Health Officer",
+            "4. Officer investigates and confirms",
+            "5. Report submitted to Ghana Health Service",
+            "6. Dashboard shows outbreak status"
+          ],
+          "ai_features": [
+            "🤖 AI predicts outbreaks based on case trends",
+            "🤖 AI suggests containment measures",
+            "🤖 AI identifies high-risk areas"
+          ]
+        },
+        
+        "immunization_registry": {
+          "description": "Track childhood immunizations and coverage",
+          "features": [
+            "Ghana EPI schedule (BCG, OPV, Pentavalent, Measles, Yellow Fever, etc.)",
+            "Auto-schedule next immunization based on DOB",
+            "SMS reminders to mothers",
+            "Immunization card printing",
+            "Coverage reports by area",
+            "Defaulter tracking (children who missed vaccines)",
+            "Outreach planning (identify communities with low coverage)"
+          ],
+          "integration": "Ghana Health Service immunization database"
+        },
+        
+        "maternal_child_health_tracking": {
+          "description": "Track ANC, delivery, PNC, child welfare",
+          "kpis": [
+            "ANC coverage (target: 4+ visits)",
+            "Facility delivery rate",
+            "Postnatal care coverage",
+            "Under-5 mortality rate",
+            "Immunization coverage"
+          ],
+          "reports": "Monthly reports to District Health Directorate"
+        },
+        
+        "mass_campaigns": {
+          "description": "Manage vaccination campaigns, health screenings",
+          "features": [
+            "Campaign planning (target population, locations, dates)",
+            "Team assignment",
+            "Mobile data collection (offline mode for field)",
+            "Real-time progress tracking",
+            "Stock management for campaign supplies"
+          ],
+          "examples": [
+            "National Immunization Days",
+            "Mass drug administration (deworming, vitamin A)",
+            "Community health screenings (BP, diabetes)"
+          ]
+        },
+        
+        "epidemiological_analytics": {
+          "features": [
+            "Disease burden by age, sex, location",
+            "Seasonal trends",
+            "Risk factor analysis",
+            "Mortality analysis",
+            "Comparative analysis (year-over-year)"
+          ],
+          "ai_features": [
+            "🤖 AI identifies disease hotspots",
+            "🤖 AI predicts seasonal disease patterns",
+            "🤖 AI recommends resource allocation"
+          ]
+        }
+      },
+      
+      "government_integration": {
+        "ghana_health_service": "Submit DHIMS2 reports electronically",
+        "nhia": "Integrated claims submission",
+        "fda_ghana": "Adverse drug reaction reporting"
+      }
+    },
+
+    "MODULE_15_MARKETING_CRM": {
+      "name": "Marketing, CRM & Patient Engagement",
+      "icon": "📢",
+      "priority": "MEDIUM - Revenue growth",
+      "description": "Attract, engage, and retain patients",
+      
+      "features": {
+        "patient_crm": {
+          "description": "Manage patient relationships and lifecycle",
+          "features": [
+            "Patient segmentation (demographics, visit frequency, conditions)",
+            "Patient journey tracking (first visit → regular → inactive)",
+            "Patient lifetime value calculation",
+            "Win-back campaigns (re-engage inactive patients)",
+            "Referral tracking (who referred this patient?)",
+            "Patient satisfaction scoring (NPS)",
+            "VIP patient management"
+          ],
+          "segments": [
+            "New patients (first 90 days)",
+            "Active patients (visited in last 6 months)",
+            "At-risk patients (haven't visited in 6-12 months)",
+            "Inactive patients (>12 months no visit)",
+            "High-value patients (spend >₵5000/year)",
+            "Chronic disease patients (diabetes, hypertension)",
+            "Pregnant women (ANC segment)"
+          ],
+          "ai_features": [
+            "🤖 AI predicts patient churn risk",
+            "🤖 AI suggests personalized engagement strategies",
+            "🤖 AI recommends next best action per patient"
+          ]
+        },
+        
+        "marketing_campaigns": {
+          "description": "Multi-channel marketing campaigns",
+          "channels": ["SMS", "Email", "WhatsApp", "In-app push", "Social media"],
+          "campaign_types": [
+            {
+              "type": "Health awareness campaigns",
+              "examples": [
+                "Diabetes screening month",
+                "Breast cancer awareness",
+                "World Health Day promotions"
+              ]
+            },
+            {
+              "type": "Service promotions",
+              "examples": [
+                "Free BP checks this month",
+                "20% off full health checkup",
+                "New radiology service launch"
+              ]
+            },
+            {
+              "type": "Seasonal campaigns",
+              "examples": [
+                "Flu vaccination drive (pre-flu season)",
+                "Back-to-school health checks",
+                "Holiday health tips"
+              ]
+            },
+            {
+              "type": "Appointment reminders",
+              "automated": true,
+              "triggers": [
+                "24 hours before appointment",
+                "Annual checkup due (remind after 1 year)",
+                "Immunization due (children)",
+                "Prescription refill due"
+              ]
+            }
+          ],
+          "features": [
+            "Campaign builder (drag-and-drop email designer)",
+            "A/B testing (test different messages)",
+            "Scheduling (send at optimal time)",
+            "Personalization (Hi {{firstName}}, your {{condition}} checkup is due)",
+            "Analytics (open rate, click rate, conversion)"
+          ]
+        },
+        
+        "referral_program": {
+          "description": "Patient referral rewards program",
+          "workflow": [
+            "1. Patient refers friend (via app, give referral code)",
+            "2. Friend registers using code",
+            "3. Friend completes first visit",
+            "4. Both get reward (₵20 credit, free consultation, etc.)"
+          ],
+          "tracking": "Referral dashboard shows top referrers, conversion rate"
+        },
+        
+        "loyalty_program": {
+          "description": "Reward frequent patients",
+          "features": [
+            "Points system (earn points per visit, per ₵ spent)",
+            "Tiered membership (Bronze, Silver, Gold, Platinum)",
+            "Benefits (priority booking, discounts, free annual checkup)",
+            "Birthday rewards",
+            "Points redemption (free consultation, discount)"
+          ]
+        },
+        
+        "patient_feedback": {
+          "features": [
+            "Post-visit SMS survey (1-5 stars + comment)",
+            "In-app rating (rate doctor, cleanliness, waiting time)",
+            "NPS survey (quarterly)",
+            "Complaint management (track, assign, resolve)",
+            "Public reviews response (Google, Facebook)"
+          ],
+          "ai_features": [
+            "🤖 AI sentiment analysis on feedback",
+            "🤖 AI identifies recurring issues",
+            "🤖 AI suggests service improvements"
+          ]
+        },
+        
+        "online_reputation_management": {
+          "features": [
+            "Aggregate reviews from Google, Facebook, HealthGrades",
+            "Monitor mentions on social media",
+            "Auto-respond to positive reviews",
+            "Alert on negative reviews (respond quickly)",
+            "Track star rating trends"
+          ]
+        }
+      }
+    },
+
+    "MODULE_16_RESEARCH_CLINICAL_TRIALS": {
+      "name": "Research & Clinical Trials",
+      "icon": "🔬",
+      "priority": "MEDIUM - For teaching hospitals, research institutions",
+      
+      "features": {
+        "research_database": {
+          "description": "Anonymized patient data for research",
+          "features": [
+            "Data extraction with filters (age, sex, diagnosis, date range)",
+            "Patient consent tracking",
+            "Data anonymization (remove PHI)",
+            "Export for analysis (CSV, SPSS, R)",
+            "Ethics committee approval tracking"
+          ],
+          "use_cases": [
+            "Retrospective studies (e.g., outcomes of malaria treatment)",
+            "Quality improvement projects",
+            "Thesis/dissertation research"
+          ]
+        },
+        
+        "clinical_trials_management": {
+          "features": [
+            "Protocol management",
+            "Patient enrollment",
+            "Inclusion/exclusion criteria checking",
+            "Randomization",
+            "Visit schedules",
+            "Adverse event reporting",
+            "Data collection forms (eCRF)",
+            "Regulatory compliance (GCP)",
+            "Trial progress monitoring"
+          ]
+        }
+      }
+    },
+
+    "MODULE_17_COMMUNITY_HEALTH": {
+      "name": "Community Health & Outreach",
+      "icon": "🏘️",
+      "priority": "MEDIUM - For public health programs",
+      
+      "features": {
+        "community_health_worker_management": {
+          "description": "Manage CHWs, home visits, community programs",
+          "features": [
+            "CHW registration and assignment (to communities)",
+            "Home visit scheduling",
+            "Mobile data collection (offline-first)",
+            "Household registration",
+            "Referral to facility",
+            "Commodity tracking (CHW drug stock)",
+            "CHW performance dashboard"
+          ]
+        },
+        
+        "mobile_clinic_management": {
+          "description": "Manage mobile/outreach clinics",
+          "features": [
+            "Outreach planning (location, date, services)",
+            "Team assignment",
+            "Patient registration on-site (offline mode)",
+            "Services delivered tracking",
+            "Stock management for mobile clinic",
+            "Follow-up tracking"
+          ]
+        },
+        
+        "health_education": {
+          "features": [
+            "Educational content library (videos, PDFs)",
+            "Community health talks tracking",
+            "IEC material distribution",
+            "Health education sessions (log attendance, topics)"
+          ]
+        }
+      }
+    },
+
+    "MODULE_18_INTEGRATION_MARKETPLACE": {
+      "name": "Integration Marketplace",
+      "icon": "🔌",
+      "priority": "HIGH - Ecosystem building",
+      "description": "Plug-and-play integrations with third-party services",
+      
+      "integrations": {
+        "payment_gateways": {
+          "providers": [
+            {
+              "name": "MTN Mobile Money (Ghana)",
+              "use": "Mobile money payments",
+              "setup": "Merchant ID, API Key"
+            },
+            {
+              "name": "Vodafone Cash (Ghana)",
+              "use": "Mobile money payments"
+            },
+            {
+              "name": "AirtelTigo Money (Ghana)",
+              "use": "Mobile money payments"
+            },
+            {
+              "name": "Paystack",
+              "use": "Cards + Mobile Money (MTN, Vodafone, AirtelTigo)",
+              "regions": "Ghana, Nigeria, South Africa"
+            },
+            {
+              "name": "Flutterwave",
+              "use": "Pan-African payments (cards, mobile money, bank transfer)"
+            },
+            {
+              "name": "Stripe",
+              "use": "International cards"
+            },
+            {
+              "name": "PayPal",
+              "use": "International payments"
+            }
+          ],
+          "multi_level_config": {
+            "super_admin_level": {
+              "description": "Super Admin sets up default payment gateways for all tenants",
+              "config": {
+                "default_gateway": "Paystack",
+                "credentials": {
+                  "paystack_public_key": "pk_live_xxx",
+                  "paystack_secret_key": "sk_live_xxx"
+                },
+                "allow_tenant_override": true
+              },
+              "use_case": "SaaS provider gets commission on all payments via their Paystack account"
+            },
+            "tenant_level": {
+              "description": "Individual hospitals can use their own payment gateway credentials",
+              "config": {
+                "use_super_admin_gateway": false,
+                "own_gateway": "MTN Mobile Money",
+                "credentials": {
+                  "mtn_merchant_id": "HOSP123",
+                  "mtn_api_key": "xxx"
+                }
+              },
+              "use_case": "Hospital wants payments to go directly to their account"
+            }
+          }
+        },
+        
+        "sms_gateways": {
+          "providers": [
+            {
+              "name": "Hubtel (Ghana)",
+              "use": "SMS in Ghana",
+              "features": ["Bulk SMS", "2-way SMS", "Delivery reports"],
+              "cost": "~₵0.02 per SMS"
+            },
+            {
+              "name": "Twilio",
+              "use": "Global SMS",
+              "features": ["SMS", "WhatsApp", "Voice calls"]
+            },
+            {
+              "name": "Africa's Talking",
+              "use": "Africa-wide SMS"
+            },
+            {
+              "name": "Infobip",
+              "use": "Global omnichannel (SMS, WhatsApp, Viber)"
+            }
+          ],
+          "multi_level_config": {
+            "super_admin_level": {
+              "description": "Super Admin provides default SMS gateway",
+              "config": {
+                "default_provider": "Hubtel",
+                "credentials": {
+                  "hubtel_client_id": "xxx",
+                  "hubtel_client_secret": "xxx",
+                  "sender_id": "SmartMed"
+                },
+                "allow_tenant_override": true
+              }
+            },
+            "tenant_level": {
+              "description": "Hospital can use own SMS gateway",
+              "config": {
+                "use_own_gateway": true,
+                "provider": "Hubtel",
+                "credentials": {
+                  "hubtel_client_id": "hospital_xxx",
+                  "sender_id": "HospitalName"
+                }
+              }
+            }
+          }
+        },
+        
+        "email_providers": {
+          "providers": [
+            {
+              "name": "SendGrid",
+              "use": "Transactional emails",
+              "features": ["Templates", "Analytics", "99% deliverability"]
+            },
+            {
+              "name": "Mailgun",
+              "use": "Developer-friendly email API"
+            },
+            {
+              "name": "AWS SES",
+              "use": "Cost-effective email ($0.10 per 1000 emails)"
+            },
+            {
+              "name": "Custom SMTP",
+              "use": "Use hospital's own email server"
+            }
+          ],
+          "multi_level_config": {
+            "super_admin_level": {
+              "default_provider": "SendGrid",
+              "credentials": {
+                "sendgrid_api_key": "xxx"
+              },
+              "from_email": "notifications@smartmed.com",
+              "allow_tenant_override": true
+            },
+            "tenant_level": {
+              "use_own_provider": true,
+              "provider": "Custom SMTP",
+              "credentials": {
+                "smtp_host": "mail.hospital.com",
+                "smtp_port": 587,
+                "smtp_username": "noreply@hospital.com",
+                "smtp_password": "xxx"
+              },
+              "from_email": "info@hospital.com"
+            }
+          }
+        },
+        
+        "laboratory_equipment": {
+          "description": "Connect lab analyzers to auto-import results",
+          "protocols": ["HL7", "ASTM"],
+          "supported_devices": [
+            "Mindray hematology analyzers",
+            "Sysmex analyzers",
+            "Roche chemistry analyzers",
+            "Abbott analyzers"
+          ]
+        },
+        
+        "accounting_software": {
+          "integrations": [
+            {
+              "name": "QuickBooks",
+              "use": "Sync revenue, expenses, invoices"
+            },
+            {
+              "name": "Xero",
+              "use": "Cloud accounting sync"
+            },
+            {
+              "name": "Sage",
+              "use": "Enterprise accounting"
+            }
+          ]
+        },
+        
+        "erp_systems": {
+          "integrations": [
+            "SAP",
+            "Oracle ERP",
+            "Microsoft Dynamics"
+          ],
+          "use_case": "Large hospital chains with existing ERP"
+        }
+      }
+    },
+
+    "MODULE_19_MOBILE_HEALTH": {
+      "name": "Mobile Health (mHealth)",
+      "icon": "📱",
+      "priority": "HIGH - Patient engagement",
+      
+      "features": {
+        "patient_mobile_app": {
+          "platforms": ["iOS", "Android"],
+          "features": [
+            "Book appointments",
+            "View medical records",
+            "Access lab results",
+            "Chat with AI bot",
+            "Telemedicine consultations",
+            "Medication reminders",
+            "Track vitals (BP, glucose, weight)",
+            "Pay bills (mobile money)",
+            "Download receipts",
+            "Find hospital branches",
+            "Emergency contacts"
+          ]
+        },
+        
+        "doctor_mobile_app": {
+          "features": [
+            "View schedule",
+            "Access patient records on-the-go",
+            "E-prescribing",
+            "View lab results",
+            "Telemedicine consultations",
+            "Clinical decision support",
+            "Notifications (critical labs, stat orders)"
+          ]
+        },
+        
+        "field_worker_app": {
+          "description": "For CHWs, outreach teams",
+          "features": [
+            "Offline mode (work without internet)",
+            "Patient registration",
+            "Data collection forms",
+            "GPS tracking (visits)",
+            "Photo capture (documentation)",
+            "Sync when online"
+          ]
+        }
+      }
+    },
+
+    "MODULE_20_WHITE_LABEL_RESELLER": {
+      "name": "White Label & Reseller Management",
+      "icon": "🏷️",
+      "priority": "HIGH - SaaS growth",
+      "description": "Allow partners to resell SmartMed under their own brand",
+      
+      "features": {
+        "white_labeling": {
+          "customizations": [
+            "Custom logo",
+            "Custom colors/theme",
+            "Custom domain (partner.com instead of smartmed.com)",
+            "Custom email templates (from partner's domain)",
+            "Custom mobile app (partner's branding)",
+            "Hide 'Powered by SmartMed' (optional)"
+          ],
+          "use_case": "Hospital association wants to offer HMS to member hospitals under their brand"
+        },
+        
+        "reseller_portal": {
+          "description": "Portal for partners who resell SmartMed",
+          "features": [
+            "Reseller dashboard",
+            "Commission tracking (e.g., 20% of subscription fees)",
+            "Customer management (their tenants)",
+            "White label configuration",
+            "Sales reports",
+            "Marketing materials download",
+            "Support ticket management"
+          ]
+        },
+        
+        "multi_tier_pricing": {
+          "description": "Different pricing for different resellers",
+          "example": {
+            "tier_1_reseller": "Gets SmartMed at 50% discount, resells at full price, keeps 50% margin",
+            "tier_2_reseller": "Gets 30% discount, keeps 30% margin",
+            "direct_customer": "Pays full price to SmartMed"
+          }
+        }
+      }
+    }
+  },
+
+  "saas_infrastructure": {
+    
+    "multi_level_api_configuration": {
+      "description": "3-tier API configuration: Super Admin → Tenant → Branch",
+      
+      "architecture": {
+        "level_1_super_admin": {
+          "role": "SaaS Provider (SmartMed)",
+          "controls": [
+            "Set default APIs for all tenants",
+            "Provision API credentials",
+            "Monitor API usage across all tenants",
+            "Set API rate limits",
+            "Revenue sharing (collect commission on payments)",
+            "Choose whether tenants can override"
+          ],
+          "config_example": {
+            "payment_gateway": {
+              "default_provider": "Paystack",
+              "super_admin_credentials": {
+                "paystack_public_key": "pk_live_superadmin_xxx",
+                "paystack_secret_key": "sk_live_superadmin_xxx"
+              },
+              "commission_rate": "2% of all transactions",
+              "allow_tenant_override": true
+            },
+            "sms_gateway": {
+              "default_provider": "Hubtel",
+              "super_admin_credentials": {
+                "hubtel_client_id": "superadmin_xxx",
+                "sender_id": "SmartMed"
+              },
+              "rate": "₵0.03 per SMS (markup)",
+              "allow_tenant_override": true
+            },
+            "email_provider": {
+              "default_provider": "SendGrid",
+              "credentials": {
+                "sendgrid_api_key": "SG.superadmin_xxx"
+              },
+              "from_email": "notifications@smartmed.com",
+              "allow_tenant_override": false
+            }
+          }
+        },
+        
+        "level_2_tenant": {
+          "role": "Hospital (Customer)",
+          "controls": [
+            "Use super admin APIs (default) OR",
+            "Configure own APIs (if allowed)",
+            "Set API preferences per module",
+            "Monitor own API usage",
+            "API cost tracking"
+          ],
+          "config_example": {
+            "scenario_1_use_super_admin": {
+              "payment_gateway": "Use SmartMed default (Paystack)",
+              "benefit": "No setup needed, works immediately",
+              "downside": "SmartMed takes 2% commission"
+            },
+            "scenario_2_own_credentials": {
+              "payment_gateway": "Use own MTN Mobile Money account",
+              "setup": {
+                "provider": "MTN Mobile Money",
+                "tenant_credentials": {
+                  "mtn_merchant_id": "HOSPITAL123",
+                  "mtn_api_key": "hospital_xxx"
+                }
+              },
+              "benefit": "Payments go directly to hospital, no commission",
+              "requirement": "Hospital has MTN merchant account"
+            }
+          }
+        },
+        
+        "level_3_branch": {
+          "role": "Hospital Branch",
+          "controls": [
+            "Use tenant's API config (default) OR",
+            "Use branch-specific config (rare)",
+            "Example: Main hospital uses MTN MoMo, Branch uses Vodafone Cash"
+          ]
+        }
+      },
+      
+      "database_schema": {
+        "api_configurations_table": {
+          "columns": [
+            "id",
+            "config_level (super_admin, tenant, branch)",
+            "config_owner_id (NULL for super_admin, tenant_id, branch_id)",
+            "api_type (payment, sms, email)",
+            "provider (Paystack, Hubtel, SendGrid, etc.)",
+            "credentials_encrypted (JSON with API keys)",
+            "is_active",
+            "allow_override (boolean - can lower levels override?)",
+            "created_at",
+            "updated_at"
+          ]
+        },
+        
+        "api_resolution_logic": {
+          "pseudocode": "
+            function getAPIConfig(tenantId, branchId, apiType) {
+              // 1. Check branch level
+              branchConfig = findConfig(level='branch', ownerId=branchId, apiType)
+              if (branchConfig && branchConfig.is_active) return branchConfig
+              
+              // 2. Check tenant level
+              tenantConfig = findConfig(level='tenant', ownerId=tenantId, apiType)
+              if (tenantConfig && tenantConfig.is_active) return tenantConfig
+              
+              // 3. Fall back to super admin default
+              superAdminConfig = findConfig(level='super_admin', apiType)
+              return superAdminConfig
+            }
+          "
+        }
+      },
+      
+      "ui_components": {
+        "super_admin_api_settings": {
+          "route": "/super-admin/api-settings",
+          "features": [
+            "Configure default APIs",
+            "Monitor API usage across all tenants",
+            "View revenue from API commissions",
+            "Enable/disable tenant overrides"
+          ]
+        },
+        
+        "tenant_api_settings": {
+          "route": "/settings/integrations",
+          "features": [
+            "View current API configuration (inherited or own)",
+            "Switch to own APIs (if allowed)",
+            "Test API connections",
+            "View API usage and costs"
+          ]
+        }
+      }
+    },
+
+    "advanced_saas_features": {
+      
+      "tenant_provisioning": {
+        "automated_setup": {
+          "workflow": [
+            "1. New hospital signs up (name, email, subdomain)",
+            "2. System auto-creates: Database schema, Admin user, Default settings",
+            "3. Send welcome email with login credentials",
+            "4. Trigger onboarding wizard on first login"
+          ],
+          "subdomain": "hospital-name.smartmed.com (or custom domain)"
+        }
+      },
+      
+      "usage_based_billing": {
+        "pricing_models": [
+          {
+            "model": "Per user per month",
+            "example": "₵50/user/month"
+          },
+          {
+            "model": "Per patient per month",
+            "example": "₵1 per active patient"
+          },
+          {
+            "model": "Tiered pricing",
+            "tiers": [
+              "Starter: 1-50 patients/month - ₵500/month",
+              "Growth: 51-200 patients - ₵1,500/month",
+              "Professional: 201-500 patients - ₵3,500/month",
+              "Enterprise: 500+ patients - Custom"
+            ]
+          },
+          {
+            "model": "Usage-based add-ons",
+            "add_ons": [
+              "SMS: ₵0.05 per SMS",
+              "Telemedicine: ₵5 per video consultation",
+              "AI features: ₵500/month additional"
+            ]
+          }
+        ],
+        
+        "metering": {
+          "track": [
+            "Number of users",
+            "Number of patients registered",
+            "SMS sent",
+            "Storage used (GB)",
+            "API calls",
+            "Telemedicine minutes"
+          ],
+          "billing_cycle": "Monthly, Auto-charge via payment gateway"
+        }
+      },
+      
+      "resource_limits": {
+        "enforce_limits_by_plan": {
+          "starter_plan": {
+            "max_users": 10,
+            "max_branches": 1,
+            "max_patients": 1000,
+            "storage": "10 GB",
+            "sms_per_month": 500,
+            "features": ["Basic HMS", "No AI features"]
+          },
+          "professional_plan": {
+            "max_users": 50,
+            "max_branches": 5,
+            "max_patients": "Unlimited",
+            "storage": "100 GB",
+            "sms_per_month": 5000,
+            "features": ["All HMS features", "AI features", "Telemedicine"]
+          },
+          "enterprise_plan": {
+            "max_users": "Unlimited",
+            "max_branches": "Unlimited",
+            "max_patients": "Unlimited",
+            "storage": "1 TB+",
+            "features": ["Everything", "White-label", "API access", "Dedicated support"]
+          }
+        }
+      },
+      
+      "subscription_management": {
+        "features": [
+          "Plan upgrades/downgrades",
+          "Prorated billing",
+          "Auto-renewal",
+          "Grace period (3 days after payment failure)",
+          "Suspend account (if payment fails after grace period)",
+          "Reactivate account (upon payment)",
+          "Cancellation (with data export option)"
+        ]
+      },
+      
+      "data_isolation": {
+        "approach": "Shared database, Row-Level Security (RLS)",
+        "all_tables_have": "organization_id, branch_id",
+        "queries_always_filter": "WHERE organization_id = :current_tenant_id",
+        "security": "Tenant A cannot see Tenant B's data"
+      }
+    }
+  },
+
+  "additional_advanced_features": {
+    
+    "ai_powered_features_summary": {
+      "clinical_ai": [
+        "🤖 AI Clinical Decision Support",
+        "🤖 AI Drug Interaction Checker",
+        "🤖 AI Triage Scoring",
+        "🤖 AI Lab Result Interpretation",
+        "🤖 AI X-Ray Analysis",
+        "🤖 AI Voice-to-Text",
+        "🤖 AI ICD-10 Coding"
+      ],
+      "operational_ai": [
+        "🤖 AI Inventory Forecasting",
+        "🤖 AI Patient Deterioration Prediction",
+        "🤖 AI Staff Scheduling Optimizer",
+        "🤖 AI Bed Allocation",
+        "🤖 AI Revenue Prediction"
+      ],
+      "patient_engagement_ai": [
+        "🤖 AI Chatbot (24/7)",
+        "🤖 AI Duplicate Detection",
+        "🤖 AI Churn Prediction",
+        "🤖 AI Personalized Recommendations"
+      ],
+      "public_health_ai": [
+        "🤖 AI Outbreak Prediction",
+        "🤖 AI Disease Hotspot Identification",
+        "🤖 AI Resource Allocation Optimizer"
+      ]
+    },
+    
+    "advanced_analytics": {
+      "features": [
+        "Executive Dashboard (CEO view)",
+        "Clinical Dashboard (Medical Director view)",
+        "Financial Dashboard (CFO view)",
+        "Operations Dashboard (COO view)",
+        "Predictive Analytics (future trends)",
+        "Comparative Analytics (benchmark against similar hospitals)",
+        "Real-time alerts",
+        "Custom report builder"
+      ]
+    },
+    
+    "compliance_certifications": {
+      "security": [
+        "HIPAA compliance (US)",
+        "GDPR compliance (EU)",
+        "Ghana Data Protection Act compliance",
+        "ISO 27001 (Information Security)",
+        "SOC 2 Type II"
+      ],
+      "clinical": [
+        "HL7 FHIR compliant",
+        "ICD-10 certified",
+        "LOINC for lab codes",
+        "SNOMED CT for clinical terms"
+      ]
+    },
+    
+    "disaster_recovery": {
+      "features": [
+        "Daily automated backups",
+        "Multi-region data replication",
+        "99.9% uptime SLA",
+        "RTO: 4 hours (Recovery Time Objective)",
+        "RPO: 1 hour (Recovery Point Objective)",
+        "Backup retention: 30 days"
+      ]
+    },
+    
+    "api_for_developers": {
+      "description": "RESTful API for custom integrations",
+      "features": [
+        "Complete API documentation (Swagger)",
+        "API keys for tenants",
+        "Webhooks (notify external systems on events)",
+        "Rate limiting",
+        "SDK for popular languages (Python, JavaScript, PHP)",
+        "Sandbox environment for testing"
+      ],
+      "use_cases": [
+        "Build custom mobile apps",
+        "Integrate with hospital website",
+        "Connect to existing systems",
+        "Data extraction for analytics"
+      ]
+    }
+  },
+
+  "competitive_positioning": {
+    "smartmed_vs_competitors": {
+      "traditional_hms": {
+        "features": "Basic HMS",
+        "ai": "None",
+        "telemedicine": "None",
+        "public_health": "None",
+        "deployment": "On-premise (expensive)",
+        "price": "High (₵50,000+ upfront)"
+      },
+      "smartmed_ultimate": {
+        "features": "Complete Ecosystem (20+ modules)",
+        "ai": "20+ AI features across all modules",
+        "telemedicine": "Built-in",
+        "public_health": "Complete",
+        "marketing_crm": "Built-in",
+        "deployment": "Cloud SaaS (pay monthly)",
+        "price": "Affordable (from ₵500/month)",
+        "differentiators": [
+          "ONLY AI-powered HMS in Ghana",
+          "ONLY system with telemedicine + public health + marketing",
+          "Built specifically for Ghana (NHIS, Ghana Card, local languages)",
+          "Complete ecosystem (no need for 5 different systems)"
+        ]
+      }
+    }
+  },
+
+  "go_to_market_strategy": {
+    "target_segments": [
+      {
+        "segment": "Small private clinics",
+        "size": "1-3 doctors",
+        "pain": "Using Excel, paper records",
+        "pitch": "Get professional HMS for ₵500/month. Start accepting mobile money payments.",
+        "plan": "Starter Plan"
+      },
+      {
+        "segment": "Medium hospitals",
+        "size": "10-50 doctors",
+        "pain": "Old expensive HMS, no integration",
+        "pitch": "SmartMed has AI, telemedicine, and NHIS integration. Switch and save 60%.",
+        "plan": "Professional Plan"
+      },
+      {
+        "segment": "Hospital chains",
+        "size": "Multiple branches",
+        "pain": "Each branch different system, no consolidated view",
+        "pitch": "One SmartMed instance for all branches. AI-powered insights across the chain.",
+        "plan": "Enterprise Plan"
+      },
+      {
+        "segment": "Government/NGO health programs",
+        "pain": "Need disease surveillance, immunization tracking",
+        "pitch": "SmartMed has complete public health module. Real-time DHIMS2 reporting.",
+        "plan": "Public Health Edition"
+      },
+      {
+        "segment": "Resellers/Partners",
+        "type": "Hospital associations, health tech companies, consultants",
+        "pitch": "White-label SmartMed under your brand. Earn 30-50% commission.",
+        "plan": "Reseller Program"
+      }
+    ]
+  },
+
+  "pricing_summary": {
+    "plans": [
+      {
+        "plan": "Starter",
+        "price": "₵500/month",
+        "for": "Small clinics (1-3 doctors)",
+        "includes": "Basic HMS, 10 users, 1 branch, 500 SMS/month"
+      },
+      {
+        "plan": "Professional",
+        "price": "₵2,500/month",
+        "for": "Medium hospitals (10-50 doctors)",
+        "includes": "All HMS + AI features + Telemedicine, 50 users, 5 branches"
+      },
+      {
+        "plan": "Enterprise",
+        "price": "Custom",
+        "for": "Large hospitals, chains",
+        "includes": "Everything + White-label + API + Dedicated support"
+      },
+      {
+        "plan": "Public Health Edition",
+        "price": "₵3,000/month",
+        "for": "Government, NGOs",
+        "includes": "HMS + Public Health + Disease surveillance + Immunization"
+      }
+    ],
+    "add_ons": [
+      "AI Features Pack: +₵500/month",
+      "Telemedicine: +₵500/month",
+      "Marketing & CRM: +₵300/month",
+      "Extra SMS: ₵0.05/SMS",
+      "Extra storage: ₵50/10GB"
+    ]
+  },
+
+  "implementation_roadmap": {
+    "current_status": "Core HMS 75% complete",
+    "phase_1_complete_core": {
+      "duration": "8 weeks",
+      "modules": "Complete all existing modules to 95%+"
+    },
+    "phase_2_ai_features": {
+      "duration": "8 weeks",
+      "features": "Add 10 quick-win AI features"
+    },
+    "phase_3_telemedicine": {
+      "duration": "6 weeks",
+      "features": "Video consultation, remote monitoring"
+    },
+    "phase_4_public_health": {
+      "duration": "6 weeks",
+      "features": "Disease surveillance, immunization registry"
+    },
+    "phase_5_marketing_crm": {
+      "duration": "4 weeks",
+      "features": "Campaigns, loyalty, feedback"
+    },
+    "phase_6_advanced": {
+      "duration": "8 weeks",
+      "features": "Community health, research, white-label"
+    },
+    "total_to_ultimate": "40 weeks (10 months) to SmartMed Ultimate"
+  }
+}

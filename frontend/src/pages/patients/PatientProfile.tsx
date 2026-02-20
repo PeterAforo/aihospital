@@ -100,7 +100,7 @@ function PatientHeader({ patient, onEdit, onPhotoClick }: { patient: PatientData
         </head>
         <body>
           <div class="card">
-            <div class="logo">MediCare Ghana</div>
+            <div class="logo">SmartMed</div>
             <div class="header">
               <div class="avatar">${patient.firstName[0]}${patient.lastName[0]}</div>
               <div>

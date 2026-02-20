@@ -40,7 +40,7 @@ export default function Step7Welcome() {
         transition={{ delay: 0.2 }}
         style={{ fontSize: '2rem', fontWeight: 700, color: '#1f2937', marginBottom: '1rem' }}
       >
-        🎉 Welcome to MediCare Ghana!
+        🎉 Welcome to SmartMed!
       </motion.h2>
 
       <motion.p

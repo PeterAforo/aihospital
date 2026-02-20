@@ -109,6 +109,30 @@ import RegistrationWizard from './pages/registration/RegistrationWizard';
 // Setup Wizard
 import SetupWizard from './pages/setup/SetupWizard';
 
+// Procurement
+import ProcurementPage from './pages/procurement/ProcurementPage';
+
+// AI Dashboard
+import AIDashboardPage from './pages/ai/AIDashboardPage';
+
+// Telemedicine
+import TelemedicinePage from './pages/telemedicine/TelemedicinePage';
+
+// Public Health
+import PublicHealthPage from './pages/public-health/PublicHealthPage';
+
+// API Settings
+import ApiSettingsPage from './pages/settings/ApiSettingsPage';
+
+// CRM
+import CRMPage from './pages/crm/CRMPage';
+
+// Community Health
+import CommunityHealthPage from './pages/community-health/CommunityHealthPage';
+
+// Research
+import ResearchPage from './pages/research/ResearchPage';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -222,6 +246,30 @@ function App() {
 
         {/* HR & Payroll */}
         <Route path="/hr" element={<HRDashboard />} />
+
+        {/* Procurement & Supply Chain */}
+        <Route path="/procurement" element={<ProcurementPage />} />
+
+        {/* AI Dashboard */}
+        <Route path="/ai" element={<AIDashboardPage />} />
+
+        {/* Telemedicine */}
+        <Route path="/telemedicine" element={<TelemedicinePage />} />
+
+        {/* Public Health */}
+        <Route path="/public-health" element={<PublicHealthPage />} />
+
+        {/* API Settings */}
+        <Route path="/api-settings" element={<ApiSettingsPage />} />
+
+        {/* CRM */}
+        <Route path="/crm" element={<CRMPage />} />
+
+        {/* Community Health */}
+        <Route path="/community-health" element={<CommunityHealthPage />} />
+
+        {/* Research */}
+        <Route path="/research" element={<ResearchPage />} />
 
         {/* Patient Portal */}
         <Route path="/portal" element={<PortalRedirect />} />

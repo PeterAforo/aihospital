@@ -84,6 +84,7 @@ model Tenant {
   serviceCatalog        ServiceCatalog[]
   discountSchemes       DiscountScheme[]
   categoryProfitSettings CategoryProfitSettings[]
+  saasSubscriptions      SaasSubscription[]
 
   @@map("tenants")
 }
@@ -255,10 +256,6 @@ model User {
 
   // Pharmacy relations
   dispensingRecords     DispensingRecord[]  @relation("DispensingUser")
-  stockMovements        StockMovement[]     @relation("StockMovementUser")
-  purchaseOrdersCreated PurchaseOrder[]     @relation("POCreatedBy")
-  purchaseOrdersApproved PurchaseOrder[]    @relation("POApprovedBy")
-  purchaseOrdersReceived PurchaseOrder[]    @relation("POReceivedBy")
   transfersRequested    StockTransfer[]     @relation("TransferRequestedBy")
   transfersApproved     StockTransfer[]     @relation("TransferApprovedBy")
   transfersReceived     StockTransfer[]     @relation("TransferReceivedBy")
@@ -279,6 +276,9 @@ model User {
 
   // CDS relations
   cdsOverrides           CDSAlertLog[]        @relation("CDSOverrides")
+
+  // Telemedicine relations
+  teleconsultSessions    TeleconsultSession[] @relation("TeleconsultDoctor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -567,6 +567,13 @@ model Patient {
   pregnancies        Pregnancy[]
   erVisits           ERVisit[]
   cdsAlertLogs       CDSAlertLog[]
+  teleconsultSessions TeleconsultSession[]
+  remoteReadings     RemoteMonitoringReading[]
+  eConsultations     EConsultation[]
+  diseaseNotifications DiseaseNotification[]
+  immunizationRecords ImmunizationRecord[]
+  feedback            PatientFeedback[]
+  loyaltyAccount      LoyaltyAccount?
 
   @@unique([tenantId, mrn])
   @@unique([tenantId, ghanaCardNumber])
@@ -1430,8 +1437,6 @@ model Drug {
   prescriptionItems    PrescriptionItem[]
   stockItems           PharmacyStock[]
   dispensingRecords    DispensingRecord[]
-  stockMovements       StockMovement[]
-  purchaseOrderItems   PurchaseOrderItem[]
   stockTransferItems   StockTransferItem[]
 
   @@index([genericName])
@@ -2298,99 +2303,8 @@ model DispensingRecord {
   @@map("dispensing_records")
 }
 
-model StockMovement {
-  id            String   @id @default(uuid())
-  tenantId      String
-  branchId      String
-  drugId        String
-  batchNumber   String?
-  movementType  String   // RECEIPT, DISPENSE, ADJUSTMENT, TRANSFER_IN, TRANSFER_OUT, EXPIRED, DAMAGED
-  quantity      Int
-  balanceBefore Int
-  balanceAfter  Int
-  referenceType String?
-  referenceId   String?
-  reason        String?
-  performedBy   String
-  performedAt   DateTime @default(now())
-  createdAt     DateTime @default(now())
-
-  drug            Drug @relation(fields: [drugId], references: [id])
-  performedByUser User @relation("StockMovementUser", fields: [performedBy], references: [id])
-
-  @@index([tenantId, branchId, performedAt])
-  @@index([drugId])
-  @@map("stock_movements")
-}
-
-model Supplier {
-  id            String   @id @default(uuid())
-  tenantId      String
-  name          String
-  contactPerson String?
-  phone         String?
-  email         String?
-  address       String?
-  paymentTerms  String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  purchaseOrders PurchaseOrder[]
-
-  @@index([tenantId])
-  @@map("suppliers")
-}
-
-model PurchaseOrder {
-  id           String    @id @default(uuid())
-  tenantId     String
-  branchId     String
-  supplierId   String
-  orderNumber  String    @unique
-  orderDate    DateTime  @default(now())
-  expectedDate DateTime?
-  status       String    @default("DRAFT")
-  totalAmount  Float     @default(0)
-  notes        String?
-  createdBy    String
-  approvedBy   String?
-  approvedAt   DateTime?
-  receivedBy   String?
-  receivedAt   DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  supplier        Supplier            @relation(fields: [supplierId], references: [id])
-  createdByUser   User                @relation("POCreatedBy", fields: [createdBy], references: [id])
-  approvedByUser  User?               @relation("POApprovedBy", fields: [approvedBy], references: [id])
-  receivedByUser  User?               @relation("POReceivedBy", fields: [receivedBy], references: [id])
-  items           PurchaseOrderItem[]
-
-  @@index([tenantId, orderDate])
-  @@index([status])
-  @@map("purchase_orders")
-}
-
-model PurchaseOrderItem {
-  id               String    @id @default(uuid())
-  purchaseOrderId  String
-  drugId           String
-  quantityOrdered  Int
-  quantityReceived Int       @default(0)
-  unitCost         Float
-  totalCost        Float
-  batchNumber      String?
-  expiryDate       DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  drug          Drug          @relation(fields: [drugId], references: [id])
-
-  @@index([purchaseOrderId])
-  @@map("purchase_order_items")
-}
+// Old pharmacy StockMovement, Supplier, PurchaseOrder, PurchaseOrderItem
+// replaced by comprehensive Procurement & Supply Chain models below Equipment section
 
 model StockTransfer {
   id             String    @id @default(uuid())
@@ -3842,6 +3756,328 @@ model RequisitionItem {
   @@map("requisition_items")
 }
 
+// ==================== PROCUREMENT & SUPPLY CHAIN ====================
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  PARTIALLY_RECEIVED
+  FULLY_RECEIVED
+  CANCELLED
+}
+
+enum GRNStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED_GRN
+}
+
+enum StockMovementType {
+  PURCHASE_GRN
+  ISSUE_TO_DEPARTMENT
+  TRANSFER
+  ADJUSTMENT
+  DISPENSING
+  EXPIRED_WRITE_OFF
+  DAMAGED_WRITE_OFF
+  RETURN_TO_STORE
+  OPENING_BALANCE
+}
+
+model Supplier {
+  id              String   @id @default(uuid())
+  tenantId        String
+  supplierName    String
+  supplierCode    String
+  contactPerson   String?
+  phone           String?
+  email           String?
+  address         String?
+  supplierType    String?  // DRUGS, MEDICAL_SUPPLIES, EQUIPMENT, REAGENTS, FOOD
+  paymentTerms    String?  // NET_30, CASH_ON_DELIVERY, etc.
+  taxId           String?
+  bankDetails     Json?
+  isApproved      Boolean  @default(false)
+  rating          Int?     // 1-5
+  notes           String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  purchaseOrders        PurchaseOrder[]
+  goodsReceivedNotes    GoodsReceivedNote[]
+  centralInventoryBatches CentralInventoryBatch[]
+
+  @@unique([tenantId, supplierCode])
+  @@index([tenantId, isApproved])
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id                    String              @id @default(uuid())
+  tenantId              String
+  branchId              String?
+  poNumber              String
+  supplierId            String
+  orderDate             DateTime            @default(now())
+  expectedDeliveryDate  DateTime?
+  requestedBy           String
+  approvedBy            String?
+  approvedAt            DateTime?
+  status                PurchaseOrderStatus @default(DRAFT)
+  paymentTerms          String?
+  deliveryLocation      String?
+  notes                 String?
+  subtotal              Float               @default(0)
+  taxAmount             Float               @default(0)
+  discountAmount        Float               @default(0)
+  totalAmount           Float               @default(0)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  supplier              Supplier            @relation(fields: [supplierId], references: [id])
+  items                 PurchaseOrderItem[]
+  goodsReceivedNotes    GoodsReceivedNote[]
+
+  @@unique([tenantId, poNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, supplierId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id                String  @id @default(uuid())
+  purchaseOrderId   String
+  itemType          String  // DRUG, MEDICAL_SUPPLY, REAGENT, EQUIPMENT
+  itemId            String? // FK to drug formulary or inventory item catalog
+  itemName          String
+  quantityOrdered   Int
+  unitOfMeasure     String  // TABLETS, VIALS, BOXES, UNITS, etc.
+  unitCost          Float
+  lineTotal         Float
+  taxRate           Float   @default(0)
+  notes             String?
+
+  purchaseOrder     PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  goodsReceivedItems GoodsReceivedItem[]
+
+  @@index([purchaseOrderId])
+  @@map("purchase_order_items")
+}
+
+model GoodsReceivedNote {
+  id                    String    @id @default(uuid())
+  tenantId              String
+  branchId              String?
+  grnNumber             String
+  purchaseOrderId       String?
+  supplierId            String
+  supplierInvoiceNumber String?
+  supplierInvoiceDate   DateTime?
+  receivedDate          DateTime  @default(now())
+  receivedBy            String
+  verifiedBy            String?
+  verifiedAt            DateTime?
+  status                GRNStatus @default(PENDING_VERIFICATION)
+  notes                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  purchaseOrder         PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  supplier              Supplier       @relation(fields: [supplierId], references: [id])
+  items                 GoodsReceivedItem[]
+
+  @@unique([tenantId, grnNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, supplierId])
+  @@map("goods_received_notes")
+}
+
+model GoodsReceivedItem {
+  id                    String    @id @default(uuid())
+  grnId                 String
+  purchaseOrderItemId   String?
+  itemType              String    // DRUG, MEDICAL_SUPPLY, REAGENT
+  itemId                String?
+  itemName              String
+  quantityReceived      Int
+  quantityOrdered       Int?
+  batchNumber           String?
+  expiryDate            DateTime?
+  unitCost              Float
+  lineTotal             Float
+  discrepancy           Int?      // quantityReceived - quantityOrdered
+  qualityCheckPassed    Boolean   @default(true)
+  notes                 String?
+
+  grn                   GoodsReceivedNote  @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  purchaseOrderItem     PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
+
+  @@index([grnId])
+  @@map("goods_received_items")
+}
+
+model CentralInventory {
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  itemType        String   // DRUG, MEDICAL_SUPPLY, LAB_REAGENT, EQUIPMENT, STATIONARY
+  itemId          String?  // FK to drug formulary or inventory item catalog
+  itemName        String
+  itemCode        String?
+  category        String?
+  unitOfMeasure   String?
+  quantityOnHand  Int      @default(0)
+  reorderLevel    Int      @default(0)
+  reorderQuantity Int      @default(0)
+  locationInStore String?  // Shelf/bin number
+  averageCost     Float    @default(0)
+  totalValue      Float    @default(0)
+  lastRestockedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  batches         CentralInventoryBatch[]
+  stockMovements  StockMovement[]
+
+  @@unique([tenantId, itemCode])
+  @@index([tenantId, itemType])
+  @@index([tenantId, quantityOnHand])
+  @@map("central_inventory")
+}
+
+model CentralInventoryBatch {
+  id                  String    @id @default(uuid())
+  centralInventoryId  String
+  batchNumber         String?
+  expiryDate          DateTime?
+  quantity            Int       @default(0)
+  unitCost            Float
+  supplierId          String?
+  receivedDate        DateTime  @default(now())
+  grnId               String?
+  createdAt           DateTime  @default(now())
+
+  centralInventory    CentralInventory @relation(fields: [centralInventoryId], references: [id], onDelete: Cascade)
+  supplier            Supplier?        @relation(fields: [supplierId], references: [id])
+
+  @@index([centralInventoryId, expiryDate])
+  @@map("central_inventory_batches")
+}
+
+model StockIssue {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  branchId            String?
+  issueNumber         String
+  requisitionId       String?
+  issuedToDepartment  String   // PHARMACY, LABORATORY, NURSING, etc.
+  issuedBy            String
+  receivedBy          String?
+  issueDate           DateTime @default(now())
+  notes               String?
+  createdAt           DateTime @default(now())
+
+  items               StockIssueItem[]
+
+  @@unique([tenantId, issueNumber])
+  @@index([tenantId, issuedToDepartment])
+  @@index([tenantId, issueDate])
+  @@map("stock_issues")
+}
+
+model StockIssueItem {
+  id                  String    @id @default(uuid())
+  stockIssueId        String
+  itemType            String
+  itemId              String?
+  itemName            String
+  quantityIssued      Int
+  batchNumber         String?
+  expiryDate          DateTime?
+  unitCost            Float
+  lineTotal           Float
+
+  stockIssue          StockIssue @relation(fields: [stockIssueId], references: [id], onDelete: Cascade)
+
+  @@index([stockIssueId])
+  @@map("stock_issue_items")
+}
+
+model DepartmentStock {
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  department      String   // PHARMACY, LABORATORY, NURSING, etc.
+  itemType        String
+  itemId          String?
+  itemName        String
+  itemCode        String?
+  quantityOnHand  Int      @default(0)
+  reorderLevel    Int      @default(0)
+  locationInDept  String?
+  averageCost     Float    @default(0)
+  totalValue      Float    @default(0)
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  batches         DepartmentStockBatch[]
+
+  @@unique([tenantId, department, itemCode])
+  @@index([tenantId, department])
+  @@index([tenantId, department, quantityOnHand])
+  @@map("department_stock")
+}
+
+model DepartmentStockBatch {
+  id                  String    @id @default(uuid())
+  departmentStockId   String
+  batchNumber         String?
+  expiryDate          DateTime?
+  quantity            Int       @default(0)
+  unitCost            Float
+  stockIssueId        String?
+  createdAt           DateTime  @default(now())
+
+  departmentStock     DepartmentStock @relation(fields: [departmentStockId], references: [id], onDelete: Cascade)
+
+  @@index([departmentStockId, expiryDate])
+  @@map("department_stock_batches")
+}
+
+model StockMovement {
+  id                  String            @id @default(uuid())
+  tenantId            String
+  branchId            String?
+  movementDate        DateTime          @default(now())
+  movementType        StockMovementType
+  itemType            String?
+  itemId              String?
+  centralInventoryId  String?
+  itemName            String
+  batchNumber         String?
+  quantity            Int
+  unitCost            Float?
+  fromLocation        String?  // CENTRAL_STORE, PHARMACY, LABORATORY, etc.
+  toLocation          String?  // PHARMACY, LABORATORY, PATIENT, WASTE, etc.
+  referenceType       String?  // GRN, STOCK_ISSUE, PRESCRIPTION, ADJUSTMENT
+  referenceId         String?
+  performedBy         String
+  notes               String?
+  createdAt           DateTime @default(now())
+
+  centralInventory    CentralInventory? @relation(fields: [centralInventoryId], references: [id])
+
+  @@index([tenantId, movementDate])
+  @@index([tenantId, movementType])
+  @@index([centralInventoryId])
+  @@index([referenceType, referenceId])
+  @@map("stock_movements")
+}
+
 // ==================== EQUIPMENT / ASSET MANAGEMENT ====================
 
 enum AssetStatus {
@@ -4170,4 +4406,678 @@ model FiscalPeriod {
   @@unique([tenantId, name])
   @@index([tenantId, status])
   @@map("fiscal_periods")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE 27: MULTI-LEVEL API CONFIGURATION
+// ═══════════════════════════════════════════════════════════════
+
+enum ApiConfigLevel {
+  SUPER_ADMIN
+  TENANT
+  BRANCH
+}
+
+enum ApiType {
+  PAYMENT
+  SMS
+  EMAIL
+  WHATSAPP
+  LAB_EQUIPMENT
+  ACCOUNTING
+}
+
+model ApiConfiguration {
+  id                  String         @id @default(uuid())
+  configLevel         ApiConfigLevel
+  configOwnerId       String?        // NULL for SUPER_ADMIN, tenantId or branchId
+  apiType             ApiType
+  provider            String         // e.g. "Paystack", "Hubtel", "SendGrid"
+  credentialsEncrypted String        // JSON encrypted blob
+  isActive            Boolean        @default(true)
+  allowOverride       Boolean        @default(true)
+  commissionRate      Float?         // e.g. 0.02 for 2%
+  settings            String?        // JSON extra settings
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@unique([configLevel, configOwnerId, apiType])
+  @@index([configLevel, apiType])
+  @@index([configOwnerId])
+  @@map("api_configurations")
+}
+
+model ApiUsageLog {
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  apiType         ApiType
+  provider        String
+  action          String   // e.g. "sms_sent", "payment_processed", "email_sent"
+  referenceId     String?  // e.g. invoiceId, appointmentId
+  cost            Float?   // cost in GHS
+  commission      Float?   // commission earned
+  status          String   @default("SUCCESS") // SUCCESS, FAILED
+  metadata        String?  // JSON
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId, apiType, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("api_usage_logs")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SAAS SUBSCRIPTION & PLAN MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+model SaasPlan {
+  id              String   @id @default(uuid())
+  name            String   @unique // Starter, Professional, Enterprise, PublicHealth
+  displayName     String
+  price           Float    // monthly price in GHS
+  currency        String   @default("GHS")
+  billingCycle    String   @default("MONTHLY") // MONTHLY, ANNUAL
+  maxUsers        Int?
+  maxBranches     Int?
+  maxPatients     Int?
+  storageGB       Int?
+  smsPerMonth     Int?
+  features        String   // JSON array of feature flags
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  saasSubscriptions SaasSubscription[]
+
+  @@map("saas_plans")
+}
+
+model SaasSubscription {
+  id              String    @id @default(uuid())
+  tenantId        String
+  planId          String
+  status          String    @default("ACTIVE") // ACTIVE, PAST_DUE, SUSPENDED, CANCELLED
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelledAt     DateTime?
+  suspendedAt     DateTime?
+  trialEndsAt     DateTime?
+  paymentMethod   String?   // e.g. "mtn_momo", "paystack_card"
+  paymentReference String?
+  autoRenew       Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan            SaasPlan  @relation(fields: [planId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([currentPeriodEnd])
+  @@map("saas_subscriptions")
+}
+
+model UsageMeter {
+  id              String   @id @default(uuid())
+  tenantId        String
+  metricType      String   // users, patients, sms, storage_gb, api_calls, telemedicine_minutes
+  periodStart     DateTime
+  periodEnd       DateTime
+  currentValue    Int      @default(0)
+  limitValue      Int?     // NULL = unlimited
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId, metricType, periodStart])
+  @@index([tenantId, periodEnd])
+  @@map("usage_meters")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE 21: TELEMEDICINE & VIRTUAL CARE
+// ═══════════════════════════════════════════════════════════════
+
+enum TeleconsultStatus {
+  SCHEDULED
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model TeleconsultSession {
+  id              String             @id @default(uuid())
+  tenantId        String
+  branchId        String
+  appointmentId   String?
+  patientId       String
+  doctorId        String
+  sessionType     String             @default("VIDEO") // VIDEO, AUDIO, E_CONSULT
+  status          TeleconsultStatus  @default(SCHEDULED)
+  scheduledAt     DateTime
+  startedAt       DateTime?
+  endedAt         DateTime?
+  duration        Int?               // minutes
+  roomId          String?            // WebRTC room ID
+  roomUrl         String?            // join URL
+  recordingUrl    String?
+  recordingConsent Boolean           @default(false)
+  notes           String?
+  diagnosis       String?
+  prescriptionId  String?
+  followUpDate    DateTime?
+  billingAmount   Float?
+  invoiceId       String?
+  cancelReason    String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  patient         Patient            @relation(fields: [patientId], references: [id])
+  doctor          User               @relation("TeleconsultDoctor", fields: [doctorId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([doctorId, scheduledAt])
+  @@index([patientId])
+  @@map("teleconsult_sessions")
+}
+
+model RemoteMonitoringReading {
+  id              String   @id @default(uuid())
+  tenantId        String
+  patientId       String
+  readingType     String   // BP, GLUCOSE, WEIGHT, SPO2, TEMPERATURE, HEART_RATE
+  value           Float
+  value2          Float?   // e.g. diastolic BP
+  unit            String
+  readingDate     DateTime @default(now())
+  notes           String?
+  isAbnormal      Boolean  @default(false)
+  alertSent       Boolean  @default(false)
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  patient         Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([tenantId, patientId, readingType])
+  @@index([patientId, readingDate])
+  @@map("remote_monitoring_readings")
+}
+
+model EConsultation {
+  id              String   @id @default(uuid())
+  tenantId        String
+  patientId       String
+  doctorId        String?
+  subject         String
+  symptoms        String
+  attachments     String?  // JSON array of file URLs
+  status          String   @default("PENDING") // PENDING, ASSIGNED, RESPONDED, CLOSED
+  priority        String   @default("NORMAL") // LOW, NORMAL, HIGH
+  patientMessage  String
+  doctorResponse  String?
+  respondedAt     DateTime?
+  prescriptionId  String?
+  billingAmount   Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  patient         Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([patientId])
+  @@map("e_consultations")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE 22: PUBLIC HEALTH & DISEASE SURVEILLANCE
+// ═══════════════════════════════════════════════════════════════
+
+model DiseaseNotification {
+  id                String   @id @default(uuid())
+  tenantId          String
+  branchId          String
+  patientId         String
+  encounterId       String?
+  diseaseName       String   // Cholera, Measles, Meningitis, Yellow Fever, COVID-19, Ebola, Malaria
+  icd10Code         String?
+  diagnosisDate     DateTime
+  onsetDate         DateTime?
+  labConfirmed      Boolean  @default(false)
+  labResultId       String?
+  severity          String   @default("MODERATE") // MILD, MODERATE, SEVERE, CRITICAL, FATAL
+  outcome           String?  // RECOVERED, ADMITTED, REFERRED, DIED
+  outcomeDate       DateTime?
+  reportedBy        String
+  reportedAt        DateTime @default(now())
+  investigatedBy    String?
+  investigatedAt    DateTime?
+  investigationNotes String?
+  ghsReported       Boolean  @default(false)
+  ghsReportedAt     DateTime?
+  ghsReferenceNumber String?
+  contactsTraced    Int?
+  location          String?  // GPS or address
+  status            String   @default("REPORTED") // REPORTED, INVESTIGATING, CONFIRMED, CLOSED
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  patient           Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([tenantId, diseaseName, diagnosisDate])
+  @@index([tenantId, status])
+  @@index([diseaseName, diagnosisDate])
+  @@map("disease_notifications")
+}
+
+model ImmunizationRecord {
+  id              String    @id @default(uuid())
+  tenantId        String
+  patientId       String
+  vaccineName     String    // BCG, OPV, Pentavalent, Measles, Yellow Fever, etc.
+  doseNumber      Int       @default(1)
+  scheduledDate   DateTime?
+  administeredDate DateTime?
+  administeredBy  String?
+  batchNumber     String?
+  manufacturer    String?
+  site            String?   // Left arm, Right thigh, etc.
+  route           String?   // IM, SC, Oral
+  status          String    @default("SCHEDULED") // SCHEDULED, ADMINISTERED, MISSED, DEFAULTED
+  adverseReaction String?
+  nextDueDate     DateTime?
+  reminderSent    Boolean   @default(false)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  patient         Patient   @relation(fields: [patientId], references: [id])
+
+  @@index([tenantId, patientId])
+  @@index([patientId, vaccineName])
+  @@index([status, scheduledDate])
+  @@map("immunization_records")
+}
+
+model OutbreakAlert {
+  id              String   @id @default(uuid())
+  tenantId        String?  // NULL = system-wide
+  diseaseName     String
+  alertLevel      String   @default("WATCH") // WATCH, WARNING, EMERGENCY
+  region          String?
+  district        String?
+  caseCount       Int      @default(0)
+  deathCount      Int      @default(0)
+  thresholdExceeded Boolean @default(false)
+  message         String
+  isActive        Boolean  @default(true)
+  activatedAt     DateTime @default(now())
+  deactivatedAt   DateTime?
+  deactivatedBy   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([diseaseName, isActive])
+  @@index([tenantId, isActive])
+  @@map("outbreak_alerts")
+}
+
+model MassCampaign {
+  id              String   @id @default(uuid())
+  tenantId        String
+  campaignName    String
+  campaignType    String   // IMMUNIZATION, DEWORMING, SCREENING, VITAMIN_A, OTHER
+  targetPopulation String? // e.g. "Children 0-5", "Women 15-49"
+  targetCount     Int?
+  startDate       DateTime
+  endDate         DateTime
+  locations       String?  // JSON array of locations
+  teams           String?  // JSON array of team assignments
+  status          String   @default("PLANNED") // PLANNED, ACTIVE, COMPLETED, CANCELLED
+  reachedCount    Int      @default(0)
+  stockAllocated  String?  // JSON
+  notes           String?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([campaignType, startDate])
+  @@map("mass_campaigns")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE 23: MARKETING, CRM & PATIENT ENGAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+model PatientSegment {
+  id              String   @id @default(uuid())
+  tenantId        String
+  name            String   // New, Active, At-Risk, Inactive, High-Value, Chronic, Pregnant
+  description     String?
+  criteria        String   // JSON filter criteria
+  patientCount    Int      @default(0)
+  isSystem        Boolean  @default(false) // system-generated vs custom
+  lastCalculated  DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("patient_segments")
+}
+
+model MarketingCampaign {
+  id              String   @id @default(uuid())
+  tenantId        String
+  name            String
+  campaignType    String   // HEALTH_AWARENESS, SERVICE_PROMOTION, SEASONAL, APPOINTMENT_REMINDER, CUSTOM
+  channel         String   // SMS, EMAIL, WHATSAPP, IN_APP, MULTI
+  targetSegment   String?  // segment name or custom filter JSON
+  targetCount     Int?
+  sentCount       Int      @default(0)
+  deliveredCount  Int      @default(0)
+  openedCount     Int      @default(0)
+  clickedCount    Int      @default(0)
+  convertedCount  Int      @default(0)
+  messageTemplate String   // message body with {{placeholders}}
+  subject         String?  // for email
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  status          String   @default("DRAFT") // DRAFT, SCHEDULED, SENDING, SENT, CANCELLED
+  abTestVariant   String?  // JSON for A/B test variants
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId, status])
+  @@index([tenantId, campaignType])
+  @@map("marketing_campaigns")
+}
+
+model PatientFeedback {
+  id              String   @id @default(uuid())
+  tenantId        String
+  patientId       String
+  encounterId     String?
+  doctorId        String?
+  feedbackType    String   @default("POST_VISIT") // POST_VISIT, NPS, COMPLAINT, SUGGESTION
+  rating          Int?     // 1-5 stars
+  npsScore        Int?     // 0-10
+  comment         String?
+  categories      String?  // JSON: ["wait_time", "doctor_care", "cleanliness"]
+  sentiment       String?  // POSITIVE, NEUTRAL, NEGATIVE (AI-analyzed)
+  status          String   @default("NEW") // NEW, ACKNOWLEDGED, IN_PROGRESS, RESOLVED
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  resolution      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  patient         Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([tenantId, feedbackType])
+  @@index([tenantId, status])
+  @@index([patientId])
+  @@map("patient_feedback")
+}
+
+model LoyaltyAccount {
+  id              String   @id @default(uuid())
+  tenantId        String
+  patientId       String   @unique
+  tier            String   @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM
+  totalPoints     Int      @default(0)
+  availablePoints Int      @default(0)
+  lifetimeSpend   Float    @default(0)
+  visitCount      Int      @default(0)
+  lastVisitDate   DateTime?
+  enrolledAt      DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  transactions    LoyaltyTransaction[]
+
+  @@index([tenantId, tier])
+  @@map("loyalty_accounts")
+}
+
+model LoyaltyTransaction {
+  id              String   @id @default(uuid())
+  loyaltyAccountId String
+  type            String   // EARN, REDEEM, EXPIRE, BONUS
+  points          Int
+  description     String
+  referenceId     String?  // invoiceId, etc.
+  createdAt       DateTime @default(now())
+
+  account         LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id], onDelete: Cascade)
+
+  @@index([loyaltyAccountId, createdAt])
+  @@map("loyalty_transactions")
+}
+
+model PatientReferral {
+  id              String   @id @default(uuid())
+  tenantId        String
+  referrerId      String   // patient who referred
+  referredId      String?  // patient who was referred (after registration)
+  referralCode    String   @unique
+  status          String   @default("PENDING") // PENDING, REGISTERED, COMPLETED, REWARDED
+  rewardGiven     Boolean  @default(false)
+  rewardAmount    Float?
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  @@index([tenantId, referrerId])
+  @@index([referralCode])
+  @@map("patient_referrals")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE 28: WHITE LABEL & RESELLER MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+model WhiteLabelConfig {
+  id              String   @id @default(uuid())
+  tenantId        String   @unique
+  brandName       String
+  logoUrl         String?
+  faviconUrl      String?
+  primaryColor    String   @default("#2563eb")
+  secondaryColor  String   @default("#1e40af")
+  accentColor     String   @default("#f59e0b")
+  customDomain    String?  @unique
+  customCss       String?
+  emailFromName   String?
+  emailFromAddress String?
+  smsFromName     String?
+  loginPageHtml   String?
+  footerText      String?
+  supportEmail    String?
+  supportPhone    String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("white_label_configs")
+}
+
+model ResellerAccount {
+  id              String   @id @default(uuid())
+  name            String
+  contactName     String
+  email           String   @unique
+  phone           String?
+  companyName     String?
+  website         String?
+  commissionRate  Float    @default(0.30) // 30% default
+  tier            String   @default("STANDARD") // STANDARD, PREMIUM, ENTERPRISE
+  status          String   @default("ACTIVE") // ACTIVE, SUSPENDED, TERMINATED
+  totalRevenue    Float    @default(0)
+  totalCommission Float    @default(0)
+  tenantCount     Int      @default(0)
+  maxTenants      Int?
+  apiKey          String?  @unique
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenants         ResellerTenant[]
+
+  @@map("reseller_accounts")
+}
+
+model ResellerTenant {
+  id              String   @id @default(uuid())
+  resellerId      String
+  tenantId        String   @unique
+  monthlyRevenue  Float    @default(0)
+  commissionPaid  Float    @default(0)
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reseller        ResellerAccount @relation(fields: [resellerId], references: [id])
+
+  @@index([resellerId])
+  @@map("reseller_tenants")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE 24: COMMUNITY HEALTH & OUTREACH
+// ═══════════════════════════════════════════════════════════════
+
+model CommunityHealthWorker {
+  id              String   @id @default(uuid())
+  tenantId        String
+  userId          String?
+  firstName       String
+  lastName        String
+  phone           String
+  email           String?
+  region          String?
+  district        String?
+  community       String?
+  gpsCoordinates  String?
+  assignedHouseholds Int   @default(0)
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE, ON_LEAVE
+  certifications  String?  // JSON
+  lastSyncDate    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  visits          CommunityVisit[]
+
+  @@index([tenantId, status])
+  @@map("community_health_workers")
+}
+
+model CommunityVisit {
+  id              String   @id @default(uuid())
+  tenantId        String
+  workerId        String
+  patientId       String?
+  householdId     String?
+  visitType       String   // HOME_VISIT, SCREENING, FOLLOW_UP, HEALTH_EDUCATION, REFERRAL
+  visitDate       DateTime @default(now())
+  gpsLocation     String?
+  findings        String?  // JSON
+  referralNeeded  Boolean  @default(false)
+  referralReason  String?
+  referralFacility String?
+  followUpDate    DateTime?
+  status          String   @default("COMPLETED") // SCHEDULED, COMPLETED, MISSED, CANCELLED
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  worker          CommunityHealthWorker @relation(fields: [workerId], references: [id])
+
+  @@index([tenantId, workerId, visitDate])
+  @@index([patientId])
+  @@map("community_visits")
+}
+
+model Household {
+  id              String   @id @default(uuid())
+  tenantId        String
+  headOfHousehold String?
+  address         String?
+  community       String?
+  district        String?
+  region          String?
+  gpsCoordinates  String?
+  memberCount     Int      @default(1)
+  hasPregnantWoman Boolean @default(false)
+  hasChildUnder5  Boolean  @default(false)
+  hasElderly      Boolean  @default(false)
+  hasChronicIllness Boolean @default(false)
+  waterSource     String?
+  toiletType      String?
+  riskLevel       String   @default("LOW") // LOW, MEDIUM, HIGH
+  lastVisitDate   DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId, community])
+  @@index([riskLevel])
+  @@map("households")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE 25: RESEARCH & CLINICAL TRIALS
+// ═══════════════════════════════════════════════════════════════
+
+model ClinicalTrial {
+  id              String   @id @default(uuid())
+  tenantId        String
+  trialCode       String   @unique
+  title           String
+  description     String?
+  principalInvestigator String
+  sponsor         String?
+  phase           String?  // Phase I, II, III, IV
+  status          String   @default("PLANNING") // PLANNING, RECRUITING, ACTIVE, COMPLETED, SUSPENDED, TERMINATED
+  startDate       DateTime?
+  endDate         DateTime?
+  targetEnrollment Int?
+  currentEnrollment Int    @default(0)
+  inclusionCriteria String? // JSON
+  exclusionCriteria String? // JSON
+  irbApprovalNumber String?
+  irbApprovalDate DateTime?
+  consentFormUrl  String?
+  protocolUrl     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  participants    TrialParticipant[]
+
+  @@index([tenantId, status])
+  @@map("clinical_trials")
+}
+
+model TrialParticipant {
+  id              String   @id @default(uuid())
+  trialId         String
+  patientId       String
+  enrollmentDate  DateTime @default(now())
+  consentDate     DateTime?
+  consentSigned   Boolean  @default(false)
+  arm             String?  // Treatment arm: A, B, Placebo, etc.
+  status          String   @default("ENROLLED") // SCREENING, ENROLLED, ACTIVE, COMPLETED, WITHDRAWN, EXCLUDED
+  withdrawalDate  DateTime?
+  withdrawalReason String?
+  adverseEvents   String?  // JSON
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  trial           ClinicalTrial @relation(fields: [trialId], references: [id])
+
+  @@unique([trialId, patientId])
+  @@index([patientId])
+  @@map("trial_participants")
 }

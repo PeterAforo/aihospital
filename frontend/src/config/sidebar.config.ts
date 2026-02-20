@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, Calendar, Pill, FlaskConical, CreditCard,
   UserCog, Settings, HeartPulse, UserPlus, ClipboardList,
-  DollarSign, BarChart3, Shield, Truck, Package, FileText, Bed, Building2, Scan, Scissors, Baby, Siren, Wrench, ExternalLink, type LucideIcon,
+  DollarSign, BarChart3, Shield, Truck, Package, FileText, Bed, Building2, Scan, Scissors, Baby, Siren, Wrench, ExternalLink, Warehouse, Brain, Video, Syringe, Plug, Heart, MapPin, Microscope, type LucideIcon,
 } from 'lucide-react';
 
 export interface SidebarItem {
@@ -22,6 +22,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Overview',
       items: [
         { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/ai', icon: Brain, label: 'SmartMed AI' },
       ],
     },
     {
@@ -75,8 +76,39 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       ],
     },
     {
+      section: 'Telemedicine',
+      items: [
+        { path: '/telemedicine', icon: Video, label: 'Virtual Care' },
+      ],
+    },
+    {
+      section: 'Public Health',
+      items: [
+        { path: '/public-health', icon: Syringe, label: 'Disease Surveillance' },
+      ],
+    },
+    {
+      section: 'Marketing & CRM',
+      items: [
+        { path: '/crm', icon: Heart, label: 'CRM & Engagement' },
+      ],
+    },
+    {
+      section: 'Community Health',
+      items: [
+        { path: '/community-health', icon: MapPin, label: 'Outreach & CHW' },
+      ],
+    },
+    {
+      section: 'Research',
+      items: [
+        { path: '/research', icon: Microscope, label: 'Clinical Trials' },
+      ],
+    },
+    {
       section: 'Inventory & Assets',
       items: [
+        { path: '/procurement', icon: Warehouse, label: 'Procurement' },
         { path: '/inventory', icon: Package, label: 'Inventory' },
         { path: '/equipment', icon: Wrench, label: 'Equipment' },
       ],
@@ -108,6 +140,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       items: [
         { path: '/hr', icon: UserCog, label: 'HR & Payroll' },
         { path: '/settings/users', icon: Shield, label: 'User Management' },
+        { path: '/api-settings', icon: Plug, label: 'API & Integrations' },
         { path: '/settings', icon: Settings, label: 'Settings' },
       ],
     },
@@ -118,6 +151,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Overview',
       items: [
         { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/ai', icon: Brain, label: 'SmartMed AI' },
       ],
     },
     {
@@ -171,8 +205,39 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       ],
     },
     {
+      section: 'Telemedicine',
+      items: [
+        { path: '/telemedicine', icon: Video, label: 'Virtual Care' },
+      ],
+    },
+    {
+      section: 'Public Health',
+      items: [
+        { path: '/public-health', icon: Syringe, label: 'Disease Surveillance' },
+      ],
+    },
+    {
+      section: 'Marketing & CRM',
+      items: [
+        { path: '/crm', icon: Heart, label: 'CRM & Engagement' },
+      ],
+    },
+    {
+      section: 'Community Health',
+      items: [
+        { path: '/community-health', icon: MapPin, label: 'Outreach & CHW' },
+      ],
+    },
+    {
+      section: 'Research',
+      items: [
+        { path: '/research', icon: Microscope, label: 'Clinical Trials' },
+      ],
+    },
+    {
       section: 'Inventory & Assets',
       items: [
+        { path: '/procurement', icon: Warehouse, label: 'Procurement' },
         { path: '/inventory', icon: Package, label: 'Inventory' },
         { path: '/equipment', icon: Wrench, label: 'Equipment' },
       ],
@@ -204,6 +269,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       items: [
         { path: '/hr', icon: UserCog, label: 'HR & Payroll' },
         { path: '/settings/users', icon: Shield, label: 'User Management' },
+        { path: '/api-settings', icon: Plug, label: 'API & Integrations' },
         { path: '/settings', icon: Settings, label: 'Settings' },
       ],
     },
@@ -214,6 +280,7 @@ export const SIDEBAR_CONFIG: Record<string, SidebarSection[]> = {
       section: 'Overview',
       items: [
         { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { path: '/ai', icon: Brain, label: 'SmartMed AI' },
       ],
     },
     {

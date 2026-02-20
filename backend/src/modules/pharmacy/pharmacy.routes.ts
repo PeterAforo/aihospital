@@ -293,14 +293,14 @@ router.get('/suppliers', requirePermission('VIEW_STOCK', 'MANAGE_SUPPLIERS'), as
 router.post('/suppliers', requirePermission('MANAGE_SUPPLIERS'), async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user!;
-    const { name, contactPerson, phone, email, address, paymentTerms } = req.body;
+    const { supplierName, supplierCode, contactPerson, phone, email, address, supplierType, paymentTerms, taxId, bankDetails, isApproved, notes } = req.body;
     
-    if (!name) {
-      return res.status(400).json({ success: false, error: 'name is required' });
+    if (!supplierName || !supplierCode) {
+      return res.status(400).json({ success: false, error: 'supplierName and supplierCode are required' });
     }
     
     const supplier = await purchaseOrderService.createSupplier(user.tenantId, {
-      name, contactPerson, phone, email, address, paymentTerms
+      supplierName, supplierCode, contactPerson, phone, email, address, supplierType, paymentTerms, taxId, bankDetails, isApproved, notes
     });
     
     res.status(201).json({ success: true, data: supplier });
@@ -362,7 +362,7 @@ router.get('/purchase-orders/:id', requirePermission('VIEW_PURCHASE_ORDERS'), as
 router.post('/purchase-orders', requirePermission('CREATE_PURCHASE_ORDER'), async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user!;
-    const { supplierId, expectedDate, notes, items } = req.body;
+    const { supplierId, expectedDeliveryDate, paymentTerms, deliveryLocation, notes, items } = req.body;
     
     if (!supplierId || !items || items.length === 0) {
       return res.status(400).json({ success: false, error: 'supplierId and items are required' });
@@ -372,7 +372,7 @@ router.post('/purchase-orders', requirePermission('CREATE_PURCHASE_ORDER'), asyn
       user.tenantId,
       user.branchId || '',
       user.userId,
-      { supplierId, expectedDate: expectedDate ? new Date(expectedDate) : undefined, notes, items }
+      { supplierId, expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : undefined, paymentTerms, deliveryLocation, notes, items }
     );
     
     res.status(201).json({ success: true, data: order });
@@ -381,11 +381,12 @@ router.post('/purchase-orders', requirePermission('CREATE_PURCHASE_ORDER'), asyn
   }
 });
 
-// Update purchase order
-router.put('/purchase-orders/:id', requirePermission('CREATE_PURCHASE_ORDER'), async (req: AuthRequest, res: Response) => {
+// Reject purchase order
+router.post('/purchase-orders/:id/reject', requirePermission('APPROVE_PURCHASE_ORDER'), async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const order = await purchaseOrderService.updatePurchaseOrder(id, req.body);
+    const { notes } = req.body;
+    const order = await purchaseOrderService.rejectPurchaseOrder(id, notes);
     res.json({ success: true, data: order });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -410,24 +411,6 @@ router.post('/purchase-orders/:id/approve', requirePermission('APPROVE_PURCHASE_
     const { id } = req.params;
     const order = await purchaseOrderService.approvePurchaseOrder(id, user.userId);
     res.json({ success: true, data: order });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Receive goods
-router.post('/purchase-orders/:id/receive', requirePermission('RECEIVE_PURCHASE_ORDER'), async (req: AuthRequest, res: Response) => {
-  try {
-    const user = req.user!;
-    const { id } = req.params;
-    const { items } = req.body;
-    
-    if (!items || items.length === 0) {
-      return res.status(400).json({ success: false, error: 'items are required' });
-    }
-    
-    const result = await purchaseOrderService.receiveGoods(id, user.userId, items);
-    res.json({ success: true, data: result });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

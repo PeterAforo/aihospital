@@ -50,17 +50,17 @@ export default function RegistrationWizard() {
 
   useEffect(() => {
     // Load from localStorage on mount
-    const saved = localStorage.getItem('medicare_registration_draft');
+    const saved = localStorage.getItem('smartmed_registration_draft');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.registrationId && Date.now() < parsed.expiresAt) {
           dispatch(loadFromStorage(parsed));
         } else {
-          localStorage.removeItem('medicare_registration_draft');
+          localStorage.removeItem('smartmed_registration_draft');
         }
       } catch (e) {
-        localStorage.removeItem('medicare_registration_draft');
+        localStorage.removeItem('smartmed_registration_draft');
       }
     }
   }, [dispatch]);
@@ -73,7 +73,7 @@ export default function RegistrationWizard() {
         currentStep,
         expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
       };
-      localStorage.setItem('medicare_registration_draft', JSON.stringify(state));
+      localStorage.setItem('smartmed_registration_draft', JSON.stringify(state));
     }
   }, [registrationId, currentStep]);
 
@@ -97,10 +97,10 @@ export default function RegistrationWizard() {
       {/* Logo */}
       <div style={headerStyle}>
         <h1 style={{ color: 'white', fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-          MediCare Ghana
+          SmartMed
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem' }}>
-          Hospital Management System
+          AI-Powered Hospital Management
         </p>
       </div>
 

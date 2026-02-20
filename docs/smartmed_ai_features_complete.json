@@ -1,0 +1,841 @@
+{
+  "project_name": "SmartMed",
+  "tagline": "AI-Powered Hospital Management System for Ghana",
+  "problem_statement": "Currently called 'AI-powered' but no AI features implemented",
+  "solution": "Integrate practical AI capabilities across all modules to improve efficiency, accuracy, and patient outcomes",
+
+  "brand_update": {
+    "old_name": "MediCare Ghana",
+    "new_name": "SmartMed",
+    "brand_positioning": "The Intelligent Hospital Management System",
+    "value_proposition": "SmartMed uses artificial intelligence to help healthcare professionals make better decisions, work faster, and deliver superior patient care",
+    
+    "taglines": [
+      "SmartMed - Healthcare Made Intelligent",
+      "SmartMed - AI That Cares",
+      "SmartMed - Smarter Healthcare for Ghana",
+      "SmartMed - Where AI Meets Healthcare Excellence"
+    ],
+    
+    "logo_concept": {
+      "icon": "Brain + Medical Cross or Stethoscope + Circuit Board",
+      "colors": {
+        "primary": "#0066CC (Medical Blue)",
+        "secondary": "#00CC88 (AI Green)",
+        "accent": "#FF6B35 (Alert Orange)"
+      }
+    }
+  },
+
+  "ai_features_overview": {
+    "categories": [
+      "Clinical Decision Support AI",
+      "Predictive Analytics",
+      "Natural Language Processing",
+      "Computer Vision",
+      "Conversational AI",
+      "Intelligent Automation",
+      "Fraud Detection",
+      "Voice AI"
+    ],
+    "ai_technologies": [
+      "Machine Learning Models",
+      "Large Language Models (LLMs)",
+      "Neural Networks",
+      "Natural Language Processing (NLP)",
+      "Computer Vision",
+      "Predictive Analytics",
+      "Rule-based AI Systems"
+    ]
+  },
+
+  "ai_features_by_module": {
+    
+    "MODULE_1_PATIENT_REGISTRATION": {
+      "module": "Patient Registration",
+      
+      "ai_feature_1_duplicate_detection": {
+        "name": "AI-Powered Duplicate Patient Detection",
+        "description": "Intelligently detect potential duplicate patient records using fuzzy matching",
+        "technology": "Machine Learning + Fuzzy String Matching",
+        "how_it_works": [
+          "1. When registering new patient, AI analyzes existing records",
+          "2. Compares: Name (phonetic similarity), DOB (±1 day tolerance), Phone number, Ghana Card",
+          "3. Uses ML to calculate similarity score (0-100%)",
+          "4. Flags potential duplicates with >70% similarity",
+          "5. Shows side-by-side comparison for manual verification"
+        ],
+        "user_experience": {
+          "trigger": "Receptionist enters patient name 'Kwame Mensah'",
+          "ai_response": "⚠️ AI found 2 potential matches: 'Kwame Mensa' (85% match), 'Kwame Mensah' (92% match). Review before creating new record.",
+          "action": "User decides: Merge with existing OR Create new"
+        },
+        "business_value": "Reduce duplicate records by 90%, improve data quality",
+        "implementation": {
+          "library": "FuzzyWuzzy (Python) or Levenshtein distance",
+          "endpoint": "POST /api/ai/check-duplicate-patient",
+          "model": "Rule-based + ML similarity scoring"
+        }
+      },
+
+      "ai_feature_2_smart_form_filling": {
+        "name": "AI Form Auto-Complete",
+        "description": "AI suggests values based on patterns (e.g., if name is 'Kwame', suggest gender=Male, likely region=Ashanti)",
+        "technology": "Predictive ML Model",
+        "business_value": "Faster registration, fewer data entry errors"
+      },
+
+      "ai_feature_3_ocr_document_scanning": {
+        "name": "AI Document Scanning (OCR)",
+        "description": "Scan Ghana Card/NHIS card and auto-extract data",
+        "technology": "Computer Vision + OCR (Tesseract or Cloud Vision API)",
+        "how_it_works": [
+          "1. Receptionist takes photo of Ghana Card",
+          "2. AI extracts: Name, DOB, Ghana Card Number, Address",
+          "3. Auto-fills registration form",
+          "4. User verifies and corrects if needed"
+        ],
+        "user_experience": {
+          "trigger": "Click 'Scan Ghana Card' button",
+          "ai_response": "📸 Camera opens → Capture card → AI extracts data → Form auto-filled in 3 seconds",
+          "accuracy": "95%+ for clear images"
+        },
+        "business_value": "10× faster registration, zero typos"
+      }
+    },
+
+    "MODULE_2_TRIAGE": {
+      "module": "Triage & Vital Signs",
+      
+      "ai_feature_1_intelligent_triage": {
+        "name": "AI-Assisted Triage Scoring",
+        "description": "AI analyzes vital signs + symptoms to recommend triage priority",
+        "technology": "Rule-based AI + ML Model trained on triage data",
+        "how_it_works": [
+          "1. Nurse enters vitals: Temp=39.5°C, BP=160/100, HR=110, SpO2=92%",
+          "2. Nurse enters symptoms: 'Chest pain, shortness of breath'",
+          "3. AI analyzes using medical algorithms + ML",
+          "4. AI recommends: Priority=URGENT (Red), Reason='Suspected cardiac event'",
+          "5. Nurse can accept or override"
+        ],
+        "ai_logic": {
+          "high_fever_tachycardia": "Temp >39°C + HR >100 → Possible sepsis → URGENT",
+          "chest_pain_vitals": "Chest pain + abnormal vitals → Cardiac risk → EMERGENCY",
+          "low_spo2": "SpO2 <90% → Respiratory distress → EMERGENCY"
+        },
+        "user_experience": {
+          "ui": "AI Recommendation card appears: '🤖 AI suggests: URGENT (Red). Reason: High fever + tachycardia may indicate sepsis. Early Warning Score: 6/10.'",
+          "nurse_action": "Accept recommendation OR Override with reason"
+        },
+        "business_value": "Reduce human error in triage, consistent prioritization, early warning for deteriorating patients",
+        "accuracy_target": "85%+ agreement with senior nurse assessment"
+      },
+
+      "ai_feature_2_early_warning_score": {
+        "name": "AI Early Warning Score (EWS)",
+        "description": "Calculate patient deterioration risk score",
+        "technology": "NEWS2 (National Early Warning Score) algorithm",
+        "output": "Score 0-20, Risk: Low/Medium/High",
+        "alerts": "Auto-alert doctor if score >7 (high risk)"
+      },
+
+      "ai_feature_3_vital_signs_anomaly_detection": {
+        "name": "Vital Signs Anomaly Detection",
+        "description": "AI flags unusual vital sign combinations",
+        "example": "BP=80/50 + HR=130 → 🚨 Possible shock, alert doctor immediately",
+        "technology": "Rule-based AI + anomaly detection algorithms"
+      }
+    },
+
+    "MODULE_3_EMR_CONSULTATION": {
+      "module": "EMR / Clinical Consultation",
+      
+      "ai_feature_1_clinical_decision_support": {
+        "name": "AI Clinical Decision Support (CDS)",
+        "description": "AI suggests diagnoses based on symptoms, vitals, and history",
+        "technology": "Large Language Model (LLM) + Medical Knowledge Base",
+        "how_it_works": [
+          "1. Doctor enters chief complaint: 'Fever, cough, body pains for 3 days'",
+          "2. Doctor enters vitals: Temp=38.5°C, normal BP, HR, RR",
+          "3. AI analyzes symptoms + vitals + patient history",
+          "4. AI suggests differential diagnoses:",
+          "   - Malaria (70% probability) - Common in Ghana, fever pattern",
+          "   - Dengue (15% probability) - Recent outbreak, body pains",
+          "   - Viral URTI (10% probability) - Cough present",
+          "   - Typhoid (5% probability) - Prolonged fever",
+          "5. AI recommends investigations: 'Order Malaria RDT, CBC to rule out dengue'",
+          "6. Doctor reviews suggestions and makes final decision"
+        ],
+        "user_experience": {
+          "ui_location": "Right sidebar in EMR",
+          "display": "
+            🤖 AI Suggestions:
+            
+            Likely Diagnoses:
+            1. Malaria (70%) - Order: Malaria RDT
+            2. Dengue (15%) - Order: CBC, Platelet count
+            3. Viral URTI (10%) - Supportive care
+            
+            Recommended Tests:
+            ✓ Malaria Rapid Test (STAT)
+            ✓ Complete Blood Count
+            
+            Red Flags:
+            ⚠️ Monitor for: Bleeding, severe headache, low platelets
+            
+            [Accept All] [Accept Selected] [Ignore]
+          "
+        },
+        "data_sources": [
+          "Symptoms entered by doctor",
+          "Vital signs from triage",
+          "Patient medical history",
+          "Current medications",
+          "Allergies",
+          "Local disease patterns (e.g., malaria prevalence in Ghana)"
+        ],
+        "safety": [
+          "AI is ADVISORY only, doctor makes final decision",
+          "AI suggestions clearly marked as 'AI-Assisted'",
+          "Doctor can ignore or override all suggestions",
+          "All AI suggestions logged for audit"
+        ],
+        "business_value": "Reduce diagnostic errors, faster consultations, catch rare conditions, standardize care quality",
+        "implementation": {
+          "option_1_rule_based": "Rules engine + medical algorithms (faster, cheaper, good for common conditions)",
+          "option_2_llm": "GPT-4 Medical or Med-PaLM 2 (better for complex cases, more expensive)",
+          "option_3_hybrid": "Rule-based for common cases + LLM for complex cases (RECOMMENDED)"
+        }
+      },
+
+      "ai_feature_2_icd10_coding_assistant": {
+        "name": "AI ICD-10 Coding Assistant",
+        "description": "AI suggests ICD-10 codes based on diagnosis entered in plain English",
+        "technology": "NLP + ICD-10 Knowledge Base",
+        "how_it_works": [
+          "1. Doctor types diagnosis: 'Patient has dengue fever'",
+          "2. AI suggests: A90 - Dengue fever [classical dengue]",
+          "3. Doctor clicks to auto-fill"
+        ],
+        "user_experience": {
+          "ui": "As-you-type suggestions dropdown",
+          "example": "Doctor types 'diabe' → AI suggests: E11 - Type 2 diabetes mellitus"
+        },
+        "business_value": "Faster coding, accurate billing, NHIS compliance"
+      },
+
+      "ai_feature_3_voice_to_text_notes": {
+        "name": "AI Voice-to-Text Documentation",
+        "description": "Doctor dictates notes, AI transcribes and structures into SOAP format",
+        "technology": "Speech Recognition (Whisper AI or Google Speech) + NLP",
+        "how_it_works": [
+          "1. Doctor clicks microphone icon",
+          "2. Doctor speaks: 'Patient presents with three day history of fever, cough, and body pains. On examination, temperature thirty-eight point five, chest clear, no lymphadenopathy. Impression is malaria. Plan is to do malaria test and start treatment'",
+          "3. AI transcribes AND structures:",
+          "   S (Subjective): 3-day history of fever, cough, body pains",
+          "   O (Objective): Temp 38.5°C, Chest clear, No lymphadenopathy",
+          "   A (Assessment): Malaria (suspected)",
+          "   P (Plan): Order malaria test, Start antimalarial treatment",
+          "4. Doctor reviews and edits if needed"
+        ],
+        "user_experience": {
+          "speed": "5× faster than typing",
+          "accuracy": "95%+ for clear speech",
+          "languages": "English, Twi, Ga (Ghana languages) - future"
+        },
+        "business_value": "Save 10 minutes per consultation, more detailed notes, happier doctors"
+      },
+
+      "ai_feature_4_treatment_recommendation": {
+        "name": "AI Treatment Recommendations",
+        "description": "AI suggests treatment protocols based on diagnosis",
+        "example": "Diagnosis: Malaria → AI suggests: Artemether-Lumefantrine 80mg/480mg, Dosage based on weight, Duration: 3 days",
+        "technology": "Clinical Guidelines Database + AI"
+      }
+    },
+
+    "MODULE_4_PRESCRIBING": {
+      "module": "E-Prescribing",
+      
+      "ai_feature_1_drug_interaction_checker": {
+        "name": "AI Drug-Drug Interaction Checker",
+        "description": "AI analyzes all prescribed drugs + current medications for dangerous interactions",
+        "technology": "Medical Knowledge Base + ML",
+        "how_it_works": [
+          "1. Doctor prescribes new drug: Ciprofloxacin",
+          "2. Patient already on: Warfarin (blood thinner)",
+          "3. AI detects dangerous interaction: 'Ciprofloxacin increases Warfarin effect → Bleeding risk'",
+          "4. Alert shown: ⚠️ SEVERE INTERACTION: Ciprofloxacin + Warfarin may increase bleeding risk. Consider alternative antibiotic or monitor INR closely.",
+          "5. Doctor can: Change drug OR Continue with caution + document reason"
+        ],
+        "severity_levels": {
+          "minor": "Yellow warning, informational",
+          "moderate": "Orange warning, suggest alternative",
+          "major": "Red alert, require override reason",
+          "contraindicated": "Block prescription, must use different drug"
+        },
+        "business_value": "Prevent medication errors, reduce adverse drug events, save lives",
+        "database": "Drug Interaction Database (RxNorm, DrugBank, or First Databank)"
+      },
+
+      "ai_feature_2_allergy_checker": {
+        "name": "AI Allergy Checker",
+        "description": "Cross-check prescriptions against patient allergies",
+        "example": "Patient allergic to Penicillin → Doctor prescribes Amoxicillin → 🚨 STOP! Amoxicillin is a penicillin. Patient is allergic!"
+      },
+
+      "ai_feature_3_dosage_calculator": {
+        "name": "AI Dosage Calculator",
+        "description": "Calculate pediatric/geriatric doses automatically",
+        "how_it_works": [
+          "Patient: 3-year-old, Weight=15kg",
+          "Drug: Paracetamol",
+          "AI calculates: 15mg/kg/dose = 225mg per dose, 4 times daily",
+          "AI suggests: Paracetamol 250mg (closest available), 4 times daily"
+        ],
+        "business_value": "Prevent dosing errors, especially in children"
+      },
+
+      "ai_feature_4_generic_substitution": {
+        "name": "AI Generic Drug Suggestions",
+        "description": "If brand drug prescribed but generic available, AI suggests cheaper alternative",
+        "example": "Doctor prescribes: Panadol (brand) ₵2.00 → AI suggests: Paracetamol (generic) ₵0.45 - Save ₵1.55 (77% cheaper)",
+        "business_value": "Reduce patient costs, especially for NHIS"
+      }
+    },
+
+    "MODULE_5_PHARMACY": {
+      "module": "Pharmacy",
+      
+      "ai_feature_1_smart_inventory_prediction": {
+        "name": "AI Inventory Forecasting",
+        "description": "Predict drug demand and optimize reorder quantities",
+        "technology": "Time Series Forecasting (ARIMA, Prophet, or LSTM Neural Network)",
+        "how_it_works": [
+          "1. AI analyzes historical data: Paracetamol usage over 12 months",
+          "2. AI detects patterns: Peak usage during malaria season (June-August), Lower during dry season",
+          "3. AI forecasts: Next month expected usage = 5,000 tablets",
+          "4. Current stock: 1,200 tablets",
+          "5. AI recommends: 'Reorder 4,000 tablets now to avoid stockout'",
+          "6. AI optimizes: 'Order from Supplier A (cheaper) vs Supplier B (faster delivery)'"
+        ],
+        "features": [
+          "Predict stockouts before they happen",
+          "Optimize reorder quantities (not too much = wastage, not too little = stockout)",
+          "Seasonal demand patterns",
+          "Alert: 'Malaria season starting, increase antimalarial stock by 30%'"
+        ],
+        "user_experience": {
+          "dashboard": "Pharmacy Dashboard shows: '🤖 AI Alert: Paracetamol predicted to run out in 5 days. Reorder now?'",
+          "auto_po": "AI can auto-generate purchase orders (with approval workflow)"
+        },
+        "business_value": "Reduce stockouts by 70%, reduce excess inventory by 40%, save money, better patient care"
+      },
+
+      "ai_feature_2_expiry_management": {
+        "name": "AI Expiry Prediction & Alerts",
+        "description": "Predict which drugs will expire and recommend actions",
+        "how_it_works": [
+          "1. AI tracks all drug batches and expiry dates",
+          "2. AI analyzes usage rates",
+          "3. AI predicts: 'Amoxicillin Batch #123 (500 tablets) will expire in 60 days. Current usage rate: 10 tablets/day. 300 tablets will expire unused!'",
+          "4. AI recommends: 'Increase Amoxicillin prescribing OR Return to supplier OR Donate to clinic'"
+        ],
+        "alerts": [
+          "90 days: Yellow alert - Monitor",
+          "60 days: Orange alert - Increase usage or act",
+          "30 days: Red alert - Critical, take action now"
+        ],
+        "business_value": "Reduce drug wastage from expiry by 60%, save money"
+      },
+
+      "ai_feature_3_drug_substitution": {
+        "name": "AI Drug Substitution Recommendations",
+        "description": "If prescribed drug out of stock, AI suggests alternatives",
+        "example": "Amoxicillin 500mg out of stock → AI suggests: Ampicillin 500mg (same class, similar efficacy)",
+        "requires_pharmacist_approval": true
+      }
+    },
+
+    "MODULE_6_LABORATORY": {
+      "module": "Laboratory",
+      
+      "ai_feature_1_result_interpretation": {
+        "name": "AI Lab Result Interpretation",
+        "description": "AI interprets lab results and flags abnormalities with clinical significance",
+        "technology": "Rule-based AI + ML Model",
+        "how_it_works": [
+          "Lab Result: Hemoglobin = 8.5 g/dL (Normal: 13-17)",
+          "AI analysis:",
+          "  ⚠️ Low Hemoglobin (Anemia)",
+          "  Severity: Moderate (8-10 g/dL)",
+          "  Possible causes: Iron deficiency, Chronic disease, Blood loss",
+          "  Recommended: Iron studies, Stool for occult blood",
+          "  Clinical Note: Patient may have fatigue, pallor, shortness of breath"
+        ],
+        "user_experience": {
+          "display": "Next to lab result value, AI interpretation appears in collapsible panel",
+          "color_coding": "Green=Normal, Yellow=Borderline, Red=Abnormal"
+        },
+        "business_value": "Help junior doctors interpret results, flag critical values, educational tool"
+      },
+
+      "ai_feature_2_critical_value_prediction": {
+        "name": "AI Critical Value Alerting",
+        "description": "Predict which results will be critical before lab even runs test",
+        "example": "Patient with dengue → AI predicts: 'High risk of thrombocytopenia (low platelets). Monitor platelets daily.'",
+        "proactive_alerting": true
+      },
+
+      "ai_feature_3_test_recommendation": {
+        "name": "AI Test Recommendations",
+        "description": "Based on initial results, AI suggests follow-up tests",
+        "example": "High blood sugar detected → AI suggests: 'Order HbA1c to assess diabetes control'",
+        "business_value": "Comprehensive diagnosis, don't miss important tests"
+      }
+    },
+
+    "MODULE_7_RADIOLOGY": {
+      "module": "Radiology",
+      
+      "ai_feature_1_image_analysis": {
+        "name": "AI Medical Image Analysis",
+        "description": "AI assists radiologists in detecting abnormalities",
+        "technology": "Computer Vision + Convolutional Neural Networks (CNN)",
+        "applications": [
+          {
+            "imaging": "Chest X-Ray",
+            "ai_detects": "Pneumonia, TB, Lung nodules, Pneumothorax, Pleural effusion",
+            "accuracy": "90%+ sensitivity for pneumonia detection"
+          },
+          {
+            "imaging": "CT Scan",
+            "ai_detects": "Fractures, Hemorrhage, Tumors",
+            "use_case": "AI highlights suspicious areas for radiologist review"
+          },
+          {
+            "imaging": "Ultrasound",
+            "ai_assists": "Fetal anomaly detection, Liver assessment",
+            "feature": "AI measurements (fetal biometry)"
+          }
+        ],
+        "how_it_works": [
+          "1. Image uploaded to system",
+          "2. AI analyzes image (takes 10-30 seconds)",
+          "3. AI generates report: 'Findings: Opacity in right lower lobe suggestive of pneumonia. Confidence: 85%'",
+          "4. Radiologist reviews AI findings + image",
+          "5. Radiologist confirms or modifies diagnosis"
+        ],
+        "user_experience": {
+          "display": "AI findings shown in sidebar",
+          "visualization": "AI draws boxes around abnormal areas",
+          "disclaimer": "🤖 AI-Assisted Analysis. Radiologist verification required."
+        },
+        "business_value": "Faster reporting, reduce missed findings, help less experienced radiologists, prioritize critical cases",
+        "implementation": {
+          "option_1": "Use existing AI models (Qure.ai, Zebra Medical, Aidoc)",
+          "option_2": "Train custom models (requires large dataset)",
+          "recommendation": "Partner with AI radiology company for Ghana market"
+        }
+      },
+
+      "ai_feature_2_report_generation": {
+        "name": "AI Report Generation",
+        "description": "AI generates structured radiology report template based on findings",
+        "example": "Radiologist clicks 'pneumonia' → AI fills template: 'There is a well-defined opacity in the right lower lobe measuring... consistent with pneumonia. No pleural effusion or pneumothorax...'"
+      }
+    },
+
+    "MODULE_8_BILLING": {
+      "module": "Billing & Finance",
+      
+      "ai_feature_1_fraud_detection": {
+        "name": "AI Fraud Detection for NHIS Claims",
+        "description": "Detect fraudulent or suspicious billing patterns",
+        "technology": "Anomaly Detection + ML",
+        "detects": [
+          "Upcoding: Billing for more expensive service than provided",
+          "Duplicate billing: Same service billed twice",
+          "Unbundling: Separating bundled services to charge more",
+          "Phantom billing: Billing for services not rendered",
+          "Unusual patterns: Doctor seeing 200 patients per day (suspicious)"
+        ],
+        "how_it_works": [
+          "1. AI analyzes billing patterns across all claims",
+          "2. AI flags anomalies: 'Dr. Mensah billed 150 consultations today (avg is 30). Investigate?'",
+          "3. Finance officer reviews flagged cases",
+          "4. Legitimate explanations accepted OR Fraudulent claims corrected before NHIS submission"
+        ],
+        "user_experience": {
+          "dashboard": "Fraud Alert Dashboard showing flagged cases",
+          "scoring": "Risk score 0-100 (>80 = high risk)"
+        },
+        "business_value": "Reduce fraudulent claims, protect hospital reputation, increase NHIS reimbursement approval rate"
+      },
+
+      "ai_feature_2_revenue_prediction": {
+        "name": "AI Revenue Forecasting",
+        "description": "Predict next month's revenue based on patient trends",
+        "technology": "Time Series Forecasting",
+        "output": "Expected revenue: ₵150,000 ± ₵10,000, Patient volume: 800 ± 50",
+        "business_value": "Better financial planning, cash flow management"
+      },
+
+      "ai_feature_3_coding_assistant": {
+        "name": "AI Medical Coding Assistant",
+        "description": "Auto-suggest CPT codes for NHIS billing",
+        "example": "Service: 'General Consultation' → AI suggests: NHIS Code: GEN-CONS-001",
+        "business_value": "Accurate billing, reduce NHIS claim rejections"
+      }
+    },
+
+    "MODULE_9_PATIENT_PORTAL": {
+      "module": "Patient Portal",
+      
+      "ai_feature_1_chatbot": {
+        "name": "AI Medical Chatbot (SmartMed Assistant)",
+        "description": "24/7 AI chatbot to answer patient questions",
+        "technology": "Large Language Model (GPT-4 or Claude) fine-tuned for medical Q&A",
+        "capabilities": [
+          "Answer general health questions",
+          "Explain lab results in simple terms",
+          "Medication information and side effects",
+          "Appointment booking assistance",
+          "Symptom checker (triage - when to seek care)",
+          "Navigate hospital services"
+        ],
+        "conversation_example": {
+          "patient": "My child has fever of 38.5°C and cough. Should I bring him to hospital?",
+          "ai_bot": "🤖 Based on the symptoms (fever 38.5°C and cough), here's my assessment:\n\n✅ Good news: Fever is moderate, not high.\n\n⚠️ Watch for:\n- Difficulty breathing\n- Refusing to eat/drink\n- Very sleepy or irritable\n- Fever lasting >3 days\n\n💡 Recommendation: You can manage at home with paracetamol and fluids for now. However, if any red flag symptoms appear OR fever persists, please visit us.\n\n📅 Would you like to book an appointment as a precaution?\n\n[Book Appointment] [Call Hospital] [Ask More Questions]"
+        },
+        "safety": [
+          "Chatbot clearly states it's AI, not a doctor",
+          "For emergencies, bot says: 'This is an emergency. Call 193 or come to hospital immediately.'",
+          "Bot can't diagnose or prescribe",
+          "Bot escalates complex questions: 'Please consult a doctor for this'"
+        ],
+        "languages": "English, Twi, Ga (Ghana languages)",
+        "business_value": "Reduce phone calls, improve patient engagement, 24/7 availability, scale patient support"
+      },
+
+      "ai_feature_2_appointment_optimization": {
+        "name": "AI Smart Appointment Scheduling",
+        "description": "AI suggests optimal appointment times based on doctor availability, patient history, and predicted duration",
+        "features": [
+          "Predict appointment duration (new patient = 20 min, follow-up = 10 min)",
+          "Avoid overbooking",
+          "Suggest: 'Dr. Ama is usually less busy on Tuesdays at 10am'"
+        ]
+      },
+
+      "ai_feature_3_health_insights": {
+        "name": "AI Personal Health Insights",
+        "description": "AI analyzes patient's health trends and provides insights",
+        "examples": [
+          "Blood pressure trending up over last 3 months → 'Consider lifestyle changes'",
+          "Missed 2 diabetes checkups → 'You're overdue for HbA1c test'",
+          "Weight increased 5kg → 'Talk to doctor about weight management'"
+        ]
+      }
+    },
+
+    "MODULE_10_INPATIENT": {
+      "module": "Inpatient / Ward Management",
+      
+      "ai_feature_1_bed_allocation_optimization": {
+        "name": "AI Bed Allocation Optimizer",
+        "description": "AI suggests optimal bed assignment based on patient condition, ward type, and availability",
+        "how_it_works": [
+          "New admission: Male patient, suspected TB",
+          "AI suggests: 'Assign to Isolation Ward, Bed 3 (negative pressure room available)'",
+          "Reasoning: TB requires isolation + male ward"
+        ],
+        "business_value": "Optimize bed utilization, reduce infection spread"
+      },
+
+      "ai_feature_2_patient_deterioration_prediction": {
+        "name": "AI Patient Deterioration Predictor",
+        "description": "Predict which inpatients are at risk of deteriorating in next 24 hours",
+        "technology": "ML Model trained on vitals, labs, and outcomes",
+        "how_it_works": [
+          "AI monitors: Vitals trends, Lab results, Medications, Nursing notes",
+          "AI predicts: 'Patient in Bed 5 has 65% risk of deterioration in next 12 hours'",
+          "Alert sent to: Doctor + Nurse",
+          "Recommended action: 'Increase monitoring frequency, consider ICU transfer'"
+        ],
+        "business_value": "Early intervention, prevent ICU transfers, reduce mortality"
+      },
+
+      "ai_feature_3_discharge_planning": {
+        "name": "AI Discharge Readiness Predictor",
+        "description": "Predict optimal discharge date",
+        "example": "Patient admitted for pneumonia → AI predicts: 'Expected discharge in 3 days based on treatment response and recovery trajectory'",
+        "helps": "Optimize length of stay, free beds for new admissions"
+      }
+    },
+
+    "MODULE_11_HR": {
+      "module": "HR & Staff Management",
+      
+      "ai_feature_1_staff_scheduling_optimization": {
+        "name": "AI Staff Scheduling Optimizer",
+        "description": "Optimize nurse/doctor rosters based on patient load predictions",
+        "how_it_works": [
+          "AI predicts: 'Monday will be busy (80 patients expected). Need 5 nurses on duty.'",
+          "AI suggests optimal schedule considering: Staff availability, Skills, Preferences, Labor laws"
+        ],
+        "business_value": "Reduce understaffing/overstaffing, staff satisfaction, cost savings"
+      },
+
+      "ai_feature_2_performance_insights": {
+        "name": "AI Staff Performance Insights",
+        "description": "Identify top performers and training needs",
+        "metrics": "Patient satisfaction scores, Consultation time, Prescription accuracy",
+        "output": "Dr. Ama: Top performer (95% patient satisfaction). Nurse Kofi: Needs triage training."
+      }
+    },
+
+    "MODULE_12_REPORTS": {
+      "module": "Reports & Analytics",
+      
+      "ai_feature_1_predictive_analytics": {
+        "name": "AI Predictive Analytics Dashboard",
+        "description": "Predict future trends and provide actionable insights",
+        "predictions": [
+          "Patient volume forecast",
+          "Revenue forecast",
+          "Disease outbreak prediction",
+          "Drug demand forecast",
+          "Bed occupancy forecast"
+        ],
+        "insights": [
+          "'Malaria cases increasing 30% - Stock up on antimalarials'",
+          "'OPD volume dropping on Thursdays - Reduce staff that day'"
+        ]
+      },
+
+      "ai_feature_2_natural_language_queries": {
+        "name": "AI Natural Language Reporting",
+        "description": "Ask questions in plain English, AI generates reports",
+        "examples": [
+          "User: 'How many malaria cases did we have last month?'",
+          "AI: Generates report showing 145 malaria cases",
+          "User: 'Which drugs are we running low on?'",
+          "AI: Shows list of drugs below reorder level"
+        ],
+        "technology": "NLP + Database Query Generation"
+      },
+
+      "ai_feature_3_anomaly_detection": {
+        "name": "AI Anomaly Detection in Data",
+        "description": "Automatically detect unusual patterns in hospital data",
+        "examples": [
+          "Sudden spike in drug usage → Investigate for theft",
+          "Unusual billing patterns → Check for errors",
+          "Drop in patient satisfaction → Investigate cause"
+        ]
+      }
+    }
+  },
+
+  "ai_infrastructure": {
+    "ai_service_architecture": {
+      "approach": "Microservices",
+      "components": [
+        {
+          "service": "AI Gateway Service",
+          "purpose": "Central hub for all AI features",
+          "endpoint": "/api/ai/*",
+          "routes": [
+            "/api/ai/clinical-decision-support",
+            "/api/ai/drug-interactions",
+            "/api/ai/duplicate-detection",
+            "/api/ai/chatbot",
+            "/api/ai/image-analysis"
+          ]
+        },
+        {
+          "service": "LLM Service",
+          "technology": "OpenAI GPT-4 or Claude API or Self-hosted LLaMA",
+          "use_cases": ["Chatbot", "Clinical decision support", "Voice-to-text", "Report generation"]
+        },
+        {
+          "service": "ML Prediction Service",
+          "technology": "Python (scikit-learn, TensorFlow)",
+          "models": ["Inventory forecasting", "Patient deterioration", "Revenue prediction"]
+        },
+        {
+          "service": "Computer Vision Service",
+          "technology": "TensorFlow, PyTorch, or Cloud Vision API",
+          "use_cases": ["OCR for Ghana Card", "X-ray analysis"]
+        }
+      ]
+    },
+
+    "ai_models_to_develop": [
+      {
+        "model": "Duplicate Patient Detector",
+        "type": "Classification",
+        "training_data": "Historical patient records with known duplicates",
+        "features": ["Name similarity", "DOB", "Phone", "Address"],
+        "output": "Similarity score 0-100%"
+      },
+      {
+        "model": "Drug Demand Forecaster",
+        "type": "Time Series",
+        "algorithm": "ARIMA or Prophet",
+        "training_data": "12+ months of drug dispensing data",
+        "output": "Predicted usage for next 30 days"
+      },
+      {
+        "model": "Patient Deterioration Predictor",
+        "type": "Classification",
+        "training_data": "Inpatient vitals + outcomes (deteriorated vs stable)",
+        "features": ["Vital signs trends", "Lab results", "Age", "Diagnosis"],
+        "output": "Risk score 0-100%"
+      },
+      {
+        "model": "Triage Priority Recommender",
+        "type": "Classification",
+        "training_data": "Historical triage data with outcomes",
+        "output": "Recommended triage category"
+      }
+    ],
+
+    "third_party_ai_services": [
+      {
+        "service": "OpenAI GPT-4",
+        "use_for": "Chatbot, Clinical decision support, Voice-to-text",
+        "cost": "$0.03 per 1K tokens (input), $0.06 per 1K tokens (output)",
+        "pros": "State-of-the-art, easy integration",
+        "cons": "Expensive at scale, data privacy concerns"
+      },
+      {
+        "service": "Google Cloud Vision API",
+        "use_for": "OCR (Ghana Card scanning)",
+        "cost": "$1.50 per 1000 images",
+        "pros": "Accurate, easy integration",
+        "cons": "Requires internet, cost"
+      },
+      {
+        "service": "Whisper AI (OpenAI)",
+        "use_for": "Voice-to-text documentation",
+        "cost": "$0.006 per minute",
+        "pros": "Excellent accuracy",
+        "cons": "Cloud-based"
+      },
+      {
+        "service": "Med-PaLM 2 (Google)",
+        "use_for": "Clinical decision support",
+        "status": "Not yet publicly available",
+        "alternative": "Use GPT-4 with medical prompt engineering"
+      }
+    ],
+
+    "data_requirements": {
+      "for_ml_models": [
+        "Collect anonymized patient data (with consent)",
+        "Minimum 1000 cases per model",
+        "Clean, labeled data",
+        "Representative of Ghana population"
+      ],
+      "privacy_compliance": [
+        "All AI training data anonymized",
+        "GDPR/Data Protection Act compliance",
+        "Patient consent for AI assistance",
+        "AI predictions are advisory, not diagnostic"
+      ]
+    }
+  },
+
+  "implementation_roadmap": {
+    "phase_1_quick_wins": {
+      "duration": "4 weeks",
+      "features": [
+        "AI Duplicate Patient Detection",
+        "AI Drug Interaction Checker",
+        "AI ICD-10 Coding Assistant",
+        "AI Chatbot (basic version)",
+        "AI Triage Scoring"
+      ],
+      "goal": "Show immediate AI value, low hanging fruit"
+    },
+
+    "phase_2_predictive_ai": {
+      "duration": "8 weeks",
+      "features": [
+        "AI Inventory Forecasting",
+        "AI Revenue Prediction",
+        "AI Patient Deterioration Predictor",
+        "AI Expiry Management"
+      ],
+      "requires": "Collect 6+ months historical data to train models"
+    },
+
+    "phase_3_advanced_ai": {
+      "duration": "12 weeks",
+      "features": [
+        "AI Clinical Decision Support (CDS)",
+        "AI Medical Image Analysis (X-ray)",
+        "AI Voice-to-Text Documentation",
+        "AI Lab Result Interpretation"
+      ],
+      "requires": "Partnerships with medical AI companies, more data"
+    },
+
+    "phase_4_scale": {
+      "duration": "Ongoing",
+      "focus": [
+        "Improve model accuracy with more data",
+        "Add more languages (Twi, Ga)",
+        "Expand to more specialties",
+        "Custom models trained on Ghana healthcare data"
+      ]
+    }
+  },
+
+  "branding_updates_needed": [
+    "Update logo to include AI elements (brain, circuits, neural network)",
+    "Update tagline: 'AI-Powered Hospital Management'",
+    "Update website/marketing materials",
+    "Add 'AI-Assisted' badges throughout UI",
+    "Create demo videos showing AI features",
+    "Update product descriptions",
+    "Rename: MediCare Ghana → SmartMed"
+  ],
+
+  "competitive_advantages": {
+    "before": "Another hospital management system",
+    "after": "The ONLY AI-powered HMS built specifically for Ghana",
+    "unique_selling_points": [
+      "AI Clinical Decision Support (help doctors make better decisions)",
+      "AI Inventory Forecasting (never run out of critical drugs)",
+      "AI Fraud Detection (protect revenue)",
+      "AI Chatbot in local languages (24/7 patient support)",
+      "AI Duplicate Detection (clean data from day 1)",
+      "Built for Ghana (understands local diseases, NHIS system)"
+    ]
+  },
+
+  "pricing_impact": {
+    "justification": "AI features justify premium pricing",
+    "pricing_model": [
+      "Basic Plan: ₵500/month - Core HMS features",
+      "Smart Plan: ₵1,200/month - Core + AI features (drug interaction, duplicate detection, chatbot)",
+      "AI Pro Plan: ₵2,500/month - All AI features (CDS, image analysis, predictive analytics)"
+    ]
+  },
+
+  "success_metrics": {
+    "track_ai_impact": [
+      "Duplicate patients prevented",
+      "Drug interactions caught",
+      "Stockouts prevented by AI forecasting",
+      "Chatbot conversations handled (reduced phone calls)",
+      "Time saved by voice-to-text (minutes per doctor per day)",
+      "Diagnostic accuracy improvement",
+      "Revenue increase from fraud prevention",
+      "Patient satisfaction with AI features"
+    ]
+  }
+}

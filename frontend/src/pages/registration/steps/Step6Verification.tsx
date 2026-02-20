@@ -51,7 +51,7 @@ export default function Step6Verification() {
     onSuccess: () => {
       toast({ title: 'Success!', description: 'Your account has been verified.' });
       dispatch(resetRegistration());
-      localStorage.removeItem('medicare_registration_draft');
+      localStorage.removeItem('smartmed_registration_draft');
       dispatch(nextStep());
     },
     onError: (error: any) => {
@@ -323,7 +323,7 @@ export default function Step6Verification() {
       {attempts >= 3 && (
         <div style={{ backgroundColor: '#fef2f2', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
           <p style={{ color: '#991b1b', fontSize: '0.875rem' }}>
-            Maximum attempts exceeded. Please contact support at <strong>support@medicaregha.com</strong>
+            Maximum attempts exceeded. Please contact support at <strong>support@smartmed.com.gh</strong>
           </p>
         </div>
       )}

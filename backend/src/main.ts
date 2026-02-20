@@ -39,6 +39,15 @@ import hrRoutes from './modules/hr/hr.routes.js';
 import portalRoutes from './modules/portal/portal.routes.js';
 import mobileRoutes from './modules/mobile/mobile.routes.js';
 import setupRoutes from './modules/setup/setup.routes.js';
+import procurementRoutes from './modules/procurement/procurement.routes.js';
+import aiRoutes from './modules/ai/ai.routes.js';
+import apiConfigRoutes from './modules/api-config/api-config.routes.js';
+import telemedicineRoutes from './modules/telemedicine/telemedicine.routes.js';
+import publicHealthRoutes from './modules/public-health/public-health.routes.js';
+import crmRoutes from './modules/crm/crm.routes.js';
+import whiteLabelRoutes from './modules/white-label/white-label.routes.js';
+import communityHealthRoutes from './modules/community-health/community-health.routes.js';
+import researchRoutes from './modules/research/research.routes.js';
 
 // Import services
 import { queueWebSocketService } from './common/services/queue-websocket.service.js';
@@ -158,6 +167,15 @@ app.use('/api/hr', hrRoutes);
 app.use('/api/portal', portalRoutes);
 app.use('/api/mobile', mobileRoutes);
 app.use('/api/setup', setupRoutes);
+app.use('/api/procurement', procurementRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/api-config', apiConfigRoutes);
+app.use('/api/telemedicine', telemedicineRoutes);
+app.use('/api/public-health', publicHealthRoutes);
+app.use('/api/crm', crmRoutes);
+app.use('/api/white-label', whiteLabelRoutes);
+app.use('/api/community-health', communityHealthRoutes);
+app.use('/api/research', researchRoutes);
 
 // Error handling
 app.use(notFoundHandler);

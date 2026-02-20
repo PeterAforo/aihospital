@@ -149,13 +149,16 @@ class ExpiryAlertService {
         data: {
           tenantId,
           branchId,
-          drugId: stock.drugId,
+          movementType: 'EXPIRED_WRITE_OFF',
+          itemName: stock.drug.genericName,
+          itemId: stock.drugId,
+          itemType: 'DRUG',
           batchNumber: stock.batchNumber,
-          movementType: 'EXPIRED',
           quantity: -disposal.quantity,
-          balanceBefore,
-          balanceAfter,
-          reason: `${disposal.reason} | Method: ${disposal.disposalMethod}${disposal.witnessedBy ? ` | Witnessed by: ${disposal.witnessedBy}` : ''}`,
+          unitCost: stock.costPrice,
+          fromLocation: 'PHARMACY',
+          toLocation: 'WASTE',
+          notes: `${disposal.reason} | Method: ${disposal.disposalMethod}${disposal.witnessedBy ? ` | Witnessed by: ${disposal.witnessedBy}` : ''}`,
           performedBy: userId,
         },
       });
@@ -197,24 +200,18 @@ class ExpiryAlertService {
   ) {
     const where: any = {
       tenantId,
-      movementType: { in: ['EXPIRED', 'DAMAGED'] },
+      movementType: { in: ['EXPIRED_WRITE_OFF', 'DAMAGED_WRITE_OFF'] },
     };
     if (branchId) where.branchId = branchId;
     if (startDate || endDate) {
-      where.performedAt = {};
-      if (startDate) where.performedAt.gte = startDate;
-      if (endDate) where.performedAt.lte = endDate;
+      where.movementDate = {};
+      if (startDate) where.movementDate.gte = startDate;
+      if (endDate) where.movementDate.lte = endDate;
     }
 
     return prisma.stockMovement.findMany({
       where,
-      include: {
-        drug: true,
-        performedByUser: {
-          select: { id: true, firstName: true, lastName: true },
-        },
-      },
-      orderBy: { performedAt: 'desc' },
+      orderBy: { movementDate: 'desc' },
       take: limit,
     });
   }

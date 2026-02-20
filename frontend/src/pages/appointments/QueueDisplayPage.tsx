@@ -49,7 +49,7 @@ export default function QueueDisplayPage() {
       }}>
         <div>
           <h1 style={{ fontSize: "2.5rem", fontWeight: 700 }}>Patient Queue</h1>
-          <p style={{ color: "#94a3b8", fontSize: "1.125rem" }}>Welcome to MediCare Ghana</p>
+          <p style={{ color: "#94a3b8", fontSize: "1.125rem" }}>Welcome to SmartMed</p>
         </div>
         <div style={{ textAlign: "right" }}>
           <p style={{ fontSize: "3rem", fontWeight: 700, fontFamily: "monospace" }}>
