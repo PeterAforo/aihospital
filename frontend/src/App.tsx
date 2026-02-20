@@ -29,6 +29,7 @@ import QueueDisplayPage from './pages/appointments/QueueDisplayPage';
 
 // Triage Pages
 import TriageStation from './pages/triage/TriageStation';
+import TriageHistoryPage from './pages/triage/TriageHistoryPage';
 
 // EMR Pages
 import EncounterWorkspace from './pages/emr/EncounterWorkspace';
@@ -138,6 +139,10 @@ import WhiteLabelPage from './pages/white-label/WhiteLabelPage';
 
 // Admin
 import AuditLogsPage from './pages/admin/AuditLogsPage';
+
+// Nursing Notes & Surgical Checklist
+import NursingNotesTimeline from './pages/inpatient/NursingNotesTimeline';
+import SurgicalChecklistPage from './pages/theatre/SurgicalChecklistPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -279,6 +284,15 @@ function App() {
 
         {/* White Label & SaaS */}
         <Route path="/white-label" element={<WhiteLabelPage />} />
+
+        {/* Triage History */}
+        <Route path="/triage/patient/:patientId/history" element={<TriageHistoryPage />} />
+
+        {/* Nursing Notes Timeline */}
+        <Route path="/inpatient/admissions/:admissionId/nursing-notes" element={<NursingNotesTimeline />} />
+
+        {/* Surgical Checklist */}
+        <Route path="/theatre/surgeries/:surgeryId/checklist" element={<SurgicalChecklistPage />} />
 
         {/* Admin */}
         <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
