@@ -136,6 +136,11 @@ class EMRService {
   }
 
   // Encounters
+  async getMyActiveEncounters(): Promise<Encounter[]> {
+    const response = await api.get('/emr/encounters/my-active');
+    return response.data.data;
+  }
+
   async createEncounter(data: {
     patientId: string;
     appointmentId?: string;

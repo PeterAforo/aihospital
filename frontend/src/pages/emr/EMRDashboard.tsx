@@ -24,6 +24,7 @@ const EMRDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [encounters, setEncounters] = useState<Encounter[]>([]);
+  const [activeEncounters, setActiveEncounters] = useState<Encounter[]>([]);
   const [consultationQueue, setConsultationQueue] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -36,13 +37,15 @@ const EMRDashboard: React.FC = () => {
   const loadEncounters = async () => {
     try {
       setIsLoading(true);
-      const [triagedAppointments, inProgressAppointments] = await Promise.all([
+      const [triagedAppointments, inProgressAppointments, myActive] = await Promise.all([
         appointmentService.list({ status: 'TRIAGED', limit: 100 }),
         appointmentService.list({ status: 'IN_PROGRESS', limit: 100 }),
+        emrService.getMyActiveEncounters().catch(() => [] as Encounter[]),
       ]);
 
       setConsultationQueue(triagedAppointments.appointments || []);
       setEncounters((inProgressAppointments.appointments as unknown as Encounter[]) || []);
+      setActiveEncounters(myActive || []);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -108,6 +111,53 @@ const EMRDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Resume In-Progress Encounters */}
+      {activeEncounters.length > 0 && (
+        <Card className="mb-6 border-amber-300 bg-amber-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-amber-800">
+              <Clock className="w-5 h-5" />
+              Continue Consultation ({activeEncounters.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {activeEncounters.map((enc) => (
+              <div
+                key={enc.id}
+                className="flex items-center justify-between p-3 bg-white border border-amber-200 rounded-lg hover:shadow-sm transition-shadow"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <User className="w-5 h-5 text-amber-700" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {enc.patient?.firstName} {enc.patient?.lastName}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      MRN: {enc.patient?.mrn || 'N/A'} • {enc.encounterType}
+                      {enc.chiefComplaint ? ` • ${enc.chiefComplaint}` : ''}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400">Started</p>
+                    <p className="text-sm text-gray-600">
+                      {new Date(enc.startedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <Badge className="bg-amber-100 text-amber-800">IN PROGRESS</Badge>
+                  <Button onClick={() => navigate(`/encounters/${enc.id}`)}>
+                    Resume
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <Card>
@@ -116,7 +166,7 @@ const EMRDashboard: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-500">In Progress</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {consultationQueue.length}
+                  {activeEncounters.length}
                 </p>
               </div>
               <Clock className="w-8 h-8 text-yellow-200" />
@@ -154,7 +204,7 @@ const EMRDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Encounters</p>
-                <p className="text-2xl font-bold text-gray-600">{consultationQueue.length + encounters.length}</p>
+                <p className="text-2xl font-bold text-gray-600">{consultationQueue.length + activeEncounters.length}</p>
               </div>
               <ClipboardList className="w-8 h-8 text-gray-200" />
             </div>

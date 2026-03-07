@@ -113,6 +113,45 @@ router.get('/icd10/suggest', async (req, res) => {
 // ==================== ENCOUNTER ROUTES ====================
 
 /**
+ * Get current doctor's in-progress encounters (for resume functionality)
+ * GET /api/emr/encounters/my-active
+ */
+router.get('/encounters/my-active', requirePermission('VIEW_ENCOUNTER', 'CREATE_ENCOUNTER'), async (req: AuthRequest, res) => {
+  try {
+    const user = (req as any).user;
+    const encounters = await prisma.encounter.findMany({
+      where: {
+        tenantId: user.tenantId,
+        doctorId: user.userId,
+        status: 'IN_PROGRESS',
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            mrn: true,
+            dateOfBirth: true,
+            gender: true,
+          },
+        },
+        diagnoses: {
+          where: { diagnosisType: 'PRIMARY' },
+          take: 1,
+        },
+      },
+      orderBy: { startedAt: 'desc' },
+      take: 50,
+    });
+    return res.json({ success: true, data: encounters });
+  } catch (error: any) {
+    console.error('Get my active encounters error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * Create new encounter
  * POST /api/emr/encounters
  */

@@ -8,6 +8,9 @@ const tenantController = new TenantController();
 // Public route for tenant lookup
 router.get('/lookup/:subdomain', tenantController.lookupBySubdomain);
 
+// Public route to list active tenants (for registration dropdown)
+router.get('/list', tenantController.listPublic);
+
 // Protected routes
 router.use(authenticate);
 

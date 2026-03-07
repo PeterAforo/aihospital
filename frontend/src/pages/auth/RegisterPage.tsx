@@ -1,19 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { User, Mail, Lock, Phone, Loader2 } from "lucide-react";
+import { User, Mail, Lock, Phone, Loader2, Building2 } from "lucide-react";
 import { authService } from "@/services/auth.service";
+import api from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+
+interface TenantOption {
+  id: string;
+  name: string;
+  subdomain: string;
+}
 
 const registerSchema = z.object({
   tenantId: z.string().min(1, "Hospital is required"),
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().min(2, "Last name is required"),
   email: z.string().email("Invalid email"),
-  phone: z.string().regex(/^(\+233|0)[0-9]{9}$/, "Invalid phone format"),
+  phone: z.string().regex(/^(\+233|0)[0-9]{9}$/, "Invalid Ghana phone format (e.g. 0241234567)"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -55,13 +62,33 @@ const iconStyle: React.CSSProperties = {
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
+  const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [tenantsLoading, setTenantsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { tenantId: "ee69b2e7-5a6b-4240-b12e-135a069fa89e" },
+    defaultValues: { tenantId: "" },
   });
+
+  useEffect(() => {
+    const loadTenants = async () => {
+      try {
+        const res = await api.get('/tenants/list');
+        const list = res.data.data || [];
+        setTenants(list);
+        if (list.length === 1) {
+          setValue('tenantId', list[0].id);
+        }
+      } catch {
+        toast({ title: 'Warning', description: 'Could not load hospital list', variant: 'destructive' });
+      } finally {
+        setTenantsLoading(false);
+      }
+    };
+    loadTenants();
+  }, [setValue, toast]);
 
   const onSubmit = async (data: RegisterFormData) => {
     setLoading(true);
@@ -93,7 +120,27 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <input type="hidden" {...register("tenantId")} />
+        {tenants.length > 1 ? (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <label style={labelStyle}>Hospital</label>
+            <div style={{ position: "relative" }}>
+              <Building2 style={iconStyle} />
+              <select
+                {...register("tenantId")}
+                style={{ ...inputStyle, appearance: "auto" }}
+                disabled={tenantsLoading}
+              >
+                <option value="">{tenantsLoading ? 'Loading hospitals...' : 'Select hospital'}</option>
+                {tenants.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            {errors.tenantId && <p style={{ fontSize: "0.75rem", color: "#dc2626", marginTop: "0.25rem" }}>{errors.tenantId.message}</p>}
+          </motion.div>
+        ) : (
+          <input type="hidden" {...register("tenantId")} />
+        )}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>

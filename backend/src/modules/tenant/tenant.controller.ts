@@ -30,6 +30,25 @@ export class TenantController {
     }
   }
 
+  async listPublic(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tenants = await prisma.tenant.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          subdomain: true,
+          logo: true,
+        },
+        orderBy: { name: 'asc' },
+      });
+
+      sendSuccess(res, tenants);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getCurrent(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const tenant = await prisma.tenant.findUnique({
