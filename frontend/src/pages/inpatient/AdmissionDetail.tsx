@@ -165,7 +165,7 @@ const AdmissionDetailPage: React.FC = () => {
             <span className="text-sm text-gray-400 font-mono">{admission.admissionNumber}</span>
           </div>
           <div className="text-sm text-gray-500 mt-0.5">
-            MRN: {admission.patient.mrn} • {admission.ward.name} / Bed {admission.bed.bedNumber} • Day {daysSince}
+            MRN: {admission.patient.mrn} • {admission.ward?.name || 'No ward'} / Bed {admission.bed?.bedNumber || '—'} • Day {daysSince}
           </div>
         </div>
         {admission.status === 'ADMITTED' && (

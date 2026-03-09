@@ -432,6 +432,39 @@ export class EncounterService {
       }
     }
 
+    // Auto-create PENDING admission if disposition is ADMITTED
+    if (completed.disposition === 'ADMITTED') {
+      try {
+        const existingAdmission = await prisma.admission.findFirst({
+          where: { encounterId, tenantId },
+        });
+        if (!existingAdmission) {
+          const admCount = await prisma.admission.count({ where: { tenantId } });
+          const admissionNumber = `ADM-${String(admCount + 1).padStart(6, '0')}`;
+          const primaryDiagnosis = encounter.diagnoses?.find(d => d.diagnosisType === 'PRIMARY');
+          await prisma.admission.create({
+            data: {
+              tenantId,
+              branchId: branchId || encounter.branchId,
+              patientId: encounter.patientId,
+              encounterId,
+              admittingDoctorId: encounter.doctorId,
+              admissionNumber,
+              admissionReason: primaryDiagnosis?.icd10Description || encounter.chiefComplaint || 'Admission from consultation',
+              admissionSource: 'OPD',
+              status: 'PENDING',
+              priority: 'routine',
+              primaryDiagnosis: primaryDiagnosis ? `${primaryDiagnosis.icd10Code} - ${primaryDiagnosis.icd10Description}` : undefined,
+              createdBy: userId || encounter.doctorId,
+            },
+          });
+          console.log(`[ADMISSION] Created PENDING admission for patient ${encounter.patientId} from encounter ${encounterId}`);
+        }
+      } catch (error: any) {
+        console.warn(`[ADMISSION] Failed to auto-create admission for encounter ${encounterId}:`, error.message);
+      }
+    }
+
     return completed;
   }
 

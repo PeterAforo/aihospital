@@ -289,7 +289,7 @@ class InpatientService {
           bed: { select: { bedNumber: true } },
         },
       }),
-      prisma.bed.update({ where: { id: admission.bedId }, data: { status: 'CLEANING' } }),
+      ...(admission.bedId ? [prisma.bed.update({ where: { id: admission.bedId }, data: { status: 'CLEANING' } })] : []),
     ]);
 
     return updated;
@@ -309,10 +309,10 @@ class InpatientService {
         where: { id: admissionId },
         data: { bedId: data.toBedId, wardId: newBed.wardId },
       }),
-      prisma.bed.update({ where: { id: admission.bedId }, data: { status: 'CLEANING' } }),
+      ...(admission.bedId ? [prisma.bed.update({ where: { id: admission.bedId }, data: { status: 'CLEANING' } })] : []),
       prisma.bed.update({ where: { id: data.toBedId }, data: { status: 'OCCUPIED' } }),
       prisma.bedTransfer.create({
-        data: { admissionId, fromBedId: admission.bedId, toBedId: data.toBedId, reason: data.reason, authorizedBy: userId },
+        data: { admissionId, fromBedId: admission.bedId || data.toBedId, toBedId: data.toBedId, reason: data.reason, authorizedBy: userId },
       }),
     ]);
 

@@ -43,8 +43,8 @@ export interface AdmissionListItem {
   priority: string;
   primaryDiagnosis?: string;
   patient: { id: string; firstName: string; lastName: string; mrn: string; dateOfBirth: string; gender: string; phonePrimary: string };
-  ward: { id: string; name: string; wardType: string };
-  bed: { id: string; bedNumber: string };
+  ward?: { id: string; name: string; wardType: string } | null;
+  bed?: { id: string; bedNumber: string } | null;
   admittingDoctor: { id: string; firstName: string; lastName: string };
   attendingDoctor?: { id: string; firstName: string; lastName: string };
   _count: { nursingNotes: number; wardRounds: number; vitalCharts: number };

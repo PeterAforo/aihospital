@@ -2936,8 +2936,8 @@ model Admission {
   tenantId        String
   branchId        String
   patientId       String
-  wardId          String
-  bedId           String
+  wardId          String?
+  bedId           String?
   encounterId     String?
   admittingDoctorId String
   attendingDoctorId String?
@@ -2979,8 +2979,8 @@ model Admission {
   updatedAt       DateTime        @updatedAt
 
   patient         Patient         @relation(fields: [patientId], references: [id])
-  ward            Ward            @relation(fields: [wardId], references: [id])
-  bed             Bed             @relation(fields: [bedId], references: [id])
+  ward            Ward?           @relation(fields: [wardId], references: [id])
+  bed             Bed?            @relation(fields: [bedId], references: [id])
   admittingDoctor User            @relation("AdmittingDoctor", fields: [admittingDoctorId], references: [id])
   attendingDoctor User?           @relation("AttendingDoctor", fields: [attendingDoctorId], references: [id])
 

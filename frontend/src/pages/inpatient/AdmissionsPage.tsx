@@ -30,7 +30,7 @@ const AdmissionsPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ADMITTED');
+  const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
@@ -146,8 +146,14 @@ const AdmissionsPage: React.FC = () => {
                   <div className="text-xs text-gray-400">{adm.patient.mrn} • {adm.patient.gender}</div>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="font-medium">{adm.ward.name}</div>
-                  <div className="text-xs text-gray-400">Bed {adm.bed.bedNumber}</div>
+                  {adm.ward ? (
+                    <>
+                      <div className="font-medium">{adm.ward.name}</div>
+                      <div className="text-xs text-gray-400">Bed {adm.bed?.bedNumber || '—'}</div>
+                    </>
+                  ) : (
+                    <span className="text-xs text-amber-600 font-medium">Awaiting bed assignment</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="max-w-[200px] truncate">{adm.primaryDiagnosis || adm.admissionReason}</div>
@@ -168,6 +174,11 @@ const AdmissionsPage: React.FC = () => {
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1">
+                    {adm.status === 'PENDING' && (
+                      <button onClick={() => navigate(`/inpatient/admit?admissionId=${adm.id}&patientId=${adm.patient.id}`)} className="px-2 py-1 rounded text-xs bg-amber-100 text-amber-700 hover:bg-amber-200" title="Assign Ward & Bed">
+                        Assign Bed
+                      </button>
+                    )}
                     <button onClick={() => navigate(`/inpatient/admissions/${adm.id}`)} className="p-1.5 rounded hover:bg-gray-100 text-blue-600" title="View Details">
                       <Eye className="w-4 h-4" />
                     </button>
