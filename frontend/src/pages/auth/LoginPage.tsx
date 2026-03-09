@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useForm } from "react-hook-form";
@@ -19,6 +19,8 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [slowWarning, setSlowWarning] = useState(false);
+  const slowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { toast } = useToast();
@@ -32,14 +34,11 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    console.log("Login form submitted with:", data);
     setLoading(true);
+    setSlowWarning(false);
+    slowTimer.current = setTimeout(() => setSlowWarning(true), 5000);
     try {
-      console.log("Calling authService.login...");
       const response = await authService.login(data);
-      console.log("Login response:", response);
-      console.log("Response data:", response.data);
-      console.log("Response data.data:", response.data?.data);
       
       if (response.data?.data) {
         dispatch(setCredentials(response.data.data));
@@ -50,7 +49,6 @@ export default function LoginPage() {
         });
         navigate("/dashboard");
       } else {
-        console.error("Unexpected response structure:", response);
         toast({
           title: "Login failed",
           description: "Unexpected response from server",
@@ -58,15 +56,18 @@ export default function LoginPage() {
         });
       }
     } catch (error: any) {
-      console.error("Login error:", error);
-      console.error("Error response:", error.response);
+      const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
       toast({
         title: "Login failed",
-        description: error.response?.data?.message || "Invalid credentials",
+        description: isTimeout
+          ? "Server is taking too long to respond. Please try again in a moment."
+          : (error.response?.data?.message || "Invalid credentials"),
         variant: "destructive",
       });
     } finally {
+      if (slowTimer.current) clearTimeout(slowTimer.current);
       setLoading(false);
+      setSlowWarning(false);
     }
   };
 
@@ -170,6 +171,11 @@ export default function LoginPage() {
               "Sign in"
             )}
           </button>
+          {slowWarning && (
+            <p style={{ fontSize: "0.8rem", color: "#d97706", textAlign: "center", marginTop: "0.75rem", lineHeight: 1.5 }}>
+              The server is waking up (free tier). This can take up to 60 seconds on the first request. Please wait...
+            </p>
+          )}
         </motion.div>
       </form>
 
