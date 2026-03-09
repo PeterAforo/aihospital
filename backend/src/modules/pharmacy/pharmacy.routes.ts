@@ -1,11 +1,28 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, requirePermission, AuthRequest } from '../../common/middleware/auth';
+import { prisma } from '../../common/utils/prisma';
 import { dispensingService } from './dispensing.service';
 import { stockService } from './stock.service';
 import { purchaseOrderService } from './purchase-order.service';
 import { expiryAlertService } from './expiry-alert.service';
 
 const router = Router();
+
+// ── Response mappers: Prisma field names → frontend-expected names ──
+const mapSupplier = (s: any) => s ? { ...s, name: s.supplierName, code: s.supplierCode } : s;
+const mapPOItem = (item: any) => ({
+  ...item,
+  drugId: item.itemId,
+  totalCost: item.lineTotal ?? (item.quantityOrdered * item.unitCost),
+  drug: item.itemName ? { genericName: item.itemName, brandName: '', strength: '' } : item.drug,
+});
+const mapPO = (po: any) => po ? {
+  ...po,
+  orderNumber: po.poNumber,
+  expectedDate: po.expectedDeliveryDate,
+  supplier: mapSupplier(po.supplier),
+  items: po.items?.map(mapPOItem) || [],
+} : po;
 
 // Apply authentication to all routes
 router.use(authenticate);
@@ -17,8 +34,6 @@ router.get('/drugs', async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user!;
     const { limit, search } = req.query;
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
     const where: any = { tenantId: user.tenantId };
     if (search) {
       where.OR = [
@@ -311,7 +326,7 @@ router.get('/suppliers', requirePermission('VIEW_STOCK', 'MANAGE_SUPPLIERS'), as
     const user = req.user!;
     const { activeOnly } = req.query;
     const suppliers = await purchaseOrderService.getSuppliers(user.tenantId, activeOnly !== 'false');
-    res.json({ success: true, data: suppliers });
+    res.json({ success: true, data: suppliers.map(mapSupplier) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -331,7 +346,7 @@ router.post('/suppliers', requirePermission('MANAGE_SUPPLIERS'), async (req: Aut
       supplierName, supplierCode, contactPerson, phone, email, address, supplierType, paymentTerms, taxId, bankDetails, isApproved, notes
     });
     
-    res.status(201).json({ success: true, data: supplier });
+    res.status(201).json({ success: true, data: mapSupplier(supplier) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -342,7 +357,7 @@ router.put('/suppliers/:id', requirePermission('MANAGE_SUPPLIERS'), async (req: 
   try {
     const { id } = req.params;
     const supplier = await purchaseOrderService.updateSupplier(id, req.body);
-    res.json({ success: true, data: supplier });
+    res.json({ success: true, data: mapSupplier(supplier) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -364,7 +379,7 @@ router.get('/purchase-orders', requirePermission('VIEW_PURCHASE_ORDERS'), async 
       endDate ? new Date(endDate as string) : undefined
     );
     
-    res.json({ success: true, data: orders });
+    res.json({ success: true, data: orders.map(mapPO) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -380,7 +395,7 @@ router.get('/purchase-orders/:id', requirePermission('VIEW_PURCHASE_ORDERS'), as
       return res.status(404).json({ success: false, error: 'Purchase order not found' });
     }
     
-    res.json({ success: true, data: order });
+    res.json({ success: true, data: mapPO(order) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -390,20 +405,55 @@ router.get('/purchase-orders/:id', requirePermission('VIEW_PURCHASE_ORDERS'), as
 router.post('/purchase-orders', requirePermission('CREATE_PURCHASE_ORDER'), async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user!;
-    const { supplierId, expectedDeliveryDate, paymentTerms, deliveryLocation, notes, items } = req.body;
+    const { supplierId, expectedDeliveryDate, expectedDate, paymentTerms, deliveryLocation, notes, items } = req.body;
     
     if (!supplierId || !items || items.length === 0) {
       return res.status(400).json({ success: false, error: 'supplierId and items are required' });
     }
+
+    // Map frontend items (drugId-based) to the full PO item schema
+    const mappedItems = await Promise.all(
+      items.map(async (item: any) => {
+        // If item already has itemName/itemType, pass through (procurement page format)
+        if (item.itemName && item.itemType) return item;
+
+        // Otherwise, look up drug from drugId (pharmacy PO page format)
+        let itemName = item.drugName || item.itemName || 'Unknown Item';
+        if (item.drugId) {
+          try {
+            const drug = await prisma.drug.findUnique({
+              where: { id: item.drugId },
+              select: { genericName: true, brandName: true, strength: true, form: true },
+            });
+            if (drug) {
+              itemName = `${drug.genericName}${drug.brandName ? ` (${drug.brandName})` : ''}${drug.strength ? ` ${drug.strength}` : ''}`;
+            }
+          } catch { /* use fallback name */ }
+        }
+
+        return {
+          itemType: item.itemType || 'DRUG',
+          itemId: item.drugId || item.itemId,
+          itemName,
+          quantityOrdered: item.quantityOrdered,
+          unitOfMeasure: item.unitOfMeasure || item.unit || 'units',
+          unitCost: item.unitCost,
+          taxRate: item.taxRate || 0,
+          notes: item.notes,
+        };
+      })
+    );
+
+    const deliveryDate = expectedDeliveryDate || expectedDate;
     
     const order = await purchaseOrderService.createPurchaseOrder(
       user.tenantId,
       user.branchId || '',
       user.userId,
-      { supplierId, expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : undefined, paymentTerms, deliveryLocation, notes, items }
+      { supplierId, expectedDeliveryDate: deliveryDate ? new Date(deliveryDate) : undefined, paymentTerms, deliveryLocation, notes, items: mappedItems }
     );
     
-    res.status(201).json({ success: true, data: order });
+    res.status(201).json({ success: true, data: mapPO(order) });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
