@@ -252,11 +252,11 @@ export default function PurchaseOrderManagement() {
               <select
                 value={newOrder.supplierId}
                 onChange={e => setNewOrder(prev => ({ ...prev, supplierId: e.target.value }))}
-                className="w-full border rounded-lg p-2"
+                className="w-full border rounded-lg p-2 bg-white text-gray-900"
               >
-                <option value="">Select supplier...</option>
+                <option value="" className="text-gray-500">Select supplier...</option>
                 {suppliers.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id} className="text-gray-900 bg-white">{s.name}</option>
                 ))}
               </select>
             </div>
@@ -302,11 +302,11 @@ export default function PurchaseOrderManagement() {
                         updateItem(idx, 'drugId', e.target.value);
                         if (drug) updateItem(idx, 'drugName', drug.genericName);
                       }}
-                      className="w-full border rounded p-1.5 text-sm"
+                      className="w-full border rounded p-1.5 text-sm bg-white text-gray-900"
                     >
-                      <option value="">Select drug...</option>
+                      <option value="" className="text-gray-500">Select drug...</option>
                       {drugs.map(d => (
-                        <option key={d.id} value={d.id}>{d.genericName} {d.strength} ({d.form})</option>
+                        <option key={d.id} value={d.id} className="text-gray-900 bg-white">{d.genericName} {d.strength} ({d.form})</option>
                       ))}
                     </select>
                   </td>
@@ -401,9 +401,9 @@ export default function PurchaseOrderManagement() {
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="border rounded-lg px-3 py-2"
+          className="border rounded-lg px-3 py-2 bg-white text-gray-900"
         >
-          <option value="">All Statuses</option>
+          <option value="" className="text-gray-900 bg-white">All Statuses</option>
           <option value="DRAFT">Draft</option>
           <option value="SUBMITTED">Submitted</option>
           <option value="APPROVED">Approved</option>
