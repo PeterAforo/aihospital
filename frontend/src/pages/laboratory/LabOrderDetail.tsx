@@ -148,34 +148,9 @@ const LabOrderDetail: React.FC = () => {
     }
   };
 
-  const handleCollectSample = async () => {
-    if (!order || !order.items[0]) return;
-
-    try {
-      setIsSaving(true);
-      await laboratoryService.collectSample({
-        orderId: order.id,
-        orderItemId: order.items[0].id,
-        patientId: order.patientId,
-        sampleType: order.items[0].test.sampleType,
-        notes: '',
-      });
-      
-      toast({
-        title: 'Success',
-        description: 'Sample collection recorded',
-      });
-      
-      loadOrder();
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to record sample collection',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  const handleCollectSample = () => {
+    if (!order) return;
+    navigate(`/lab/collection/${order.id}`);
   };
 
   const handleVerifyResults = async () => {

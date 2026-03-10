@@ -58,6 +58,7 @@ import LabWorklist from './pages/laboratory/LabWorklist';
 import LabOrderDetail from './pages/laboratory/LabOrderDetail';
 import LabVerificationQueue from './pages/laboratory/LabVerificationQueue';
 import LabReport from './pages/laboratory/LabReport';
+import SampleCollectionPage from './pages/laboratory/SampleCollectionPage';
 
 // Billing
 import BillingDashboard from './pages/billing/BillingDashboard';
@@ -244,7 +245,9 @@ function App() {
         <Route path="/lab" element={<LabDashboard />} />
         <Route path="/lab/worklist" element={<LabWorklist />} />
         <Route path="/lab/verification" element={<LabVerificationQueue />} />
+        <Route path="/lab/collection/:orderId" element={<SampleCollectionPage />} />
         <Route path="/lab/order/:orderId" element={<LabOrderDetail />} />
+        <Route path="/lab/results/:orderId" element={<LabOrderDetail />} />
         <Route path="/lab/report/:orderId" element={<LabReport />} />
         
         {/* Billing */}

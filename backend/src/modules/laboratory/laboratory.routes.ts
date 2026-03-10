@@ -61,6 +61,7 @@ router.post('/samples/collect', requirePermission('COLLECT_SAMPLE'), async (req:
     
     res.status(201).json({ success: true, data: sample });
   } catch (error: any) {
+    console.error('[LAB_SAMPLE_COLLECT] Error:', error.message, error.stack?.slice(0, 500));
     res.status(500).json({ success: false, error: error.message });
   }
 });
