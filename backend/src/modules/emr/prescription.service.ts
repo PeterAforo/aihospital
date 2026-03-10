@@ -240,19 +240,20 @@ export class PrescriptionService {
    */
   getFrequencyOptions() {
     return [
-      { value: 'OD', label: 'Once daily (OD)' },
-      { value: 'BD', label: 'Twice daily (BD)' },
-      { value: 'TDS', label: 'Three times daily (TDS)' },
-      { value: 'QDS', label: 'Four times daily (QDS)' },
-      { value: 'PRN', label: 'As needed (PRN)' },
-      { value: 'STAT', label: 'Immediately (STAT)' },
-      { value: 'NOCTE', label: 'At night (NOCTE)' },
-      { value: 'MANE', label: 'In the morning (MANE)' },
-      { value: 'Q4H', label: 'Every 4 hours' },
-      { value: 'Q6H', label: 'Every 6 hours' },
-      { value: 'Q8H', label: 'Every 8 hours' },
-      { value: 'Q12H', label: 'Every 12 hours' },
-      { value: 'WEEKLY', label: 'Once weekly' },
+      { value: 'OD', label: 'Once daily (OD)', dosesPerDay: 1 },
+      { value: 'BD', label: 'Twice daily (BD)', dosesPerDay: 2 },
+      { value: 'TDS', label: 'Three times daily (TDS)', dosesPerDay: 3 },
+      { value: 'QDS', label: 'Four times daily (QDS)', dosesPerDay: 4 },
+      { value: 'PRN', label: 'As needed (PRN)', dosesPerDay: 0 },
+      { value: 'STAT', label: 'Immediately (STAT)', dosesPerDay: 1 },
+      { value: 'NOCTE', label: 'At night (NOCTE)', dosesPerDay: 1 },
+      { value: 'MANE', label: 'In the morning (MANE)', dosesPerDay: 1 },
+      { value: 'Q2H', label: 'Every 2 hours', dosesPerDay: 12 },
+      { value: 'Q4H', label: 'Every 4 hours', dosesPerDay: 6 },
+      { value: 'Q6H', label: 'Every 6 hours', dosesPerDay: 4 },
+      { value: 'Q8H', label: 'Every 8 hours', dosesPerDay: 3 },
+      { value: 'Q12H', label: 'Every 12 hours', dosesPerDay: 2 },
+      { value: 'WEEKLY', label: 'Once weekly', dosesPerDay: 0.143 },
     ];
   }
 
@@ -261,17 +262,23 @@ export class PrescriptionService {
    */
   getDurationOptions() {
     return [
-      { value: '3 days', label: '3 days' },
-      { value: '5 days', label: '5 days' },
-      { value: '7 days', label: '7 days (1 week)' },
-      { value: '10 days', label: '10 days' },
-      { value: '14 days', label: '14 days (2 weeks)' },
-      { value: '21 days', label: '21 days (3 weeks)' },
-      { value: '28 days', label: '28 days (4 weeks)' },
-      { value: '30 days', label: '30 days (1 month)' },
-      { value: '60 days', label: '60 days (2 months)' },
-      { value: '90 days', label: '90 days (3 months)' },
-      { value: 'Continuous', label: 'Continuous/Ongoing' },
+      { value: '6 hours', label: '6 hours', days: 0.25 },
+      { value: '8 hours', label: '8 hours', days: 0.333 },
+      { value: '12 hours', label: '12 hours', days: 0.5 },
+      { value: '24 hours', label: '24 hours (1 day)', days: 1 },
+      { value: '48 hours', label: '48 hours (2 days)', days: 2 },
+      { value: '72 hours', label: '72 hours (3 days)', days: 3 },
+      { value: '3 days', label: '3 days', days: 3 },
+      { value: '5 days', label: '5 days', days: 5 },
+      { value: '7 days', label: '7 days (1 week)', days: 7 },
+      { value: '10 days', label: '10 days', days: 10 },
+      { value: '14 days', label: '14 days (2 weeks)', days: 14 },
+      { value: '21 days', label: '21 days (3 weeks)', days: 21 },
+      { value: '28 days', label: '28 days (4 weeks)', days: 28 },
+      { value: '30 days', label: '30 days (1 month)', days: 30 },
+      { value: '60 days', label: '60 days (2 months)', days: 60 },
+      { value: '90 days', label: '90 days (3 months)', days: 90 },
+      { value: 'Continuous', label: 'Continuous/Ongoing', days: 0 },
     ];
   }
 }

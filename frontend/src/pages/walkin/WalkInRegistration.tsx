@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Search, UserPlus, ArrowRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, UserPlus, ArrowRight, CheckCircle, AlertCircle, Loader2, RotateCcw, Stethoscope, Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { patientService } from '@/services/patient.service';
-import { appointmentService } from '@/services/appointment.service';
+import { appointmentService, ReviewCheckResult, VisitType } from '@/services/appointment.service';
 import api from '@/services/api';
 
 type Step = 'search' | 'register' | 'confirm';
@@ -22,6 +23,12 @@ interface PatientResult {
   dateOfBirth: string;
   gender: string;
   phonePrimary?: string;
+}
+
+interface DepartmentOption {
+  id: string;
+  name: string;
+  code?: string;
 }
 
 interface QuickRegisterForm {
@@ -51,6 +58,10 @@ export default function WalkInRegistration() {
   const [selectedPatient, setSelectedPatient] = useState<PatientResult | null>(null);
   const [form, setForm] = useState<QuickRegisterForm>(initialForm);
   const [chiefComplaint, setChiefComplaint] = useState('');
+  const [visitType, setVisitType] = useState<VisitType>('WALK_IN');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [reviewData, setReviewData] = useState<ReviewCheckResult | null>(null);
+  const [checkingReview, setCheckingReview] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,10 +78,18 @@ export default function WalkInRegistration() {
     },
   });
 
+  // Fetch departments for specialist selector
+  const { data: departments } = useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => {
+      const res = await api.get('/rbac/departments');
+      return (res.data.data || []) as DepartmentOption[];
+    },
+  });
+
   // Search patients - live search with debounce
   const [debouncedQuery, setDebouncedQuery] = useState('');
   
-  // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
@@ -97,14 +116,49 @@ export default function WalkInRegistration() {
     }),
   });
 
+  // Check review status when patient is selected
+  const checkReviewStatus = async (patientId: string) => {
+    setCheckingReview(true);
+    try {
+      const result = await appointmentService.checkReviewStatus(patientId);
+      setReviewData(result);
+    } catch {
+      setReviewData(null);
+    } finally {
+      setCheckingReview(false);
+    }
+  };
+
   const handleSelectPatient = (patient: PatientResult) => {
     setSelectedPatient(patient);
+    setReviewData(null);
+    setVisitType('WALK_IN');
+    setSelectedDepartment('');
+    setChiefComplaint('');
     setStep('confirm');
+    checkReviewStatus(patient.id);
   };
 
   const handleNewPatient = () => {
     setSelectedPatient(null);
+    setReviewData(null);
+    setVisitType('WALK_IN');
     setStep('register');
+  };
+
+  // Quick review check-in: auto-fill complaint and skip billing
+  const handleReviewCheckIn = async () => {
+    if (!selectedPatient || !reviewData?.encounter) return;
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const complaint = `Follow-up / Review — Previous: ${reviewData.encounter.chiefComplaint || 'consultation'}`;
+      await processWalkIn(selectedPatient.id, complaint, 'REVIEW', false);
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to check in patient for review'));
+      setIsProcessing(false);
+    }
   };
 
   const handleRegisterAndCheckIn = async () => {
@@ -112,12 +166,9 @@ export default function WalkInRegistration() {
     setError(null);
 
     try {
-      // Step 1: Create patient
       const patientResponse = await createPatientMutation.mutateAsync(form);
       const newPatient = patientResponse.data;
-
-      // Step 2: Create walk-in appointment and check-in
-      await processWalkIn(newPatient.id, form.chiefComplaint);
+      await processWalkIn(newPatient.id, form.chiefComplaint, visitType, true);
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to register patient'));
       setIsProcessing(false);
@@ -130,30 +181,39 @@ export default function WalkInRegistration() {
     setError(null);
 
     try {
-      await processWalkIn(selectedPatient.id, chiefComplaint);
+      const isBillable = visitType !== 'REVIEW';
+      await processWalkIn(selectedPatient.id, chiefComplaint, visitType, isBillable);
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to check in patient'));
       setIsProcessing(false);
     }
   };
 
-  const processWalkIn = async (patientId: string, complaint: string) => {
+  const processWalkIn = async (
+    patientId: string,
+    complaint: string,
+    vType: VisitType = 'WALK_IN',
+    isBillable = true
+  ) => {
     const branchId = branchData?.[0]?.id;
     if (!branchId) {
       throw new Error('No branch available');
     }
 
-    // Get first available doctor for today
-    const doctorsRes = await api.get('/appointments/doctors/available', {
-      params: {
-        branchId,
-        date: new Date().toISOString().split('T')[0],
-      },
-    });
+    // For review visits, prefer the original doctor
+    let doctorId: string | undefined;
 
-    let doctorId = doctorsRes.data.data?.[0]?.id;
+    if (vType === 'REVIEW' && reviewData?.encounter?.doctorId) {
+      doctorId = reviewData.encounter.doctorId;
+    }
 
-    // Fallback to any configured doctor if none are currently available
+    if (!doctorId) {
+      const doctorsRes = await api.get('/appointments/doctors/available', {
+        params: { branchId, date: new Date().toISOString().split('T')[0] },
+      });
+      doctorId = doctorsRes.data.data?.[0]?.id;
+    }
+
     if (!doctorId) {
       const fallbackDoctorsRes = await api.get('/appointments/schedules/doctors');
       doctorId = fallbackDoctorsRes.data.data?.[0]?.id;
@@ -163,7 +223,6 @@ export default function WalkInRegistration() {
       throw new Error('No doctors available for walk-in');
     }
 
-    // Create walk-in appointment
     const now = new Date();
     const appointmentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
@@ -174,54 +233,45 @@ export default function WalkInRegistration() {
       appointmentDate: now.toISOString().split('T')[0],
       appointmentTime,
       duration: 30,
-      type: 'CONSULTATION',
+      type: vType === 'REVIEW' ? 'FOLLOW_UP' : 'CONSULTATION',
+      visitType: vType,
+      departmentId: vType === 'SPECIALIST' && selectedDepartment ? selectedDepartment : undefined,
       reason: complaint,
       isWalkIn: true,
+      isBillable,
     });
 
-    // Check-in the appointment
     await appointmentService.checkIn(appointment.id);
 
-    // Navigate to triage
-    navigate('/triage', { 
-      state: { 
-        message: 'Walk-in patient checked in successfully. Ready for triage.',
-        patientId,
-      } 
-    });
+    const msg = vType === 'REVIEW'
+      ? 'Review patient checked in (no consultation charge). Ready for triage.'
+      : vType === 'SPECIALIST'
+        ? 'Specialist visit checked in. Ready for triage.'
+        : 'Walk-in patient checked in successfully. Ready for triage.';
+
+    navigate('/triage', { state: { message: msg, patientId } });
   };
 
   const patients = searchResults?.data || [];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: '#111827' }}>
-          OPD Registration
-        </h1>
-        <p style={{ color: '#6b7280', marginTop: '4px' }}>
-          Quick registration and check-in for outpatient visits
-        </p>
+    <div className="p-6 max-w-[900px] mx-auto">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">OPD Registration</h1>
+        <p className="text-gray-500 mt-1">Quick registration and check-in for outpatient visits</p>
       </div>
 
       {/* Progress Steps */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+      <div className="flex gap-2 mb-6">
         {['Search Patient', 'Register/Select', 'Check In'].map((label, idx) => {
           const stepMap: Step[] = ['search', 'register', 'confirm'];
           const isActive = stepMap.indexOf(step) >= idx;
           return (
             <div
               key={label}
-              style={{
-                flex: 1,
-                padding: '12px',
-                borderRadius: '8px',
-                backgroundColor: isActive ? '#2563eb' : '#e5e7eb',
-                color: isActive ? 'white' : '#6b7280',
-                textAlign: 'center',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-              }}
+              className={`flex-1 py-3 rounded-lg text-center text-sm font-medium ${
+                isActive ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+              }`}
             >
               {label}
             </div>
@@ -230,17 +280,7 @@ export default function WalkInRegistration() {
       </div>
 
       {error && (
-        <div style={{
-          padding: '12px 16px',
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          borderRadius: '8px',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          color: '#dc2626',
-        }}>
+        <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
           <AlertCircle size={20} />
           {error}
         </div>
@@ -250,69 +290,46 @@ export default function WalkInRegistration() {
       {step === 'search' && (
         <Card>
           <CardHeader>
-            <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CardTitle className="flex items-center gap-2">
               <Search size={20} />
               Search Existing Patient
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', position: 'relative' }}>
-              <div style={{ flex: 1, position: 'relative' }}>
+            <div className="relative mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   placeholder="Start typing to search by name, phone, MRN, or Ghana Card..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{ paddingRight: '40px' }}
+                  className="pl-10 pr-10"
                 />
                 {searching && (
-                  <Loader2 
-                    className="animate-spin" 
-                    size={16} 
-                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} 
-                  />
+                  <Loader2 className="animate-spin absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 )}
               </div>
             </div>
 
-            {/* Search Results */}
             {patients.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '8px' }}>
-                  Found {patients.length} patient(s)
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-2">Found {patients.length} patient(s)</p>
+                <div className="flex flex-col gap-2">
                   {patients.map((patient: PatientResult) => (
                     <div
                       key={patient.id}
                       onClick={() => handleSelectPatient(patient)}
-                      style={{
-                        padding: '12px 16px',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#2563eb';
-                        e.currentTarget.style.backgroundColor = '#eff6ff';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.backgroundColor = 'white';
-                      }}
+                      className="p-3 border rounded-lg cursor-pointer flex justify-between items-center hover:border-blue-500 hover:bg-blue-50 transition-all"
                     >
                       <div>
-                        <p style={{ fontWeight: 600, color: '#111827' }}>
+                        <p className="font-semibold text-gray-900">
                           {patient.firstName} {patient.lastName}
                         </p>
-                        <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                          MRN: {patient.mrn} • {patient.phonePrimary || 'No phone'}
+                        <p className="text-sm text-gray-500">
+                          MRN: {patient.mrn} &bull; {patient.phonePrimary || 'No phone'}
                         </p>
                       </div>
-                      <ArrowRight size={20} style={{ color: '#6b7280' }} />
+                      <ArrowRight size={20} className="text-gray-400" />
                     </div>
                   ))}
                 </div>
@@ -320,15 +337,15 @@ export default function WalkInRegistration() {
             )}
 
             {searchResults && patients.length === 0 && (
-              <p style={{ color: '#6b7280', textAlign: 'center', padding: '16px' }}>
+              <p className="text-gray-500 text-center py-4">
                 No patients found. Register as new patient below.
               </p>
             )}
 
-            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px', marginTop: '16px' }}>
-              <Button onClick={handleNewPatient} variant="outline" style={{ width: '100%' }}>
-                <UserPlus size={16} />
-                <span style={{ marginLeft: '8px' }}>Register New Patient</span>
+            <div className="border-t pt-4 mt-4">
+              <Button onClick={handleNewPatient} variant="outline" className="w-full">
+                <UserPlus size={16} className="mr-2" />
+                Register New Patient
               </Button>
             </div>
           </CardContent>
@@ -339,43 +356,29 @@ export default function WalkInRegistration() {
       {step === 'register' && (
         <Card>
           <CardHeader>
-            <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CardTitle className="flex items-center gap-2">
               <UserPlus size={20} />
               Quick Registration
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>First Name *</Label>
-                <Input
-                  value={form.firstName}
-                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  placeholder="First name"
-                />
+                <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="First name" />
               </div>
               <div>
                 <Label>Last Name *</Label>
-                <Input
-                  value={form.lastName}
-                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  placeholder="Last name"
-                />
+                <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} placeholder="Last name" />
               </div>
               <div>
                 <Label>Date of Birth *</Label>
-                <Input
-                  type="date"
-                  value={form.dateOfBirth}
-                  onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
-                />
+                <Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} />
               </div>
               <div>
                 <Label>Gender *</Label>
                 <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v as any })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="MALE">Male</SelectItem>
                     <SelectItem value="FEMALE">Female</SelectItem>
@@ -385,51 +388,25 @@ export default function WalkInRegistration() {
               </div>
               <div>
                 <Label>Phone Number *</Label>
-                <Input
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  placeholder="0XX XXX XXXX"
-                />
+                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="0XX XXX XXXX" />
               </div>
               <div>
                 <Label>Address</Label>
-                <Input
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  placeholder="Address"
-                />
+                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Address" />
               </div>
-              <div style={{ gridColumn: '1 / -1' }}>
+              <div className="col-span-2">
                 <Label>Chief Complaint / Reason for Visit *</Label>
-                <Textarea
-                  value={form.chiefComplaint}
-                  onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })}
-                  placeholder="Why is the patient visiting today?"
-                  rows={3}
-                />
+                <Textarea value={form.chiefComplaint} onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })} placeholder="Why is the patient visiting today?" rows={3} />
               </div>
             </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <Button variant="outline" onClick={() => setStep('search')}>
-                Back
-              </Button>
+            <div className="flex gap-3 mt-6">
+              <Button variant="outline" onClick={() => setStep('search')}>Back</Button>
               <Button
                 onClick={handleRegisterAndCheckIn}
                 disabled={isProcessing || !form.firstName || !form.lastName || !form.dateOfBirth || !form.phone || !form.chiefComplaint}
-                style={{ flex: 1 }}
+                className="flex-1"
               >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />
-                    <span style={{ marginLeft: '8px' }}>Processing...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={16} />
-                    <span style={{ marginLeft: '8px' }}>Register & Check In</span>
-                  </>
-                )}
+                {isProcessing ? <><Loader2 className="animate-spin w-4 h-4 mr-2" />Processing...</> : <><CheckCircle size={16} className="mr-2" />Register &amp; Check In</>}
               </Button>
             </div>
           </CardContent>
@@ -440,55 +417,140 @@ export default function WalkInRegistration() {
       {step === 'confirm' && selectedPatient && (
         <Card>
           <CardHeader>
-            <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CardTitle className="flex items-center gap-2">
               <CheckCircle size={20} />
               Confirm Check-In
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f0fdf4',
-              borderRadius: '8px',
-              marginBottom: '16px',
-            }}>
-              <p style={{ fontWeight: 600, fontSize: '1.125rem', color: '#166534' }}>
+          <CardContent className="space-y-4">
+            {/* Patient summary */}
+            <div className="p-4 bg-green-50 rounded-lg">
+              <p className="font-semibold text-lg text-green-800">
                 {selectedPatient.firstName} {selectedPatient.lastName}
               </p>
-              <p style={{ color: '#15803d', fontSize: '0.875rem' }}>
-                MRN: {selectedPatient.mrn} • DOB: {new Date(selectedPatient.dateOfBirth).toLocaleDateString()}
+              <p className="text-green-700 text-sm">
+                MRN: {selectedPatient.mrn} &bull; DOB: {new Date(selectedPatient.dateOfBirth).toLocaleDateString()}
               </p>
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
+            {/* Review badge */}
+            {checkingReview && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Loader2 className="animate-spin w-4 h-4" /> Checking follow-up status...
+              </div>
+            )}
+
+            {reviewData?.isReview && reviewData.encounter && (
+              <div
+                className="p-4 bg-amber-50 border border-amber-200 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors"
+                onClick={handleReviewCheckIn}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge className="bg-amber-500 text-white">
+                    <RotateCcw className="w-3 h-3 mr-1" />
+                    Review Patient
+                  </Badge>
+                  <span className="text-xs text-amber-700">Click to check-in as review (no consultation charge)</span>
+                </div>
+                <p className="text-sm text-amber-800">
+                  Follow-up due by <strong>{new Date(reviewData.encounter.followUpDate).toLocaleDateString()}</strong>
+                  {reviewData.encounter.doctorName && <> with <strong>{reviewData.encounter.doctorName}</strong></>}
+                </p>
+                {reviewData.encounter.followUpPlan && (
+                  <p className="text-xs text-amber-700 mt-1">Plan: {reviewData.encounter.followUpPlan}</p>
+                )}
+                {reviewData.encounter.chiefComplaint && (
+                  <p className="text-xs text-amber-600 mt-0.5">Previous complaint: {reviewData.encounter.chiefComplaint}</p>
+                )}
+              </div>
+            )}
+
+            {/* Visit Type Selector */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Visit Type *</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {([
+                  { value: 'WALK_IN' as VisitType, label: 'Walk-In', icon: <UserPlus className="w-5 h-5" />, desc: 'General consultation' },
+                  { value: 'REVIEW' as VisitType, label: 'Review', icon: <RotateCcw className="w-5 h-5" />, desc: 'Follow-up visit' },
+                  { value: 'SPECIALIST' as VisitType, label: 'Specialist', icon: <Stethoscope className="w-5 h-5" />, desc: 'See a specialist' },
+                ]).map((opt) => (
+                  <div
+                    key={opt.value}
+                    onClick={() => {
+                      setVisitType(opt.value);
+                      if (opt.value !== 'SPECIALIST') setSelectedDepartment('');
+                    }}
+                    className={`p-3 border-2 rounded-lg cursor-pointer text-center transition-all ${
+                      visitType === opt.value
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <div className="flex justify-center mb-1">{opt.icon}</div>
+                    <p className="font-medium text-sm">{opt.label}</p>
+                    <p className="text-xs opacity-70">{opt.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Specialist department selector */}
+            {visitType === 'SPECIALIST' && (
+              <div>
+                <Label className="text-sm font-medium flex items-center gap-1">
+                  <Building2 className="w-4 h-4" />
+                  Specialist Service / Department *
+                </Label>
+                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select department..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(departments || []).map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name} {dept.code && `(${dept.code})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Chief complaint */}
+            <div>
               <Label>Chief Complaint / Reason for Visit *</Label>
               <Textarea
                 value={chiefComplaint}
                 onChange={(e) => setChiefComplaint(e.target.value)}
-                placeholder="Why is the patient visiting today?"
+                placeholder={
+                  visitType === 'REVIEW'
+                    ? 'Follow-up / Review...'
+                    : visitType === 'SPECIALIST'
+                      ? 'Reason for specialist referral...'
+                      : 'Why is the patient visiting today?'
+                }
                 rows={3}
               />
             </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <Button variant="outline" onClick={() => setStep('search')}>
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => { setStep('search'); setReviewData(null); }}>
                 Back
               </Button>
               <Button
                 onClick={handleExistingPatientCheckIn}
-                disabled={isProcessing || !chiefComplaint}
-                style={{ flex: 1 }}
+                disabled={
+                  isProcessing ||
+                  !chiefComplaint ||
+                  (visitType === 'SPECIALIST' && !selectedDepartment)
+                }
+                className="flex-1"
               >
                 {isProcessing ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />
-                    <span style={{ marginLeft: '8px' }}>Processing...</span>
-                  </>
+                  <><Loader2 className="animate-spin w-4 h-4 mr-2" />Processing...</>
                 ) : (
-                  <>
-                    <CheckCircle size={16} />
-                    <span style={{ marginLeft: '8px' }}>Check In Patient</span>
-                  </>
+                  <><CheckCircle size={16} className="mr-2" />Check In Patient</>
                 )}
               </Button>
             </div>

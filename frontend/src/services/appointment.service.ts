@@ -41,6 +41,8 @@ export interface Appointment {
 export type AppointmentType = 'CONSULTATION' | 'FOLLOW_UP' | 'PROCEDURE' | 'CHECKUP' | 'EMERGENCY';
 export type AppointmentStatus = 'SCHEDULED' | 'CONFIRMED' | 'CHECKED_IN' | 'TRIAGED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
+export type VisitType = 'WALK_IN' | 'REVIEW' | 'SPECIALIST';
+
 export interface CreateAppointmentRequest {
   branchId: string;
   patientId: string;
@@ -49,9 +51,25 @@ export interface CreateAppointmentRequest {
   appointmentTime: string;
   duration?: number;
   type: AppointmentType;
+  visitType?: VisitType;
+  departmentId?: string;
   reason?: string;
   notes?: string;
   isWalkIn?: boolean;
+  isBillable?: boolean;
+}
+
+export interface ReviewCheckResult {
+  isReview: boolean;
+  encounter: {
+    id: string;
+    followUpDate: string;
+    followUpPlan: string | null;
+    completedAt: string;
+    chiefComplaint: string | null;
+    doctorName: string | null;
+    doctorId: string | null;
+  } | null;
 }
 
 export interface UpdateAppointmentRequest {
@@ -213,6 +231,11 @@ class AppointmentService {
 
   async deleteSchedule(id: string): Promise<void> {
     await api.delete(`/appointments/schedules/${id}`);
+  }
+
+  async checkReviewStatus(patientId: string): Promise<ReviewCheckResult> {
+    const response = await api.get(`/appointments/review-check/${patientId}`);
+    return response.data.data;
   }
 }
 

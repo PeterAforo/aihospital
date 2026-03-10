@@ -367,11 +367,13 @@ export interface Prescription {
 export interface FrequencyOption {
   value: string;
   label: string;
+  dosesPerDay: number;
 }
 
 export interface DurationOption {
   value: string;
   label: string;
+  days: number;
 }
 
 export type CDSAlertSeverity = 'CRITICAL' | 'WARNING' | 'INFO';

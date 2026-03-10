@@ -118,16 +118,25 @@ export const PrescriptionPanel: React.FC<PrescriptionPanelProps> = ({
     }
   };
 
+  const computeQuantity = (frequencyValue: string, durationValue: string): number => {
+    const freq = frequencies.find(f => f.value === frequencyValue);
+    const dur = durations.find(d => d.value === durationValue);
+    if (!freq || !dur || freq.dosesPerDay === 0 || dur.days === 0) return 0;
+    return Math.ceil(freq.dosesPerDay * dur.days);
+  };
+
   const handleAddDrug = (drug: Drug) => {
     if (!prescriptionItems.find(item => item.drug.id === drug.id)) {
+      const defaultFreq = 'BD';
+      const defaultDur = '7 days';
       const newItems = [
         ...prescriptionItems,
         {
           drug,
           dosage: drug.strength || '',
-          frequency: 'BD',
-          duration: '7 days',
-          quantity: 14,
+          frequency: defaultFreq,
+          duration: defaultDur,
+          quantity: computeQuantity(defaultFreq, defaultDur),
           instructions: '',
         },
       ];
@@ -146,9 +155,14 @@ export const PrescriptionPanel: React.FC<PrescriptionPanelProps> = ({
 
   const handleUpdateItem = (drugId: string, field: keyof PrescriptionItemForm, value: any) => {
     setPrescriptionItems(
-      prescriptionItems.map(item =>
-        item.drug.id === drugId ? { ...item, [field]: value } : item
-      )
+      prescriptionItems.map(item => {
+        if (item.drug.id !== drugId) return item;
+        const updated = { ...item, [field]: value };
+        if (field === 'frequency' || field === 'duration') {
+          updated.quantity = computeQuantity(updated.frequency, updated.duration);
+        }
+        return updated;
+      })
     );
   };
 
@@ -391,9 +405,9 @@ export const PrescriptionPanel: React.FC<PrescriptionPanelProps> = ({
                         <Input
                           type="number"
                           value={item.quantity}
-                          onChange={(e) => handleUpdateItem(item.drug.id, 'quantity', parseInt(e.target.value) || 0)}
-                          min={1}
-                          className="mt-1"
+                          readOnly
+                          className="mt-1 bg-gray-100 cursor-not-allowed"
+                          title={`Auto-calculated: ${frequencies.find(f => f.value === item.frequency)?.dosesPerDay ?? '?'} doses/day × ${durations.find(d => d.value === item.duration)?.days ?? '?'} days`}
                         />
                       </div>
                     </div>

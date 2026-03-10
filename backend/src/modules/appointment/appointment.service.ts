@@ -27,6 +27,7 @@ export class AppointmentService {
       data: {
         tenantId,
         branchId: data.branchId,
+        departmentId: (data as any).departmentId || undefined,
         patientId: data.patientId,
         doctorId: data.doctorId,
         appointmentDate: new Date(data.appointmentDate),
@@ -34,7 +35,11 @@ export class AppointmentService {
         endTime,
         duration: data.duration || 30,
         chiefComplaint: data.reason,
-        specialInstructions: data.notes,
+        specialInstructions: data.notes
+          ? data.notes
+          : (data as any).visitType
+            ? `Visit Type: ${(data as any).visitType}`
+            : undefined,
         isWalkIn: data.isWalkIn || false,
         bookingChannel: data.isWalkIn ? 'WALKIN' : 'PORTAL',
       },

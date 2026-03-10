@@ -9,10 +9,13 @@ export const createAppointmentSchema = z.object({
   appointmentTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Time must be in HH:MM format'),
   duration: z.number().min(15).max(120).optional().default(30),
   type: z.enum(['CONSULTATION', 'FOLLOW_UP', 'PROCEDURE', 'CHECKUP', 'EMERGENCY']).optional(),
+  visitType: z.enum(['WALK_IN', 'REVIEW', 'SPECIALIST']).optional(),
+  departmentId: z.string().uuid().optional(),
   reason: z.string().optional(),
   notes: z.string().optional(),
   sendReminder: z.boolean().optional().default(true),
   isWalkIn: z.boolean().optional().default(false),
+  isBillable: z.boolean().optional(),
 }).refine(
   (data) => {
     // Walk-ins are allowed for today, scheduled appointments must be today or future
