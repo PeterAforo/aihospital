@@ -171,6 +171,11 @@ class InpatientService {
     return res.data.data;
   }
 
+  async assignBed(admissionId: string, data: { wardId: string; bedId: string; attendingDoctorId?: string }): Promise<any> {
+    const res = await api.post(`/inpatient/admissions/${admissionId}/assign-bed`, data);
+    return res.data.data;
+  }
+
   async dischargePatient(admissionId: string, data: {
     dischargeType?: string; dischargeSummary?: string; dischargeNotes?: string;
     dischargeMedications?: string; followUpDate?: string; followUpInstructions?: string;

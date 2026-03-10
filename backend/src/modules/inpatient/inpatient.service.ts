@@ -187,6 +187,38 @@ class InpatientService {
     return admission;
   }
 
+  async assignBed(admissionId: string, userId: string, data: {
+    wardId: string; bedId: string; attendingDoctorId?: string;
+  }) {
+    const existing = await prisma.admission.findUnique({ where: { id: admissionId } });
+    if (!existing) throw new Error('Admission not found');
+    if (existing.status !== 'PENDING') throw new Error('Only PENDING admissions can have beds assigned');
+
+    const bed = await prisma.bed.findUnique({ where: { id: data.bedId } });
+    if (!bed || bed.status !== 'AVAILABLE') throw new Error('Bed is not available');
+
+    const [admission] = await prisma.$transaction([
+      prisma.admission.update({
+        where: { id: admissionId },
+        data: {
+          wardId: data.wardId,
+          bedId: data.bedId,
+          attendingDoctorId: data.attendingDoctorId || undefined,
+          status: 'ADMITTED',
+          admissionDate: new Date(),
+        },
+        include: {
+          patient: { select: { id: true, firstName: true, lastName: true, mrn: true } },
+          ward: { select: { name: true, wardType: true } },
+          bed: { select: { bedNumber: true } },
+        },
+      }),
+      prisma.bed.update({ where: { id: data.bedId }, data: { status: 'OCCUPIED' } }),
+    ]);
+
+    return admission;
+  }
+
   async listAdmissions(tenantId: string, filters: {
     branchId?: string; wardId?: string; status?: AdmissionStatus;
     patientId?: string; search?: string; page?: number; limit?: number;

@@ -143,6 +143,18 @@ router.post('/admissions', async (req: any, res: Response) => {
   }
 });
 
+// ==================== ASSIGN BED (for PENDING admissions) ====================
+
+router.post('/admissions/:admissionId/assign-bed', async (req: any, res: Response) => {
+  try {
+    const user = req.user!;
+    const admission = await inpatientService.assignBed(req.params.admissionId, user.id, req.body);
+    res.json({ success: true, data: admission });
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 // ==================== DISCHARGE ====================
 
 router.post('/admissions/:admissionId/discharge', async (req: any, res: Response) => {

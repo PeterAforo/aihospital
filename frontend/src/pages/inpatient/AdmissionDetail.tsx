@@ -32,6 +32,8 @@ const AdmissionDetailPage: React.FC = () => {
   const [vitalsForm, setVitalsForm] = useState({ bloodPressureSystolic: '', bloodPressureDiastolic: '', temperature: '', pulse: '', respiratoryRate: '', oxygenSaturation: '', painLevel: '', notes: '' });
   const [showAddMed, setShowAddMed] = useState(false);
   const [medForm, setMedForm] = useState({ medicationName: '', dosage: '', route: 'oral', frequency: '', scheduledTime: '' });
+  const [showAddCarePlan, setShowAddCarePlan] = useState(false);
+  const [carePlanForm, setCarePlanForm] = useState({ problem: '', goal: '', interventions: '' });
 
   const load = async () => {
     if (!admissionId) return;
@@ -122,6 +124,19 @@ const AdmissionDetailPage: React.FC = () => {
       toast({ title: 'Success', description: 'Medication scheduled' });
       setShowAddMed(false);
       setMedForm({ medicationName: '', dosage: '', route: 'oral', frequency: '', scheduledTime: '' });
+      load();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleAddCarePlan = async () => {
+    if (!admissionId || !carePlanForm.problem || !carePlanForm.goal || !carePlanForm.interventions) return;
+    try {
+      await inpatientService.addCarePlan(admissionId, carePlanForm);
+      toast({ title: 'Success', description: 'Care plan added' });
+      setShowAddCarePlan(false);
+      setCarePlanForm({ problem: '', goal: '', interventions: '' });
       load();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -383,7 +398,7 @@ const AdmissionDetailPage: React.FC = () => {
       {activeTab === 'care-plans' && (
         <div>
           <div className="flex justify-end mb-3">
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-1" /> Add Care Plan</Button>
+            <Button size="sm" onClick={() => setShowAddCarePlan(true)} className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-1" /> Add Care Plan</Button>
           </div>
           <div className="space-y-3">
             {admission.carePlans?.map((plan: any) => (
@@ -516,6 +531,30 @@ const AdmissionDetailPage: React.FC = () => {
               <div className="flex justify-end gap-2 pt-3 border-t">
                 <Button variant="outline" onClick={() => setShowAddVitals(false)}>Cancel</Button>
                 <Button onClick={handleAddVitals} className="bg-blue-600 hover:bg-blue-700">Save Vitals</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Care Plan Modal */}
+      {showAddCarePlan && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowAddCarePlan(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><Heart className="w-5 h-5 text-pink-600" /> Add Care Plan</h3>
+            <div className="space-y-3">
+              <div><label className="text-sm font-medium block mb-1">Problem / Nursing Diagnosis *</label>
+                <textarea value={carePlanForm.problem} onChange={e => setCarePlanForm(f => ({ ...f, problem: e.target.value }))} className="w-full border rounded-md px-3 py-2 text-sm h-20" placeholder="e.g. Risk for infection related to surgical incision" />
+              </div>
+              <div><label className="text-sm font-medium block mb-1">Goal / Expected Outcome *</label>
+                <textarea value={carePlanForm.goal} onChange={e => setCarePlanForm(f => ({ ...f, goal: e.target.value }))} className="w-full border rounded-md px-3 py-2 text-sm h-16" placeholder="e.g. Patient will remain free of infection during hospital stay" />
+              </div>
+              <div><label className="text-sm font-medium block mb-1">Interventions *</label>
+                <textarea value={carePlanForm.interventions} onChange={e => setCarePlanForm(f => ({ ...f, interventions: e.target.value }))} className="w-full border rounded-md px-3 py-2 text-sm h-20" placeholder="e.g. Monitor vital signs q4h, assess wound site daily, administer antibiotics as prescribed" />
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <Button variant="outline" onClick={() => setShowAddCarePlan(false)}>Cancel</Button>
+                <Button onClick={handleAddCarePlan} disabled={!carePlanForm.problem || !carePlanForm.goal || !carePlanForm.interventions} className="bg-blue-600 hover:bg-blue-700">Add Care Plan</Button>
               </div>
             </div>
           </div>

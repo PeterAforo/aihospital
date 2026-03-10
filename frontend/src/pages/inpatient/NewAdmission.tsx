@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, UserPlus, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,9 @@ import api from '@/services/api';
 const NewAdmission: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const prefillAdmissionId = searchParams.get('admissionId');
+  const prefillPatientId = searchParams.get('patientId');
 
   const [wards, setWards] = useState<Ward[]>([]);
   const [beds, setBeds] = useState<BedItem[]>([]);
@@ -18,6 +21,7 @@ const NewAdmission: React.FC = () => {
   const [patientSearch, setPatientSearch] = useState('');
   const [patientResults, setPatientResults] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [existingAdmissionId, setExistingAdmissionId] = useState<string | null>(prefillAdmissionId);
 
   const [form, setForm] = useState({
     patientId: '', patientName: '', wardId: '', bedId: '', branchId: '',
@@ -42,6 +46,40 @@ const NewAdmission: React.FC = () => {
           const usersRes = await api.get('/users?role=DOCTOR&limit=100');
           setDoctors(usersRes.data.data?.users || usersRes.data.data || []);
         } catch { /* ignore */ }
+
+        // Pre-fill from existing admission (Assign Bed flow)
+        if (prefillAdmissionId) {
+          try {
+            const adm = await inpatientService.getAdmission(prefillAdmissionId);
+            const pName = `${adm.patient.firstName} ${adm.patient.lastName} (${adm.patient.mrn})`;
+            setForm(f => ({
+              ...f,
+              patientId: adm.patient.id,
+              patientName: pName,
+              admissionReason: adm.admissionReason || '',
+              primaryDiagnosis: adm.primaryDiagnosis || '',
+              admissionSource: adm.admissionSource || 'OPD',
+              priority: adm.priority || 'routine',
+              admissionNotes: adm.admissionNotes || '',
+              dietOrders: adm.dietOrders || '',
+              activityLevel: adm.activityLevel || '',
+              estimatedStay: adm.estimatedStay ? String(adm.estimatedStay) : '',
+              attendingDoctorId: adm.attendingDoctorId || '',
+            }));
+            setPatientSearch(pName);
+            setExistingAdmissionId(prefillAdmissionId);
+          } catch { /* ignore — fall through to empty form */ }
+        } else if (prefillPatientId) {
+          try {
+            const res = await api.get(`/patients/${prefillPatientId}`);
+            const p = res.data.data;
+            if (p) {
+              const pName = `${p.firstName} ${p.lastName} (${p.mrn})`;
+              setForm(f => ({ ...f, patientId: p.id, patientName: pName }));
+              setPatientSearch(pName);
+            }
+          } catch { /* ignore */ }
+        }
       } catch (error: any) {
         toast({ title: 'Error', description: error.message, variant: 'destructive' });
       }
@@ -73,28 +111,45 @@ const NewAdmission: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!form.patientId || !form.wardId || !form.bedId || !form.admissionReason) {
+    if (!form.wardId || !form.bedId) {
+      toast({ title: 'Error', description: 'Please select a ward and bed', variant: 'destructive' });
+      return;
+    }
+    if (!existingAdmissionId && (!form.patientId || !form.admissionReason)) {
       toast({ title: 'Error', description: 'Please fill all required fields', variant: 'destructive' });
       return;
     }
     try {
       setSubmitting(true);
-      const admission = await inpatientService.admitPatient({
-        branchId: form.branchId,
-        patientId: form.patientId,
-        wardId: form.wardId,
-        bedId: form.bedId,
-        admissionReason: form.admissionReason,
-        admissionSource: form.admissionSource,
-        priority: form.priority,
-        primaryDiagnosis: form.primaryDiagnosis || undefined,
-        admissionNotes: form.admissionNotes || undefined,
-        dietOrders: form.dietOrders || undefined,
-        estimatedStay: form.estimatedStay ? parseInt(form.estimatedStay) : undefined,
-        attendingDoctorId: form.attendingDoctorId || undefined,
-      });
-      toast({ title: 'Success', description: `Patient admitted: ${admission.admissionNumber}` });
-      navigate(`/inpatient/admissions/${admission.id}`);
+
+      if (existingAdmissionId) {
+        // Assign bed to existing PENDING admission
+        const admission = await inpatientService.assignBed(existingAdmissionId, {
+          wardId: form.wardId,
+          bedId: form.bedId,
+          attendingDoctorId: form.attendingDoctorId || undefined,
+        });
+        toast({ title: 'Success', description: `Bed assigned — patient admitted: ${admission.admissionNumber}` });
+        navigate(`/inpatient/admissions/${existingAdmissionId}`);
+      } else {
+        // Create brand-new admission
+        const admission = await inpatientService.admitPatient({
+          branchId: form.branchId,
+          patientId: form.patientId,
+          wardId: form.wardId,
+          bedId: form.bedId,
+          admissionReason: form.admissionReason,
+          admissionSource: form.admissionSource,
+          priority: form.priority,
+          primaryDiagnosis: form.primaryDiagnosis || undefined,
+          admissionNotes: form.admissionNotes || undefined,
+          dietOrders: form.dietOrders || undefined,
+          estimatedStay: form.estimatedStay ? parseInt(form.estimatedStay) : undefined,
+          attendingDoctorId: form.attendingDoctorId || undefined,
+        });
+        toast({ title: 'Success', description: `Patient admitted: ${admission.admissionNumber}` });
+        navigate(`/inpatient/admissions/${admission.id}`);
+      }
     } catch (error: any) {
       toast({ title: 'Error', description: error.response?.data?.error || error.message, variant: 'destructive' });
     } finally {
@@ -107,8 +162,8 @@ const NewAdmission: React.FC = () => {
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate('/inpatient/admissions')} className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft className="w-5 h-5" /></button>
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><UserPlus className="w-6 h-6 text-blue-600" /> New Admission</h1>
-          <p className="text-sm text-gray-500">Admit a patient to a ward</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><UserPlus className="w-6 h-6 text-blue-600" /> {existingAdmissionId ? 'Assign Bed' : 'New Admission'}</h1>
+          <p className="text-sm text-gray-500">{existingAdmissionId ? 'Assign a ward and bed to the pending admission' : 'Admit a patient to a ward'}</p>
         </div>
       </div>
 
@@ -124,6 +179,7 @@ const NewAdmission: React.FC = () => {
                 value={patientSearch}
                 onChange={e => searchPatients(e.target.value)}
                 className="pl-10"
+                disabled={!!existingAdmissionId}
               />
               {patientResults.length > 0 && (
                 <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border rounded-lg shadow-lg max-h-48 overflow-auto">
@@ -225,8 +281,8 @@ const NewAdmission: React.FC = () => {
         {/* Submit */}
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={() => navigate('/inpatient/admissions')}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={submitting || !form.patientId || !form.wardId || !form.bedId || !form.admissionReason} className="bg-blue-600 hover:bg-blue-700">
-            {submitting ? 'Admitting...' : 'Admit Patient'}
+          <Button onClick={handleSubmit} disabled={submitting || !form.wardId || !form.bedId || (!existingAdmissionId && (!form.patientId || !form.admissionReason))} className="bg-blue-600 hover:bg-blue-700">
+            {submitting ? 'Processing...' : existingAdmissionId ? 'Assign Bed & Admit' : 'Admit Patient'}
           </Button>
         </div>
       </div>
