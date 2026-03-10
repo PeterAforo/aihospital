@@ -6,11 +6,11 @@ import {
   Clock, 
   CheckCircle, 
   FileSignature,
-  User,
   Calendar,
   Filter,
   AlertTriangle
 } from 'lucide-react';
+import PatientAvatar from '@/components/patients/PatientAvatar';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -127,9 +127,7 @@ const EMRDashboard: React.FC = () => {
                 className="flex items-center justify-between p-3 bg-white border border-amber-200 rounded-lg hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                    <User className="w-5 h-5 text-amber-700" />
-                  </div>
+                  <PatientAvatar photoUrl={(enc.patient as any)?.photoUrl} firstName={enc.patient?.firstName || '?'} lastName={enc.patient?.lastName || '?'} size="sm" />
                   <div>
                     <p className="font-medium text-gray-900">
                       {enc.patient?.firstName} {enc.patient?.lastName}
@@ -257,9 +255,7 @@ const EMRDashboard: React.FC = () => {
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <User className="w-5 h-5 text-blue-600" />
-                    </div>
+                    <PatientAvatar photoUrl={(appointment.patient as any)?.photoUrl} firstName={appointment.patient?.firstName || '?'} lastName={appointment.patient?.lastName || '?'} size="sm" />
                     <div>
                       <p className="font-medium">
                         {appointment.patient?.firstName} {appointment.patient?.lastName}

@@ -414,6 +414,7 @@ class ResultsService {
             lastName: true,
             dateOfBirth: true,
             gender: true,
+            photoUrl: true,
           },
         },
         encounter: {

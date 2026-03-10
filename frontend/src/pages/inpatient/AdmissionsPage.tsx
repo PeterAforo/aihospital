@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { inpatientService, AdmissionListItem, DashboardStats } from '@/services/inpatient.service';
+import PatientAvatar from '@/components/patients/PatientAvatar';
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -142,8 +143,13 @@ const AdmissionsPage: React.FC = () => {
               <tr key={adm.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                 <td className="px-4 py-3 font-mono text-xs">{adm.admissionNumber}</td>
                 <td className="px-4 py-3">
-                  <div className="font-medium">{adm.patient.firstName} {adm.patient.lastName}</div>
-                  <div className="text-xs text-gray-400">{adm.patient.mrn} • {adm.patient.gender}</div>
+                  <div className="flex items-center gap-2">
+                    <PatientAvatar photoUrl={(adm.patient as any).photoUrl} firstName={adm.patient.firstName} lastName={adm.patient.lastName} size="xs" />
+                    <div>
+                      <div className="font-medium">{adm.patient.firstName} {adm.patient.lastName}</div>
+                      <div className="text-xs text-gray-400">{adm.patient.mrn} • {adm.patient.gender}</div>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   {adm.ward ? (

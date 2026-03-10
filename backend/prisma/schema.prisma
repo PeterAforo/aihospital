@@ -519,6 +519,10 @@ model Patient {
   fingerprintTemplate   String?
   fingerprintEnrolledAt DateTime?
 
+  // RFID Card
+  rfidCardNumber   String?
+  rfidEnrolledAt   DateTime?
+
   // Status and merge tracking
   isActive            Boolean   @default(true)
   isMerged            Boolean   @default(false)
@@ -579,6 +583,7 @@ model Patient {
 
   @@unique([tenantId, mrn])
   @@unique([tenantId, ghanaCardNumber])
+  @@unique([tenantId, rfidCardNumber])
   @@index([tenantId, phonePrimary])
   @@index([tenantId, firstName, lastName])
   @@index([tenantId, dateOfBirth])

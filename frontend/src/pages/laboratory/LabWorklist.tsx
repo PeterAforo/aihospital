@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { laboratoryService, LabWorklistItem } from '@/services/laboratory.service';
+import PatientAvatar from '@/components/patients/PatientAvatar';
 import { useToast } from '@/hooks/use-toast';
 
 const LabWorklist: React.FC = () => {
@@ -172,9 +173,12 @@ const LabWorklist: React.FC = () => {
                   <TableRow key={order.id} className="cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/lab/order/${order.id}`)}>
                     <TableCell>{getPriorityBadge(order.priority)}</TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{order.patient.firstName} {order.patient.lastName}</p>
-                        <p className="text-sm text-gray-500">MRN: {order.patient.mrn}</p>
+                      <div className="flex items-center gap-2">
+                        <PatientAvatar photoUrl={(order.patient as any).photoUrl} firstName={order.patient.firstName} lastName={order.patient.lastName} size="xs" />
+                        <div>
+                          <p className="font-medium">{order.patient.firstName} {order.patient.lastName}</p>
+                          <p className="text-sm text-gray-500">MRN: {order.patient.mrn}</p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>

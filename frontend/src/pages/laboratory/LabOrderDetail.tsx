@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { laboratoryService, LabWorklistItem } from '@/services/laboratory.service';
+import PatientAvatar from '@/components/patients/PatientAvatar';
 import { useToast } from '@/hooks/use-toast';
 
 // ── Helpers ──
@@ -374,6 +375,13 @@ const LabOrderDetail: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center gap-4 mb-4">
+            <PatientAvatar photoUrl={(order.patient as any).photoUrl} firstName={order.patient.firstName} lastName={order.patient.lastName} size="lg" />
+            <div>
+              <p className="font-semibold text-lg">{order.patient.firstName} {order.patient.lastName}</p>
+              <p className="text-sm text-gray-500 font-mono">{order.patient.mrn}</p>
+            </div>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <p className="text-gray-500">Patient Name</p>

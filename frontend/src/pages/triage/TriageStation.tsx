@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, User, AlertTriangle, Activity, Thermometer, Heart, Wind, Droplets, Scale, Ruler } from 'lucide-react';
+import { Clock, AlertTriangle, Activity, Thermometer, Heart, Wind, Droplets, Scale, Ruler } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import PatientAvatar from '@/components/patients/PatientAvatar';
 import {
   getTriageQueue,
   createTriage,
@@ -215,7 +216,8 @@ export default function TriageStation() {
                       <span className="font-medium text-sm">{patient.queueNumber}</span>
                       <span className="text-xs text-muted-foreground">{patient.waitTime}</span>
                     </div>
-                    <div className="font-medium">
+                    <div className="font-medium flex items-center gap-2">
+                      <PatientAvatar photoUrl={(patient.patient as any).photoUrl || (patient.patient as any).photo} firstName={patient.patient.firstName} lastName={patient.patient.lastName} size="xs" />
                       {patient.patient.firstName} {patient.patient.lastName}
                     </div>
                     <div className="text-sm text-muted-foreground">
@@ -249,9 +251,7 @@ export default function TriageStation() {
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
+                    <PatientAvatar photoUrl={(selectedPatient.patient as any).photoUrl || (selectedPatient.patient as any).photo} firstName={selectedPatient.patient.firstName} lastName={selectedPatient.patient.lastName} size="lg" />
                     <div>
                       <h2 className="text-xl font-semibold">
                         {selectedPatient.patient.firstName} {selectedPatient.patient.lastName}

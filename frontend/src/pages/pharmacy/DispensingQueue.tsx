@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pill, Search, AlertTriangle, Clock, CheckCircle, User } from 'lucide-react';
+import { Pill, Search, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { pharmacyService, PrescriptionQueueItem } from '@/services/pharmacy.service';
+import PatientAvatar from '@/components/patients/PatientAvatar';
 import { useToast } from '@/hooks/use-toast';
 
 const DispensingQueue: React.FC = () => {
@@ -133,9 +134,7 @@ const DispensingQueue: React.FC = () => {
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex gap-4">
-                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                          <User className="w-6 h-6 text-gray-500" />
-                        </div>
+                        <PatientAvatar photoUrl={(rx.patient as any).photoUrl} firstName={rx.patient.firstName} lastName={rx.patient.lastName} size="md" />
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold">

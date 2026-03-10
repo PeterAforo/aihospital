@@ -167,6 +167,67 @@ export class PatientController {
     }
   }
 
+  // ── Biometric & RFID ──
+
+  async registerFingerprint(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { fingerprintTemplate } = req.body;
+      if (!fingerprintTemplate) return sendError(res, 'fingerprintTemplate is required', 400);
+      const patient = await prisma.patient.update({
+        where: { id: req.params.id, tenantId: req.tenantId! },
+        data: { fingerprintTemplate, fingerprintEnrolledAt: new Date() },
+        select: { id: true, mrn: true, firstName: true, lastName: true, fingerprintEnrolledAt: true },
+      });
+      sendSuccess(res, patient, 'Fingerprint registered');
+    } catch (error) { next(error); }
+  }
+
+  async registerRfidCard(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { rfidCardNumber } = req.body;
+      if (!rfidCardNumber) return sendError(res, 'rfidCardNumber is required', 400);
+      // Check uniqueness
+      const existing = await prisma.patient.findFirst({
+        where: { tenantId: req.tenantId!, rfidCardNumber, id: { not: req.params.id } },
+      });
+      if (existing) return sendError(res, 'This RFID card is already assigned to another patient', 409);
+      const patient = await prisma.patient.update({
+        where: { id: req.params.id, tenantId: req.tenantId! },
+        data: { rfidCardNumber, rfidEnrolledAt: new Date() },
+        select: { id: true, mrn: true, firstName: true, lastName: true, rfidCardNumber: true, rfidEnrolledAt: true },
+      });
+      sendSuccess(res, patient, 'RFID card registered');
+    } catch (error) { next(error); }
+  }
+
+  async lookupByRfid(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { rfidCardNumber } = req.query;
+      if (!rfidCardNumber) return sendError(res, 'rfidCardNumber query param is required', 400);
+      const patient = await prisma.patient.findFirst({
+        where: { tenantId: req.tenantId!, rfidCardNumber: rfidCardNumber as string, isActive: true },
+        include: { nhisInfo: true },
+      });
+      if (!patient) return sendError(res, 'No patient found with this RFID card', 404);
+      sendSuccess(res, patient);
+    } catch (error) { next(error); }
+  }
+
+  async lookupByFingerprint(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { fingerprintTemplate } = req.body;
+      if (!fingerprintTemplate) return sendError(res, 'fingerprintTemplate is required', 400);
+      // In a real implementation this would use a fingerprint SDK matching algorithm.
+      // For now, we do an exact-match lookup on the template string.
+      const patient = await prisma.patient.findFirst({
+        where: { tenantId: req.tenantId!, fingerprintTemplate, isActive: true },
+        include: { nhisInfo: true },
+      });
+      if (!patient) return sendError(res, 'No matching patient found for this fingerprint', 404);
+      sendSuccess(res, patient);
+    } catch (error) { next(error); }
+  }
+
   async deleteDocument(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const document = await prisma.patientDocument.findFirst({

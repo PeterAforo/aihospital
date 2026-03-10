@@ -44,6 +44,7 @@ class SampleService {
             lastName: true,
             dateOfBirth: true,
             gender: true,
+            photoUrl: true,
           },
         },
         encounter: {

@@ -16,6 +16,11 @@ router.use(tenantGuard);
 router.post('/', requirePermission('REGISTER_PATIENT'), validateBody(createPatientSchema), patientController.create);
 router.get('/search', requirePermission('VIEW_PATIENT', 'VIEW_PATIENT_BASIC'), patientController.search);
 router.post('/check-duplicate', requirePermission('REGISTER_PATIENT'), validateBody(checkDuplicateSchema), patientController.checkDuplicate);
+
+// Biometric & RFID lookup (must be BEFORE /:id to avoid matching 'lookup' as patient id)
+router.get('/lookup/rfid', requirePermission('VIEW_PATIENT', 'VIEW_PATIENT_BASIC'), patientController.lookupByRfid);
+router.post('/lookup/fingerprint', requirePermission('VIEW_PATIENT', 'VIEW_PATIENT_BASIC'), patientController.lookupByFingerprint);
+
 router.get('/:id', requirePermission('VIEW_PATIENT', 'VIEW_PATIENT_BASIC'), patientController.getById);
 router.put('/:id', requirePermission('EDIT_PATIENT'), validateBody(updatePatientSchema), patientController.update);
 router.delete('/:id', requirePermission('DELETE_PATIENT'), patientController.delete);
@@ -24,6 +29,10 @@ router.delete('/:id', requirePermission('DELETE_PATIENT'), patientController.del
 router.get('/:id/visits', requirePermission('VIEW_PATIENT'), patientController.getVisitHistory);
 router.post('/:id/merge', requirePermission('MERGE_PATIENT'), patientController.merge);
 router.post('/:id/photo', requirePermission('EDIT_PATIENT'), uploadPatientPhoto.single('photo'), patientController.uploadPhoto);
+
+// Biometric & RFID registration
+router.post('/:id/fingerprint', requirePermission('EDIT_PATIENT'), patientController.registerFingerprint);
+router.post('/:id/rfid', requirePermission('EDIT_PATIENT'), patientController.registerRfidCard);
 
 // Patient documents
 router.get('/:id/documents', requirePermission('VIEW_PATIENT'), patientController.getDocuments);

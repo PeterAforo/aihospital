@@ -143,4 +143,24 @@ export const patientService = {
     });
     return response.data;
   },
+
+  registerFingerprint: async (patientId: string, fingerprintTemplate: string) => {
+    const response = await api.post(`/patients/${patientId}/fingerprint`, { fingerprintTemplate });
+    return response.data;
+  },
+
+  registerRfidCard: async (patientId: string, rfidCardNumber: string) => {
+    const response = await api.post(`/patients/${patientId}/rfid`, { rfidCardNumber });
+    return response.data;
+  },
+
+  lookupByRfid: async (rfidCardNumber: string) => {
+    const response = await api.get('/patients/lookup/rfid', { params: { rfidCardNumber } });
+    return response.data;
+  },
+
+  lookupByFingerprint: async (fingerprintTemplate: string) => {
+    const response = await api.post('/patients/lookup/fingerprint', { fingerprintTemplate });
+    return response.data;
+  },
 };
