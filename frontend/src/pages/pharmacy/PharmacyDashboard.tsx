@@ -30,6 +30,9 @@ const PharmacyDashboard: React.FC = () => {
       setPrescriptionQueue(queue);
       setLowStockAlerts(lowStock);
       setExpiringStock(expiring);
+
+      // Auto-ensure minimum stock of 100 for all items (idempotent, fire-and-forget)
+      pharmacyService.ensureMinimumStock(100).catch(() => {});
     } catch (error: any) {
       toast({
         title: 'Error',

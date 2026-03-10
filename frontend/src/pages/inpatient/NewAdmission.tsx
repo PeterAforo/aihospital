@@ -64,7 +64,7 @@ const NewAdmission: React.FC = () => {
               dietOrders: adm.dietOrders || '',
               activityLevel: adm.activityLevel || '',
               estimatedStay: adm.estimatedStay ? String(adm.estimatedStay) : '',
-              attendingDoctorId: adm.attendingDoctorId || '',
+              attendingDoctorId: adm.attendingDoctor?.id || '',
             }));
             setPatientSearch(pName);
             setExistingAdmissionId(prefillAdmissionId);

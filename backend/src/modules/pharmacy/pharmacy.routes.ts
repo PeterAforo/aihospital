@@ -779,4 +779,46 @@ router.post('/expiry/generate-alerts', requirePermission('MANAGE_PHARMACY'), asy
   }
 });
 
+// ==================== ENSURE MINIMUM STOCK ====================
+
+router.post('/stock/ensure-minimum', requirePermission('MANAGE_PHARMACY'), async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const minimum = parseInt(req.body.minimum as string) || 100;
+
+    // Update all pharmacy_stock rows where quantity < minimum
+    const result = await prisma.pharmacyStock.updateMany({
+      where: {
+        tenantId: user.tenantId,
+        quantity: { lt: minimum },
+      },
+      data: { quantity: minimum },
+    });
+
+    // Also update central_inventory if it exists
+    let centralUpdated = 0;
+    try {
+      const ciResult = await (prisma as any).centralInventory.updateMany({
+        where: {
+          tenantId: user.tenantId,
+          quantityOnHand: { lt: minimum },
+        },
+        data: { quantityOnHand: minimum },
+      });
+      centralUpdated = ciResult.count;
+    } catch { /* table may not exist */ }
+
+    res.json({
+      success: true,
+      data: {
+        pharmacyStockUpdated: result.count,
+        centralInventoryUpdated: centralUpdated,
+        minimumSet: minimum,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

@@ -256,6 +256,11 @@ class PharmacyService {
     const response = await api.post(`/pharmacy/purchase-orders/${id}/cancel`);
     return response.data.data;
   }
+
+  async ensureMinimumStock(minimum: number = 100): Promise<any> {
+    const response = await api.post('/pharmacy/stock/ensure-minimum', { minimum });
+    return response.data.data;
+  }
 }
 
 export const pharmacyService = new PharmacyService();

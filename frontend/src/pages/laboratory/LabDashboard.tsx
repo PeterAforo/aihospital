@@ -37,6 +37,9 @@ const LabDashboard: React.FC = () => {
       }
       if (alertsResult.status === 'fulfilled') setCriticalAlerts(alertsResult.value);
 
+      // Auto-seed panel test parameters (idempotent, fire-and-forget)
+      laboratoryService.seedPanelParameters().catch(() => {});
+
       // Show error only if the main worklist call failed
       if (worklistResult.status === 'rejected') {
         toast({

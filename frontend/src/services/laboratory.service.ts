@@ -207,6 +207,12 @@ class LaboratoryService {
     return response.data.data;
   }
 
+  // Seed panel test parameters (FBC, LFT, etc.)
+  async seedPanelParameters(): Promise<any> {
+    const response = await api.post('/lab/seed-panel-parameters');
+    return response.data.data;
+  }
+
   // Patient History
   async getPatientLabHistory(patientId: string, limit?: number): Promise<LabWorklistItem[]> {
     const response = await api.get(`/lab/patient/${patientId}/history`, { params: { limit } });
