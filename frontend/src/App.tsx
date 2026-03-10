@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './store';
+import { setUser, logout } from './store/slices/authSlice';
+import api from './services/api';
 
 // Layouts
 import MainLayout from './components/layout/MainLayout';
@@ -172,12 +175,49 @@ import AnesthesiaRecordPage from './pages/surgery/AnesthesiaRecordPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  
+  const dispatch = useDispatch();
+  const { isAuthenticated, user, accessToken } = useSelector((state: RootState) => state.auth);
+  const [rehydrating, setRehydrating] = useState(true);
+
+  useEffect(() => {
+    if (!isAuthenticated || !accessToken) {
+      setRehydrating(false);
+      return;
+    }
+    if (user) {
+      setRehydrating(false);
+      return;
+    }
+    // Token in localStorage but user is null (page refresh) — re-fetch profile
+    api.get('/auth/me')
+      .then((res) => {
+        const u = res.data.data;
+        if (u) {
+          dispatch(setUser(u));
+        }
+      })
+      .catch(() => {
+        // Token expired and refresh also failed — logout
+        dispatch(logout());
+      })
+      .finally(() => setRehydrating(false));
+  }, [isAuthenticated, accessToken, user, dispatch]);
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
+  if (rehydrating) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3" />
+          <p className="text-gray-500 text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 };
 
